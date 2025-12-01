@@ -253,6 +253,15 @@ export default function StudentDashboard() {
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Skills button: added so students can go to the Skills page */}
+          <Button
+            onClick={() => router.push('/student/skills')}
+            className="bg-white border border-gray-200 text-foreground"
+            aria-label="Manage skills"
+          >
+            Skills
+          </Button>
+
           {/* Scorecard button */}
           <Button
             onClick={() => {
