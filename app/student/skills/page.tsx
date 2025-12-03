@@ -1,12 +1,17 @@
 "use client"
 
 import React, { useEffect, useState, ChangeEvent } from "react";
+import dynamic from "next/dynamic";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import QuizSkills from "@/components/QuizSkills";
 import { useRouter } from "next/navigation";
 import { X, Plus } from "lucide-react";
+
+const QuizSkills = dynamic(() => import("@/components/QuizSkills"), {
+  ssr: false,
+  loading: () => <div className="p-4 text-sm text-foreground/60">Loading quizzes…</div>,
+});
 
 const safeParse = (s: string | null) => {
   try {
