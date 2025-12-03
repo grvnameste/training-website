@@ -1,29 +1,23 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
 
-type CareerAnswers = Record<string, number> // likert answers (0..4)
-type CareerOpenAnswers = Record<string, string> // open text answers
+type CareerAnswers = Record<string, number>
+type CareerOpenAnswers = Record<string, string>
 type CultureAnswers = Record<string, number>
 
 type Question = {
   id: string
   text: string
   type: 'likert' | 'open'
-  // optional hint / placeholder for open questions
   placeholder?: string
 }
 
-const CAREER_SCREENSHOT_REF = '/mnt/data/cf976832-d05d-4ea2-a6ff-6058b5ddfb94.png'
-
-/**
- * Mixed questions list (15 total):
- * First 4 = Likert, Next 7 = Open, Last 4 = Likert
- */
+/* --- questions omitted for brevity in this comment block, keep your original arrays --- */
+/* Copy the same careerQuestions and cultureQuestions you already have above here. */
 const careerQuestions: Question[] = [
   { id: 'q1', text: 'How comfortable are you with learning new technical tools (e.g., a new programming language, cloud console, or BI tool)?', type: 'likert' },
   { id: 'q2', text: 'Which type of tasks energize you most? (Choose the option that fits best)', type: 'likert' },
@@ -53,7 +47,13 @@ const cultureQuestions: Question[] = [
   { id: 'c6', text: 'I like experimentation and trying new technologies even if they fail initially.', type: 'likert' },
 ]
 
-type PathwayKey = 'Cloud & Infrastructure' | 'Business Analysis & Delivery' | 'Data & Analytics' | 'Automation / Low-Code' | 'AI & Workflow Integration'
+type PathwayKey =
+  | 'Cloud & Infrastructure'
+  | 'Business Analysis & Delivery'
+  | 'Data & Analytics'
+  | 'Automation / Low-Code'
+  | 'AI & Workflow Integration'
+
 const pathwayKeys: PathwayKey[] = [
   'Cloud & Infrastructure',
   'Business Analysis & Delivery',
@@ -62,6 +62,7 @@ const pathwayKeys: PathwayKey[] = [
   'AI & Workflow Integration',
 ]
 
+// keep your weights exactly as before
 const careerQuestionWeights: Record<string, number[]> = {
   q1: [0.6, 0.2, 0.2, 0.2, 0.4],
   q2: [1.0, 0, 0, 0.1, 0.2],
@@ -73,69 +74,11 @@ const careerQuestionWeights: Record<string, number[]> = {
   q15: [0.4, 0.6, 0.6, 0.6, 0.6],
 }
 
-const pathwayRoadmaps: Record<PathwayKey, { title: string; steps: string[] }> = {
-  'Cloud & Infrastructure': {
-    title: 'Cloud & Infrastructure — Starter Roadmap',
-    steps: [
-      'Basics: Learn Linux fundamentals, networking basics (TCP/IP), and command-line usage.',
-      'Cloud intro: Get familiar with one provider (AWS/Azure/GCP) — understand VM, storage, IAM, and networking.',
-      'Hands-on: Deploy a sample app (static website or simple Node app) to cloud VM or managed service.',
-      'Automation: Learn Infrastructure-as-Code tools — Terraform or CloudFormation basics.',
-      'Certify: Consider entry cert like AWS Certified Cloud Practitioner or equivalent.',
-      'Next: Learn containerization (Docker) and orchestration (Kubernetes) fundamentals.',
-    ],
-  },
-  'Business Analysis & Delivery': {
-    title: 'Business Analysis & Delivery — Starter Roadmap',
-    steps: [
-      'Foundations: Learn requirement gathering, writing user stories, and process mapping.',
-      'Tools: Get comfortable with Excel/Sheets, basic SQL, and documentation tools (Confluence/Notion).',
-      'Communication: Practice stakeholder interviews and presenting findings clearly.',
-      'Delivery: Learn Agile basics (Scrum/Kanban) and tools like Jira.',
-      'Portfolio: Document 2–3 case studies where you analyzed a problem and proposed a solution.',
-      'Next: Explore product analytics tools (Mixpanel/GA) and basic data literacy to strengthen decision-making.',
-    ],
-  },
-  'Data & Analytics': {
-    title: 'Data & Analytics — Starter Roadmap',
-    steps: [
-      'Foundations: Learn statistics basics (mean, median, variance), and Excel/Sheets for analysis.',
-      'SQL: Learn SQL for querying relational data (SELECT, JOIN, GROUP BY).',
-      'Python/R: Pick Python (pandas, numpy) for data cleaning and exploration.',
-      'Visualization: Learn a charting library or BI tool (PowerBI/Tableau/Looker).',
-      'Project: Do a small end-to-end analysis — get a dataset, clean it, analyze, and visualize insights.',
-      'Next: Learn basic machine learning concepts and pipelines as needed.',
-    ],
-  },
-  'Automation / Low-Code': {
-    title: 'Automation / Low-Code — Starter Roadmap',
-    steps: [
-      'Basics: Document repetitive processes you want to automate; learn logic constructs (if/else, loops).',
-      'Tools: Explore low-code platforms (Power Automate, Make, Zapier) and their building blocks.',
-      'Scripting: Learn a small amount of scripting (JavaScript/Python) to extend automations.',
-      'Integrations: Practice connecting APIs and services; work with webhooks and basic auth.',
-      'Project: Automate a recurring task end-to-end using a low-code tool + small script.',
-      'Next: Learn versioning and monitoring for automations and how to scale flows.',
-    ],
-  },
-  'AI & Workflow Integration': {
-    title: 'AI & Workflow Integration — Starter Roadmap',
-    steps: [
-      'Concepts: Learn what AI/ML means practically — prompt engineering, embeddings, simple models.',
-      'APIs: Explore LLM APIs (OpenAI/others) and how to call them from apps/flows.',
-      'Data prep: Learn how to prepare and sanitize data for AI (clean text, embeddings basics).',
-      'Integration: Build a small workflow that uses an LLM to automate a business task (summaries, triage).',
-      'Ethics & Monitoring: Learn basics of AI safety, biases, and evaluation metrics.',
-      'Next: Combine AI with automation platforms to create intelligent flows.',
-    ],
-  },
-}
-
 export default function StudentQuestionnaire() {
   const router = useRouter()
   const [currentUser, setCurrentUser] = useState<any>(null)
 
-  const [step, setStep] = useState<'career' | 'culture' | 'results'>('career')
+  const [step, setStep] = useState<'career' | 'culture'>('career') // remove 'results' usage
   const [careerIndex, setCareerIndex] = useState(0)
   const [cultureIndex, setCultureIndex] = useState(0)
 
@@ -151,7 +94,6 @@ export default function StudentQuestionnaire() {
     cultureQuestions.reduce((acc, q) => ({ ...acc, [q.id]: 2 }), {} as CultureAnswers)
   )
 
-  const [error, setError] = useState('')
   const [computedPathway, setComputedPathway] = useState<PathwayKey | null>(null)
   const [pathwayScores, setPathwayScores] = useState<Record<PathwayKey, number> | null>(null)
 
@@ -169,22 +111,25 @@ export default function StudentQuestionnaire() {
     }
     setCurrentUser(u)
 
+    // if saved career, go to the dedicated result page
     const c = localStorage.getItem(`questionnaire_career_${u.email}`)
     if (c) {
-      const parsed = JSON.parse(c)
-      if (parsed.answers) setCareerAnswers(parsed.answers)
-      if (parsed.openAnswers) setCareerOpenAnswers(parsed.openAnswers)
-      const savedCulture = localStorage.getItem(`questionnaire_culture_${u.email}`)
-      if (savedCulture) setCultureAnswers(JSON.parse(savedCulture).answers || {})
-      const { top, scores } = computePathwayFromAnswers(parsed.answers || careerAnswers)
-      setComputedPathway(top)
-      setPathwayScores(scores)
-      setStep('results')
+      try {
+        const parsed = JSON.parse(c)
+        if (parsed.answers) setCareerAnswers(parsed.answers)
+        if (parsed.openAnswers) setCareerOpenAnswers(parsed.openAnswers)
+        const { top, scores } = computePathwayFromAnswers(parsed.answers || careerAnswers)
+        setComputedPathway(top)
+        setPathwayScores(scores)
+        router.push('/student/rersult') // navigate away immediately if already computed
+      } catch (e) {
+        // ignore parse errors
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router])
 
-  function computePathwayFromAnswers(answersObj: CareerAnswers) {
+  function computePathwayFromAnswers(answersObj: CareerAnswers | Record<string, number> | undefined) {
     const scores: Record<PathwayKey, number> = {
       'Cloud & Infrastructure': 0,
       'Business Analysis & Delivery': 0,
@@ -192,6 +137,7 @@ export default function StudentQuestionnaire() {
       'Automation / Low-Code': 0,
       'AI & Workflow Integration': 0,
     }
+    if (!answersObj) return { top: null, scores }
     for (const q of Object.keys(answersObj)) {
       const val = Number(answersObj[q] ?? 0)
       const weights = careerQuestionWeights[q] || [0, 0, 0, 0, 0]
@@ -200,33 +146,48 @@ export default function StudentQuestionnaire() {
       })
     }
     const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1])
-    const top = sorted[0][0] as PathwayKey
+    const top = (sorted.length ? (sorted[0][0] as PathwayKey) : null)
     return { top, scores }
   }
 
+  const likertLabels = [
+    'Very confident',
+    'Confident',
+    'Neutral',
+    'Slightly unconfident',
+    'Not confident at all',
+  ]
+
+  const careerProgress = Math.round(((careerIndex + 1) / careerQuestions.length) * 100)
+  const cultureProgress = Math.round(((cultureIndex + 1) / cultureQuestions.length) * 100)
+  const progress = step === 'career' ? careerProgress : cultureProgress
+
   const onSelectCareerOption = (val: number) => {
-    const id = careerQuestions[careerIndex].type === 'likert' ? careerQuestions[careerIndex].id : null
-    if (!id) return
-    setCareerAnswers(prev => ({ ...prev, [id]: val }))
+    const q = careerQuestions[careerIndex]
+    if (q.type !== 'likert') return
+    setCareerAnswers(prev => ({ ...prev, [q.id]: val }))
   }
 
   const onChangeCareerOpen = (text: string) => {
-    const id = careerQuestions[careerIndex].type === 'open' ? careerQuestions[careerIndex].id : null
-    if (!id) return
-    setCareerOpenAnswers(prev => ({ ...prev, [id]: text }))
+    const q = careerQuestions[careerIndex]
+    if (q.type !== 'open') return
+    setCareerOpenAnswers(prev => ({ ...prev, [q.id]: text }))
   }
 
   const onSelectCultureOption = (val: number) => {
-    const qId = cultureQuestions[cultureIndex].id
-    setCultureAnswers(prev => ({ ...prev, [qId]: val }))
+    const q = cultureQuestions[cultureIndex]
+    setCultureAnswers(prev => ({ ...prev, [q.id]: val }))
   }
 
   const goCareerNext = () => {
+    // if open question, allow empty - user can leave blank
     if (careerIndex < careerQuestions.length - 1) {
       setCareerIndex(i => i + 1)
       window.scrollTo({ top: 0, behavior: 'smooth' })
       return
     }
+
+    // finalise career answers and move to culture
     const { top, scores } = computePathwayFromAnswers(careerAnswers)
     setComputedPathway(top)
     setPathwayScores(scores)
@@ -254,6 +215,8 @@ export default function StudentQuestionnaire() {
       window.scrollTo({ top: 0, behavior: 'smooth' })
       return
     }
+
+    // finalise culture answers and then navigate to the dedicated result page
     if (currentUser?.email) {
       localStorage.setItem(`questionnaire_culture_${currentUser.email}`, JSON.stringify({
         answers: cultureAnswers,
@@ -261,8 +224,24 @@ export default function StudentQuestionnaire() {
       }))
       localStorage.setItem(`questionnaire_${currentUser.email}`, JSON.stringify({ careerAt: new Date().toISOString() }))
     }
-    setStep('results')
-    setCultureIndex(0)
+
+    // compute pathway again to ensure result page sees the computed values in localStorage
+    const { top, scores } = computePathwayFromAnswers(careerAnswers)
+    setComputedPathway(top)
+    setPathwayScores(scores)
+    // ensure career entry is saved (in case user skipped career finalise earlier)
+    if (currentUser?.email) {
+      localStorage.setItem(`questionnaire_career_${currentUser.email}`, JSON.stringify({
+        answers: careerAnswers,
+        openAnswers: careerOpenAnswers,
+        computedAt: new Date().toISOString(),
+        computedTop: top,
+        scores,
+      }))
+    }
+
+    // NAVIGATE to the dedicated result page (this is the key change)
+    router.push('/student/rersult')
   }
 
   const goCulturePrev = () => {
@@ -286,28 +265,6 @@ export default function StudentQuestionnaire() {
     setCultureIndex(0)
   }
 
-  const summaryCulture = useMemo(() => {
-    const independence = Number(cultureAnswers['c1'] ?? 2)
-    const pace = Number(cultureAnswers['c2'] ?? 2)
-    const mentorship = Number(cultureAnswers['c3'] ?? 2)
-    const stability = Number(cultureAnswers['c4'] ?? 2)
-    const comms = Number(cultureAnswers['c5'] ?? 2)
-    const experimentation = Number(cultureAnswers['c6'] ?? 2)
-    return { independence, pace, mentorship, stability, comms, experimentation }
-  }, [cultureAnswers])
-
-  const likertLabels = [
-    'Very inaccurate',
-    'Moderately inaccurate',
-    'Neither accurate nor inaccurate',
-    'Moderately accurate',
-    'Very accurate',
-  ]
-
-  const careerProgress = Math.round(((careerIndex + 1) / careerQuestions.length) * 100)
-  const cultureProgress = Math.round(((cultureIndex + 1) / cultureQuestions.length) * 100)
-  const progress = step === 'career' ? careerProgress : step === 'culture' ? cultureProgress : 100
-
   const renderOpenQuestion = (q: Question) => {
     const val = careerOpenAnswers[q.id] ?? ''
     const maxLen = 400
@@ -318,204 +275,120 @@ export default function StudentQuestionnaire() {
           onChange={(e) => onChangeCareerOpen(e.target.value)}
           placeholder={q.placeholder || ''}
           maxLength={maxLen}
-          rows={5}
-          className="w-full p-4 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white text-foreground"
+          rows={6}
+          className="w-full p-4 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white text-foreground shadow-sm"
         />
         <div className="text-sm text-foreground/60 mt-2 text-right">{val.length}/{maxLen}</div>
       </div>
     )
   }
 
-  // NEW: robust dashboard navigation helper
-  const navigateToDashboard = () => {
-    // Prefer SPA navigation, but fallback to full reload to avoid unexpected dashboard-state behavior
-    try {
-      router.push('/student/dashboard')
-      // Also force a full reload (useful if dashboard has client-side logic that opens the scorecard)
-      // This ensures the dashboard loads fresh and avoids leftover UI state.
-      // We use assign() so browser history behaves normally.
-      window.location.assign('/student/dashboard')
-    } catch (e) {
-      // final fallback
-      window.location.href = '/student/dashboard'
-    }
+  const OptionRow: React.FC<{
+    label: string
+    selected: boolean
+    onClick: () => void
+  }> = ({ label, selected, onClick }) => {
+    return (
+      <button
+        onClick={onClick}
+        className={`w-full text-left flex items-center gap-4 p-4 rounded-lg border transition-shadow
+          ${selected ? 'border-blue-500 bg-blue-50 shadow-md' : 'border-gray-200 bg-white hover:shadow-sm'}`}
+        aria-pressed={selected}
+        type="button"
+      >
+        <div className={`w-5 h-5 rounded-full flex items-center justify-center border ${selected ? 'bg-blue-600 border-blue-600' : 'bg-white border-gray-300'}`}>
+          {selected ? <div className="w-2.5 h-2.5 rounded-full bg-white" /> : <div className="w-2.5 h-2.5 rounded-full bg-white/0" />}
+        </div>
+        <div className="text-sm text-foreground/800">{label}</div>
+      </button>
+    )
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-start justify-center px-6 py-8">
-      <div className="w-full max-w-4xl space-y-6">
+    <div className="min-h-screen bg-slate-50 py-12 px-6">
+      <div className="max-w-3xl mx-auto space-y-6">
         <Card className="p-6">
-          <CardHeader className="pb-2">
+          <CardHeader className="p-0 mb-4">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-3xl">{
-                step === 'career' ? 'Career Clarity' : step === 'culture' ? 'Culture fit' : 'Your Roadmap'
-              }</CardTitle>
-              <div className="text-sm text-foreground/60">Reference: <span className="font-mono text-xs">{CAREER_SCREENSHOT_REF}</span></div>
+              <CardTitle className="text-2xl font-semibold">Career Strengths Diagnostic</CardTitle>
+              <div className="text-sm text-foreground/60">{step === 'career' ? `${careerIndex + 1}/${careerQuestions.length}` : `${cultureIndex + 1}/${cultureQuestions.length}`}</div>
             </div>
           </CardHeader>
 
-          <CardContent>
-            <div className="flex items-center justify-between mb-4">
-              <Button className="px-4 py-2 shadow-md bg-white border border-blue-200 text-blue-700">Learn more</Button>
-              <div className="flex-1 px-6">
-                <div className="w-full bg-slate-200 h-3 rounded-md overflow-hidden">
-                  <div
-                    className="h-3 rounded-md bg-blue-600 transition-all"
-                    style={{ width: `${progress}%` }}
-                    aria-hidden
-                  />
-                </div>
-              </div>
-              <div style={{ width: 120 }} />
+          <div className="mb-6">
+            <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+              <div className="h-2 bg-blue-600 rounded-full transition-all" style={{ width: `${progress}%` }} />
             </div>
+          </div>
 
+          <CardContent className="p-0">
+            {/* CAREER */}
             {step === 'career' && (
               <>
                 <div className="text-center mb-6">
-                  <div className="text-sm text-foreground/60">Question {careerIndex + 1} of {careerQuestions.length}</div>
-                  <div className="mt-3 text-lg font-semibold">{careerQuestions[careerIndex].text}</div>
+                  <div className="text-sm text-foreground/60 mb-2">Question {careerIndex + 1} of {careerQuestions.length}</div>
+                  <h2 className="text-2xl md:text-3xl font-bold text-foreground/900 leading-snug">{careerQuestions[careerIndex].text}</h2>
                 </div>
 
-                <div className="flex flex-col items-center">
+                <div className="space-y-4">
                   {careerQuestions[careerIndex].type === 'likert' ? (
-                    <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {likertLabels.map((label, idx) => {
+                    <div className="space-y-3">
+                      {likertLabels.map((lab, i) => {
                         const id = careerQuestions[careerIndex].id
-                        const selected = (careerAnswers[id] ?? 2) === idx
+                        const selected = (careerAnswers[id] ?? 2) === i
                         return (
-                          <button
-                            key={label}
-                            type="button"
-                            onClick={() => onSelectCareerOption(idx)}
-                            className={`mx-auto px-6 py-3 rounded-full border 
-                              ${selected ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-blue-700 border-blue-300'}
-                              shadow-sm transition`}
-                          >
-                            {label}
-                          </button>
+                          <OptionRow key={lab} label={lab} selected={selected} onClick={() => onSelectCareerOption(i)} />
                         )
                       })}
                     </div>
                   ) : (
-                    renderOpenQuestion(careerQuestions[careerIndex])
+                    <div className="pt-2">{renderOpenQuestion(careerQuestions[careerIndex])}</div>
                   )}
+                </div>
 
-                  <div className="w-full flex items-center justify-between mt-8">
-                    <button
-                      type="button"
-                      onClick={goCareerPrev}
-                      className="text-blue-700 font-medium"
-                    >
-                      Previous
+                <div className="flex items-center justify-between mt-10">
+                  <button onClick={goCareerPrev} className="px-4 py-2 rounded-md border bg-white text-foreground/700">← Back</button>
+
+                  <div className="flex items-center gap-4">
+                    <div className="text-sm text-foreground/60">Progress: {progress}%</div>
+                    <button onClick={goCareerNext} className="px-5 py-3 rounded-md bg-blue-600 text-white font-medium">
+                      {careerIndex < careerQuestions.length - 1 ? 'Next' : 'Continue'}
                     </button>
-
-                    <div className="flex items-center gap-3">
-                      <div className="text-sm text-foreground/60">Progress: {progress}%</div>
-                      <button
-                        type="button"
-                        onClick={goCareerNext}
-                        className="px-4 py-2 rounded-md bg-blue-600 text-white font-medium"
-                      >
-                        {careerIndex < careerQuestions.length - 1 ? 'Next' : 'Continue'}
-                      </button>
-                    </div>
                   </div>
                 </div>
               </>
             )}
 
+            {/* CULTURE */}
             {step === 'culture' && (
               <>
                 <div className="text-center mb-6">
-                  <div className="text-sm text-foreground/60">Culture question {cultureIndex + 1} of {cultureQuestions.length}</div>
-                  <div className="mt-3 text-lg font-semibold">{cultureQuestions[cultureIndex].text}</div>
+                  <div className="text-sm text-foreground/60 mb-2">Culture question {cultureIndex + 1} of {cultureQuestions.length}</div>
+                  <h2 className="text-2xl md:text-3xl font-bold text-foreground/900 leading-snug">{cultureQuestions[cultureIndex].text}</h2>
                 </div>
 
-                <div className="flex flex-col items-center">
-                  <div className="w-full md:w-3/4 grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {likertLabels.map((label, idx) => {
-                      const selected = cultureAnswers[cultureQuestions[cultureIndex].id] === idx
+                <div className="space-y-4">
+                  <div className="space-y-3">
+                    {likertLabels.map((lab, i) => {
+                      const selected = (cultureAnswers[cultureQuestions[cultureIndex].id] ?? 2) === i
                       return (
-                        <button
-                          key={label}
-                          type="button"
-                          onClick={() => onSelectCultureOption(idx)}
-                          className={`mx-auto px-5 py-3 rounded-full border 
-                            ${selected ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-blue-700 border-blue-300'}
-                            shadow-sm transition`}
-                        >
-                          {label}
-                        </button>
+                        <OptionRow key={lab} label={lab} selected={selected} onClick={() => onSelectCultureOption(i)} />
                       )
                     })}
                   </div>
+                </div>
 
-                  <div className="w-full flex items-center justify-between mt-8">
-                    <button type="button" onClick={goCulturePrev} className="text-blue-700 font-medium">Previous</button>
+                <div className="flex items-center justify-between mt-10">
+                  <button onClick={goCulturePrev} className="px-4 py-2 rounded-md border bg-white text-foreground/700">← Back</button>
 
-                    <div className="flex items-center gap-3">
-                      <div className="text-sm text-foreground/60">Progress: {progress}%</div>
-                      <button type="button" onClick={goCultureNext} className="px-4 py-2 rounded-md bg-blue-600 text-white font-medium">
-                        {cultureIndex < cultureQuestions.length - 1 ? 'Next' : 'Finish'}
-                      </button>
-                    </div>
+                  <div className="flex items-center gap-4">
+                    <div className="text-sm text-foreground/60">Progress: {progress}%</div>
+                    <button onClick={goCultureNext} className="px-5 py-3 rounded-md bg-blue-600 text-white font-medium">
+                      {cultureIndex < cultureQuestions.length - 1 ? 'Next' : 'Finish'}
+                    </button>
                   </div>
                 </div>
               </>
-            )}
-
-            {step === 'results' && (
-              <div>
-                <div className="text-center mb-6">
-                  <div className="text-xl font-semibold">Your Suggested Pathway</div>
-                  <div className="mt-3 text-lg text-blue-700 font-bold">{computedPathway}</div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="p-4 border rounded">
-                    <div className="font-medium mb-2">Roadmap</div>
-                    <ol className="list-decimal list-inside space-y-2">
-                      {computedPathway && pathwayRoadmaps[computedPathway].steps.map((s, i) => (
-                        <li key={i} className="text-sm">{s}</li>
-                      ))}
-                    </ol>
-                  </div>
-
-                  <div className="p-4 border rounded">
-                    <div className="font-medium mb-2">Culture fit summary</div>
-                    <div className="text-sm space-y-1">
-                      <div>Independent work: {summaryCulture.independence}/4</div>
-                      <div>Prefers fast pace: {summaryCulture.pace}/4</div>
-                      <div>Mentorship need: {summaryCulture.mentorship}/4</div>
-                      <div>Stability preference: {summaryCulture.stability}/4</div>
-                      <div>Communication comfort: {summaryCulture.comms}/4</div>
-                      <div>Experimentation: {summaryCulture.experimentation}/4</div>
-                    </div>
-
-                    <div className="mt-4">
-                      <div className="font-medium mb-2">Your open responses (summary)</div>
-                      <div className="text-sm space-y-2">
-                        {Object.entries(careerOpenAnswers).length === 0 ? (
-                          <div className="text-foreground/70">No open answers provided.</div>
-                        ) : (
-                          Object.entries(careerOpenAnswers).map(([k, v]) => (
-                            <div key={k}>
-                              <div className="text-xs text-foreground/60 font-medium">{k}</div>
-                              <div className="text-sm">{v || <span className="text-foreground/60">—</span>}</div>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex gap-3 mt-6">
-                  {/* use navigateToDashboard helper to force a full navigation */}
-                  <Button type="button" onClick={navigateToDashboard} className="bg-blue-600 text-white">Go to Dashboard</Button>
-                  <Button type="button" onClick={retakeAll} className="bg-white border border-blue-300 text-blue-700">Retake Assessments</Button>
-                </div>
-              </div>
             )}
           </CardContent>
         </Card>

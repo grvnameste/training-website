@@ -1,5 +1,3 @@
-// app/student/dashboard/page.tsx
-
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -7,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { BookOpen, Search, Star, X } from 'lucide-react'
+import { BookOpen, Search, Star } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 
 interface Course {
@@ -160,9 +158,6 @@ export default function StudentDashboard() {
     scores: Record<PathwayKey, number>
   } | null>(null)
 
-  // NEW: modal toggle to open the scorecard on demand
-  const [showScorecardModal, setShowScorecardModal] = useState(false)
-
   useEffect(() => {
     // Load all courses
     const allCourses = safeParse(localStorage.getItem('lms_courses')) || []
@@ -255,22 +250,22 @@ export default function StudentDashboard() {
         <div className="flex items-center gap-3">
           {/* Skills button: added so students can go to the Skills page */}
           <Button
-            onClick={() => router.push('/student/skills')}
+            onClick={() => router.push('/student/skills?open=true')}
             className="bg-white border border-gray-200 text-foreground"
             aria-label="Manage skills"
           >
             Skills
           </Button>
 
-          {/* Scorecard button */}
+          {/* Scorecard button: now navigates to result page instead of opening a modal */}
           <Button
             onClick={() => {
-              // If no saved questionnaire, show questionnaire page instead
+              // If no saved questionnaire, go to questionnaire; otherwise go to the result page
               if (!questionnaireCareer) {
                 router.push('/student/questionnaire')
                 return
               }
-              setShowScorecardModal(true)
+              router.push('/student/rersult')
             }}
             className="bg-blue-600 text-white"
           >
@@ -283,113 +278,6 @@ export default function StudentDashboard() {
           </Button>
         </div>
       </div>
-
-      {/* Modal: Scorecard (compact & scrollable) */}
-      {showScorecardModal && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-12 px-4">
-          {/* backdrop */}
-          <div className="absolute inset-0 bg-black/40" onClick={() => setShowScorecardModal(false)} />
-
-          {/* modal container: narrower and constrained height with inner scroll */}
-          <div className="relative w-full max-w-2xl mx-auto">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">Your Scorecard</CardTitle>
-                  <div className="flex items-center gap-2">
-                    <Button onClick={() => setShowScorecardModal(false)} className="bg-white border border-border p-2">
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-                <CardDescription className="text-foreground/70 text-sm">Saved result from your assessment</CardDescription>
-              </CardHeader>
-
-              {/* make CardContent scrollable with limited height so the modal never overflows screen */}
-              <CardContent className="max-h-[70vh] overflow-auto py-3 space-y-3">
-                {questionnaireCareer && questionnaireComputed ? (
-                  <div className="space-y-3 text-sm">
-                    <div className="text-center">
-                      <div className="text-xs text-foreground/60">Top Pathway</div>
-                      <div className="mt-1 text-lg font-semibold text-blue-700">{renderSafe(questionnaireComputed.top)}</div>
-                      <div className="text-xs text-foreground/60 mt-1">
-                        Computed: {questionnaireCareer.computedAt ? renderSafe(new Date(questionnaireCareer.computedAt).toLocaleString()) : '—'}
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div className="p-2 border rounded">
-                        <div className="text-xs font-medium mb-1">Scores</div>
-                        <ul className="text-xs space-y-1">
-                          {questionnaireComputed &&
-                            Object.entries(questionnaireComputed.scores).map(([k, v]) => (
-                              <li key={k} className="flex items-center justify-between">
-                                <span className="text-foreground/80">{String(k)}</span>
-                                <span className="font-mono text-xs text-foreground/70">{Number(v).toFixed(2)}</span>
-                              </li>
-                            ))}
-                        </ul>
-                      </div>
-
-                      <div className="p-2 border rounded">
-                        <div className="text-xs font-medium mb-1">Roadmap (starter)</div>
-                        {questionnaireComputed && questionnaireComputed.top ? (
-                          // show first 4 steps to keep it compact
-                          <ol className="list-decimal list-inside text-xs space-y-1">
-                            {pathwayRoadmaps[questionnaireComputed.top].steps.slice(0, 4).map((s, i) => (
-                              <li key={i} className="leading-snug">{String(s)}</li>
-                            ))}
-                          </ol>
-                        ) : (
-                          <div className="text-foreground/70 text-xs">No roadmap available</div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="p-2 border rounded">
-                      <div className="text-xs font-medium mb-2">Your open responses (summary)</div>
-
-                      {/* compact open answers box: limit height, scroll if longer */}
-                      <div className="max-h-36 overflow-auto text-xs space-y-2">
-                        {questionnaireCareer.openAnswers && Object.keys(questionnaireCareer.openAnswers).length > 0 ? (
-                          <div className="grid grid-cols-1 gap-2">
-                            {Object.entries(questionnaireCareer.openAnswers).map(([k, v]) => (
-                              <div key={k} className="break-words">
-                                <div className="text-xxs text-foreground/60 font-medium">{String(k)}</div>
-                                <div className="text-foreground/80 leading-tight">{renderSafe(v)}</div>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="text-foreground/70">No short answers saved.</div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        onClick={() => {
-                          setShowScorecardModal(false)
-                          router.push('/student/questionnaire')
-                        }}
-                        className="bg-white border border-blue-300 text-blue-700 text-sm"
-                      >
-                        Open full assessment
-                      </Button>
-                      <Button onClick={() => setShowScorecardModal(false)} className="bg-blue-600 text-white text-sm">Close</Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center text-foreground/70">
-                    No saved assessment found. <br />
-                    <Button onClick={() => { setShowScorecardModal(false); router.push('/student/questionnaire') }} className="mt-4 bg-blue-600 text-white text-sm">Take the Career Clarity assessment</Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      )}
 
       {/* My Courses Stats */}
       {myCoursesCount > 0 && (
