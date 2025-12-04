@@ -7,9 +7,8 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'EduLearn - Professional Learning Management System',
-  description: 'Build and manage your online courses with EduLearn. Create, teach, and learn with our modern LMS platform.',
-  generator: 'v0.app',
+  title: 'ReadnRevise - Professional Learning Management System',
+  description: 'Build and manage your online courses with ReadnRevise. Learn with our modern LMS platform.',
 }
 
 export default function RootLayout({
