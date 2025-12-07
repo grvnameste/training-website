@@ -1,20 +1,28 @@
+// app/student/layout.tsx
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import React, { useEffect, useState } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { BookOpen, LogOut } from 'lucide-react'
+import {
+  BookOpen,
+  LogOut,
+  LayoutDashboard,
+  GraduationCap,
+  Mic,
+  BarChart3,
+} from 'lucide-react'
 import { getCurrentUser, logout } from '@/lib/auth'
 
-// If you run into "Element type is invalid" errors, move EditProfile to /components and import from there.
-// For now importing from app/student/profile as you had it.
-import EditProfile from '@/app/student/profile/EditProfile'
-
-export default function StudentLayout({ children }: { children: React.ReactNode }) {
+export default function StudentLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   const router = useRouter()
+  const pathname = usePathname()
   const [user, setUser] = useState<any>(null)
-  const [showEdit, setShowEdit] = useState(false)
 
   useEffect(() => {
     const currentUser = getCurrentUser()
@@ -32,12 +40,19 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
     router.push('/')
   }
 
+  const navItems = [
+    { href: '/student/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/student/courses', label: 'Courses', icon: GraduationCap },
+    { href: '/student/skills', label: 'Skills', icon: BookOpen },
+    { href: '/student/rersult', label: 'Scorecard', icon: BarChart3 },
+    { href: '/student/interview', label: 'Interview Prep', icon: Mic },
+  ]
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-slate-50">
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
         <nav className="flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
-          
           {/* Logo */}
           <Link href="/student/dashboard" className="flex items-center gap-2">
             <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
@@ -47,12 +62,12 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
           </Link>
 
           <div className="flex items-center gap-4">
-            {/* Profile avatar (clickable) - shows avatar image or initial */}
+            {/* Profile avatar (click -> profile page) */}
             <button
-              onClick={() => setShowEdit(true)}
+              onClick={() => router.push('/student/profile')}
               className="w-10 h-10 rounded-full overflow-hidden border border-border flex items-center justify-center bg-gray-50"
-              title="Edit profile"
-              aria-label="Edit profile"
+              title="View profile"
+              aria-label="View profile"
             >
               {user?.avatar ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -82,22 +97,60 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
         </nav>
       </header>
 
-      {/* EditProfile modal rendered at layout level so it's available globally */}
-      {showEdit && user && (
-        <EditProfile
-          initial={user}
-          onClose={() => setShowEdit(false)}
-          onSave={(updatedUser) => {
-            // EditProfile should update localStorage; keep layout state in sync
-            setUser(updatedUser)
-            setShowEdit(false)
-          }}
-        />
-      )}
-
-      {/* Main Content */}
+      {/* Main + sidebar */}
       <main className="max-w-7xl mx-auto px-6 py-8">
-        {children}
+        <div className="flex gap-6">
+          {/* Sidebar */}
+          <aside className="hidden md:flex md:flex-col w-60 rounded-3xl bg-white shadow-sm border border-slate-200 p-4">
+            <button
+              type="button"
+              onClick={() => router.push('/student/profile')}
+              className="flex items-center gap-3 rounded-2xl px-2 py-2 hover:bg-slate-50 text-left"
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-600 text-white text-sm font-semibold">
+                {(user?.name || user?.email || 'S').charAt(0).toUpperCase()}
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold text-slate-900">
+                  {user?.name || 'Student'}
+                </span>
+                <span className="text-xs text-slate-500">ReadNRevise Student</span>
+              </div>
+            </button>
+
+            <nav className="mt-6 flex-1 space-y-1">
+              {navItems.map((item) => {
+                const Icon = item.icon
+                const isActive =
+                  pathname === item.href ||
+                  pathname.startsWith(item.href + '/')
+
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={[
+                      'flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors',
+                      isActive
+                        ? 'bg-teal-600 text-white shadow-sm'
+                        : 'text-slate-600 hover:bg-slate-100',
+                    ].join(' ')}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span>{item.label}</span>
+                  </Link>
+                )
+              })}
+            </nav>
+
+            <button className="mt-4 w-full rounded-xl bg-teal-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-800">
+              Upgrade Plan
+            </button>
+          </aside>
+
+          {/* Page content */}
+          <section className="flex-1">{children}</section>
+        </div>
       </main>
     </div>
   )

@@ -4,7 +4,13 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { BookOpen, Search, Star } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 
@@ -111,7 +117,9 @@ const safeParse = (s: string | null) => {
   }
 }
 
-const computePathwayFromAnswers = (answersObj: Record<string, number> | undefined | null) => {
+const computePathwayFromAnswers = (
+  answersObj: Record<string, number> | undefined | null
+) => {
   const defaultScores: Record<PathwayKey, number> = {
     'Cloud & Infrastructure': 0,
     'Business Analysis & Delivery': 0,
@@ -119,7 +127,8 @@ const computePathwayFromAnswers = (answersObj: Record<string, number> | undefine
     'Automation / Low-Code': 0,
     'AI & Workflow Integration': 0,
   }
-  if (!answersObj) return { top: null as PathwayKey | null, scores: defaultScores }
+  if (!answersObj)
+    return { top: null as PathwayKey | null, scores: defaultScores }
   const scores = { ...defaultScores }
   for (const q of Object.keys(answersObj)) {
     const val = Number(answersObj[q] ?? 0)
@@ -151,7 +160,7 @@ export default function StudentDashboard() {
         computedTop?: string | null
         scores?: Record<string, number>
       }
-    >(null)
+  >(null)
   const [questionnaireCulture, setQuestionnaireCulture] = useState<any>(null)
   const [questionnaireComputed, setQuestionnaireComputed] = useState<{
     top: PathwayKey | null
@@ -180,15 +189,19 @@ export default function StudentDashboard() {
     }
 
     // Load enrolled courses for this student (safe)
-    const enrollments = safeParse(localStorage.getItem(`enrollments_${currentUser.email}`)) || []
+    const enrollments =
+      safeParse(localStorage.getItem(`enrollments_${currentUser.email}`)) || []
     setEnrolledCourses(enrollments)
 
     // Load questionnaire data (career + culture) if present
-    const career = safeParse(localStorage.getItem(`questionnaire_career_${currentUser.email}`))
-    const culture = safeParse(localStorage.getItem(`questionnaire_culture_${currentUser.email}`))
+    const career = safeParse(
+      localStorage.getItem(`questionnaire_career_${currentUser.email}`)
+    )
+    const culture = safeParse(
+      localStorage.getItem(`questionnaire_culture_${currentUser.email}`)
+    )
 
     if (career) {
-      // ensure shape is predictable
       const safeCareer = {
         answers: career.answers ?? {},
         openAnswers: career.openAnswers ?? {},
@@ -227,8 +240,12 @@ export default function StudentDashboard() {
   // helper to safely render values that might be objects
   const renderSafe = (v: any) => {
     if (v === null || v === undefined) return '—'
-    if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') return String(v)
-    // fallback for objects/arrays
+    if (
+      typeof v === 'string' ||
+      typeof v === 'number' ||
+      typeof v === 'boolean'
+    )
+      return String(v)
     try {
       return JSON.stringify(v)
     } catch {
@@ -237,60 +254,65 @@ export default function StudentDashboard() {
   }
 
   return (
-    <div className="space-y-8">
-      {/* Welcome Section with Scorecard button */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-4xl font-bold text-foreground">Welcome to Your Learning Dashboard</h1>
-          <p className="text-xl text-foreground/70">
+    <div className="space-y-10">
+      {/* Hero / Welcome Section */}
+      <div className="rounded-3xl border border-border bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-6 py-7 md:px-8 md:py-8 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+        <div className="space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-300/80">
+            Dashboard
+          </p>
+          <h1 className="text-3xl md:text-4xl font-semibold text-white leading-tight">
+            Welcome to Your Learning Dashboard
+          </h1>
+          <p className="text-base md:text-lg text-slate-200/85 max-w-xl">
             Explore courses and continue your learning journey
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          {/* Skills button: added so students can go to the Skills page */}
-          <Button
-            onClick={() => router.push('/student/skills?open=true')}
-            className="bg-white border border-gray-200 text-foreground"
-            aria-label="Manage skills"
-          >
-            Skills
-          </Button>
+        <div className="flex flex-col items-end gap-3">
+          <div className="rounded-2xl bg-slate-800/80 px-4 py-3 text-right min-w-[180px]">
+            <p className="text-xs uppercase tracking-wide text-slate-400">
+              My courses
+            </p>
+            <p className="mt-1 text-3xl font-semibold text-white">
+              {myCoursesCount}
+            </p>
+            <p className="text-xs text-slate-300/80">
+              course{myCoursesCount !== 1 ? 's' : ''} in progress
+            </p>
+          </div>
 
-          {/* Scorecard button: now navigates to result page instead of opening a modal */}
-          <Button
-            onClick={() => {
-              // If no saved questionnaire, go to questionnaire; otherwise go to the result page
-              if (!questionnaireCareer) {
-                router.push('/student/questionnaire')
-                return
-              }
-              router.push('/student/rersult')
-            }}
-            className="bg-blue-600 text-white"
-          >
-            View Scorecard
-          </Button>
-
-          {/* Quick nav to full questionnaire page */}
-          <Button onClick={() => router.push('/student/questionnaire')} className="bg-white border border-blue-200 text-blue-700">
-            Full Assessment
-          </Button>
+          <Link href="/student/my-courses">
+            <Button
+              variant="outline"
+              className="border-slate-500/60 bg-slate-900/40 text-slate-50 hover:bg-slate-800/80 hover:text-white"
+            >
+              Go to My Courses
+            </Button>
+          </Link>
         </div>
       </div>
 
-      {/* My Courses Stats */}
+      {/* My Courses Stats (secondary card) */}
       {myCoursesCount > 0 && (
-        <Card className="bg-primary text-primary-foreground">
-          <CardHeader>
-            <CardTitle>My Enrolled Courses</CardTitle>
-            <CardDescription className="text-primary-foreground/80">
-              {myCoursesCount} course{myCoursesCount !== 1 ? 's' : ''} in progress
-            </CardDescription>
+        <Card className="border border-primary/15 bg-primary/5 backdrop-blur-sm rounded-2xl">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <div>
+              <CardTitle className="text-base md:text-lg">
+                My Enrolled Courses
+              </CardTitle>
+              <CardDescription className="text-sm text-primary/80">
+                {myCoursesCount} course{myCoursesCount !== 1 ? 's' : ''} in
+                progress
+              </CardDescription>
+            </div>
+            <div className="hidden md:flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+              <BookOpen className="h-5 w-5 text-primary" />
+            </div>
           </CardHeader>
           <CardContent>
             <Link href="/student/my-courses">
-              <Button className="bg-primary-foreground text-primary hover:bg-primary-foreground/90">
+              <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
                 View My Courses
               </Button>
             </Link>
@@ -300,41 +322,61 @@ export default function StudentDashboard() {
 
       {/* Search and Filter */}
       <div className="space-y-4">
-        <h2 className="text-2xl font-bold text-foreground">Explore Courses</h2>
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-foreground/40" />
-            <Input
-              type="text"
-              placeholder="Search courses..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-input text-foreground"
-            />
-          </div>
-          <select
-            value={priceFilter}
-            onChange={(e) => setPriceFilter(e.target.value)}
-            className="px-4 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            <option value="all">All Prices</option>
-            <option value="free">Free</option>
-            <option value="paid">Paid</option>
-          </select>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-2xl font-semibold text-foreground">
+            Explore Courses
+          </h2>
+          <span className="text-xs md:text-sm text-foreground/60">
+            {filteredCourses.length} course
+            {filteredCourses.length !== 1 ? 's' : ''} available
+          </span>
         </div>
+
+        <Card className="border border-border/70 rounded-2xl">
+          <CardContent className="pt-5 pb-4 space-y-4">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-foreground/40" />
+                <Input
+                  type="text"
+                  placeholder="Search courses by title or description"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 h-10 rounded-xl border border-border bg-background text-foreground placeholder:text-foreground/40"
+                />
+              </div>
+              <div className="flex items-center gap-2 md:w-56">
+                <span className="text-xs text-foreground/60 whitespace-nowrap">
+                  Price
+                </span>
+                <select
+                  value={priceFilter}
+                  onChange={(e) => setPriceFilter(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/70"
+                >
+                  <option value="all">All</option>
+                  <option value="free">Free</option>
+                  <option value="paid">Paid</option>
+                </select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Courses Grid */}
       <div>
         {filteredCourses.length === 0 ? (
-          <Card>
+          <Card className="border-dashed border-2 border-border/60 rounded-3xl">
             <CardContent className="pt-12 pb-12 text-center">
               <BookOpen className="w-16 h-16 text-foreground/20 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-foreground mb-2">
                 No courses found
               </h3>
-              <p className="text-foreground/70">
-                {searchQuery ? 'Try adjusting your search terms' : 'More courses coming soon!'}
+              <p className="text-foreground/70 max-w-sm mx-auto text-sm">
+                {searchQuery
+                  ? 'Try adjusting your search terms'
+                  : 'More courses coming soon!'}
               </p>
             </CardContent>
           </Card>
@@ -363,14 +405,14 @@ function StudentCourseCard({
 }) {
   return (
     <Link href={`/student/courses/${course.id}`}>
-      <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer h-full">
+      <Card className="group overflow-hidden border border-border/70 rounded-2xl shadow-sm hover:shadow-lg hover:border-primary/50 transition-all duration-200 cursor-pointer h-full flex flex-col">
         {/* Thumbnail */}
-        <div className="w-full h-40 bg-primary/10 relative">
+        <div className="w-full aspect-video bg-primary/5 relative overflow-hidden">
           {course.thumbnail ? (
             <img
               src={course.thumbnail || '/placeholder.svg'}
               alt={course.title}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-[1.03]"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
@@ -378,46 +420,52 @@ function StudentCourseCard({
             </div>
           )}
           {isEnrolled && (
-            <div className="absolute top-2 right-2 bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-semibold">
+            <div className="absolute top-3 right-3 bg-emerald-600 text-emerald-50 px-3 py-1 rounded-full text-xs font-medium shadow-sm">
               Enrolled
             </div>
           )}
         </div>
 
-        <CardContent className="pt-4 space-y-3">
-          <div>
-            <h3 className="font-bold text-foreground line-clamp-2">{course.title}</h3>
-            <p className="text-lg font-bold text-primary mt-1">
-              {course.price === 0 ? 'Free' : `$${course.price}`}
+        <CardContent className="pt-4 pb-4 px-4 md:px-5 flex flex-col gap-3 flex-1">
+          <div className="space-y-1">
+            <h3 className="font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors text-sm md:text-base">
+              {course.title}
+            </h3>
+            <p className="text-[13px] md:text-sm text-foreground/70 line-clamp-2">
+              {course.description}
             </p>
           </div>
 
-          <p className="text-sm text-foreground/70 line-clamp-2">{course.description}</p>
-
-          <div className="flex items-center justify-between pt-2">
-            <span className="text-xs text-foreground/60">
+          <div className="flex items-center justify-between text-xs md:text-sm pt-1">
+            <span className="inline-flex items-center gap-1 text-foreground/60">
+              <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />
               {course.enrollments} students enrolled
             </span>
-            <div className="flex gap-1">
+            <div className="flex items-center gap-1">
               {[...Array(5)].map((_, i) => (
                 <Star
                   key={i}
-                  className="w-3 h-3 fill-accent text-accent"
+                  className="w-3 h-3 md:w-3.5 md:h-3.5 fill-accent text-accent"
                 />
               ))}
             </div>
           </div>
 
-          <Button
-            className={`w-full ${
-              isEnrolled
-                ? 'bg-primary/50 hover:bg-primary/50'
-                : 'bg-primary hover:bg-primary/90'
-            }`}
-            disabled={isEnrolled}
-          >
-            {isEnrolled ? 'View Course' : 'Enroll Now'}
-          </Button>
+          <div className="mt-2 flex items-center justify-between">
+            <p className="text-base md:text-lg font-semibold text-primary">
+              {course.price === 0 ? 'Free' : `$${course.price}`}
+            </p>
+            <Button
+              className={`h-9 px-4 text-xs md:text-sm rounded-full ${
+                isEnrolled
+                  ? 'bg-primary/10 text-primary hover:bg-primary/15'
+                  : 'bg-primary text-primary-foreground hover:bg-primary/90'
+              }`}
+              disabled={isEnrolled}
+            >
+              {isEnrolled ? 'View Course' : 'Enroll Now'}
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </Link>
