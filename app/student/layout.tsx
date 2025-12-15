@@ -1,4 +1,3 @@
-// app/student/layout.tsx
 'use client'
 
 import React, { useEffect, useState } from 'react'
@@ -44,30 +43,31 @@ export default function StudentLayout({
     { href: '/student/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/student/courses', label: 'Courses', icon: GraduationCap },
     { href: '/student/skills', label: 'Skills', icon: BookOpen },
-    { href: '/student/rersult', label: 'Scorecard', icon: BarChart3 },
+    { href: '/student/result', label: 'Scorecard', icon: BarChart3 },
     { href: '/student/interview', label: 'Interview Prep', icon: Mic },
   ]
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-100">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
+      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white">
         <nav className="flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
           {/* Logo */}
           <Link href="/student/dashboard" className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-              <BookOpen className="w-6 h-6 text-primary-foreground" />
+            <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center">
+              <BookOpen className="w-6 h-6 text-white" />
             </div>
-            <span className="text-xl font-bold text-foreground">ReadNRevise</span>
+            <span className="text-xl font-semibold text-slate-900">
+              ReadNRevise
+            </span>
           </Link>
 
           <div className="flex items-center gap-4">
-            {/* Profile avatar (click -> profile page) */}
+            {/* Profile avatar */}
             <button
               onClick={() => router.push('/student/profile')}
-              className="w-10 h-10 rounded-full overflow-hidden border border-border flex items-center justify-center bg-gray-50"
+              className="w-10 h-10 rounded-full overflow-hidden border border-slate-300 flex items-center justify-center bg-slate-50"
               title="View profile"
-              aria-label="View profile"
             >
               {user?.avatar ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -77,8 +77,10 @@ export default function StudentLayout({
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <span className="text-sm text-foreground/60">
-                  {(user?.name || user?.email || 'S').charAt(0).toUpperCase()}
+                <span className="text-sm font-medium text-slate-700">
+                  {(user?.name || user?.email || 'S')
+                    .charAt(0)
+                    .toUpperCase()}
                 </span>
               )}
             </button>
@@ -88,7 +90,7 @@ export default function StudentLayout({
               variant="outline"
               size="sm"
               onClick={handleLogout}
-              className="text-foreground"
+              className="border-slate-300 text-slate-700 hover:bg-slate-100"
             >
               <LogOut className="w-4 h-4 mr-2" />
               Logout
@@ -101,23 +103,29 @@ export default function StudentLayout({
       <main className="max-w-7xl mx-auto px-6 py-8">
         <div className="flex gap-6">
           {/* Sidebar */}
-          <aside className="hidden md:flex md:flex-col w-60 rounded-3xl bg-white shadow-sm border border-slate-200 p-4">
+          <aside className="hidden md:flex md:flex-col w-64 rounded-2xl bg-white shadow-sm border border-slate-200 p-4">
+            {/* User card */}
             <button
               type="button"
               onClick={() => router.push('/student/profile')}
-              className="flex items-center gap-3 rounded-2xl px-2 py-2 hover:bg-slate-50 text-left"
+              className="flex items-center gap-3 rounded-xl px-3 py-3 hover:bg-slate-50 text-left"
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-600 text-white text-sm font-semibold">
-                {(user?.name || user?.email || 'S').charAt(0).toUpperCase()}
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-600 text-white text-sm font-semibold">
+                {(user?.name || user?.email || 'S')
+                  .charAt(0)
+                  .toUpperCase()}
               </div>
               <div className="flex flex-col">
                 <span className="text-sm font-semibold text-slate-900">
                   {user?.name || 'Student'}
                 </span>
-                <span className="text-xs text-slate-500">ReadNRevise Student</span>
+                <span className="text-xs text-slate-500">
+                  ReadNRevise Student
+                </span>
               </div>
             </button>
 
+            {/* Navigation */}
             <nav className="mt-6 flex-1 space-y-1">
               {navItems.map((item) => {
                 const Icon = item.icon
@@ -130,9 +138,9 @@ export default function StudentLayout({
                     key={item.href}
                     href={item.href}
                     className={[
-                      'flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors',
+                      'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                       isActive
-                        ? 'bg-teal-600 text-white shadow-sm'
+                        ? 'bg-indigo-600 text-white shadow'
                         : 'text-slate-600 hover:bg-slate-100',
                     ].join(' ')}
                   >
@@ -143,7 +151,8 @@ export default function StudentLayout({
               })}
             </nav>
 
-            <button className="mt-4 w-full rounded-xl bg-teal-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-800">
+            {/* CTA */}
+            <button className="mt-4 w-full rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition">
               Upgrade Plan
             </button>
           </aside>

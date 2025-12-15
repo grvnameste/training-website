@@ -4,9 +4,16 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { BookOpen } from 'lucide-react'
+import { FaGoogle, FaGithub, FaLinkedin } from 'react-icons/fa'
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -14,18 +21,28 @@ export default function RegisterPage() {
     name: '',
     email: '',
     password: '',
-    role: 'student',
+    role: 'student'
   })
   const [error, setError] = useState('')
 
+  const redirectUser = (user: any) => {
+    localStorage.setItem('lms_current_user', JSON.stringify(user))
+    router.push(
+      user.role === 'student'
+        ? '/student/dashboard'
+        : '/teacher/dashboard'
+    )
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    setError('')
+
     if (!formData.name || !formData.email || !formData.password) {
       setError('Please fill in all fields')
       return
     }
 
-    // Save to localStorage for demo
     const users = JSON.parse(localStorage.getItem('lms_users') || '[]')
     if (users.find((u: any) => u.email === formData.email)) {
       setError('Email already registered')
@@ -34,9 +51,28 @@ export default function RegisterPage() {
 
     users.push(formData)
     localStorage.setItem('lms_users', JSON.stringify(users))
-    localStorage.setItem('lms_current_user', JSON.stringify(formData))
+    redirectUser(formData)
+  }
 
-    router.push(formData.role === 'student' ? '/student/dashboard' : '/teacher/dashboard')
+  /** ✅ FIXED: Social Register also saves user */
+  const socialRegister = (provider: 'google' | 'github' | 'linkedin') => {
+    const users = JSON.parse(localStorage.getItem('lms_users') || '[]')
+
+    const email = `${provider}@demo.com`
+    let user = users.find((u: any) => u.email === email)
+
+    if (!user) {
+      user = {
+        name: `${provider} user`,
+        email,
+        role: 'student',
+        provider
+      }
+      users.push(user)
+      localStorage.setItem('lms_users', JSON.stringify(users))
+    }
+
+    redirectUser(user)
   }
 
   return (
@@ -47,93 +83,94 @@ export default function RegisterPage() {
           <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center">
             <BookOpen className="w-7 h-7 text-primary-foreground" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground">ReadNRevise</h1>
+          <h1 className="text-3xl font-bold">ReadNRevise</h1>
         </div>
 
-        {/* Form Card */}
         <Card>
-          <CardHeader className="space-y-2">
-            <CardTitle className="text-2xl text-foreground">Create Account</CardTitle>
-            <CardDescription>Choose your role and sign up to get started</CardDescription>
+          <CardHeader>
+            <CardTitle>Create Account</CardTitle>
+            <CardDescription>Sign up to get started</CardDescription>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
+
+          <CardContent className="space-y-6">
+            {/* Social Register */}
+            <div className="grid grid-cols-3 gap-2">
+              <Button variant="outline" onClick={() => socialRegister('google')}>
+                <FaGoogle className="mr-2" /> Google
+              </Button>
+              <Button variant="outline" onClick={() => socialRegister('github')}>
+                <FaGithub className="mr-2" /> GitHub
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => socialRegister('linkedin')}
+              >
+                <FaLinkedin className="mr-2" /> LinkedIn
+              </Button>
+            </div>
+
+            <div className="text-center text-sm text-muted-foreground">
+              or register with email
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
-                <div className="p-3 bg-red-100 text-red-700 rounded-lg text-sm">
+                <div className="p-3 bg-red-100 text-red-700 rounded text-sm">
                   {error}
                 </div>
               )}
 
-              {/* Name Field */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-foreground">Full Name</label>
-                <Input
-                  type="text"
-                  placeholder="John Doe"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="bg-input text-foreground"
-                />
+              <Input
+                placeholder="Full Name"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+              />
+
+              <Input
+                type="email"
+                placeholder="Email"
+                value={formData.email}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
+              />
+
+              <Input
+                type="password"
+                placeholder="Password"
+                value={formData.password}
+                onChange={(e) =>
+                  setFormData({ ...formData, password: e.target.value })
+                }
+              />
+
+              {/* Role */}
+              <div className="grid grid-cols-3 gap-2">
+                {['admin', 'teacher', 'student'].map((role) => (
+                  <button
+                    key={role}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, role })}
+                    className={`py-2 rounded border text-sm font-medium ${
+                      formData.role === role
+                        ? 'bg-primary text-white'
+                        : 'bg-background'
+                    }`}
+                  >
+                    {role}
+                  </button>
+                ))}
               </div>
 
-              {/* Email Field */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-foreground">Email</label>
-                <Input
-                  type="email"
-                  placeholder="john@example.com"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="bg-input text-foreground"
-                />
-              </div>
-
-              {/* Password Field */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-foreground">Password</label>
-                <Input
-                  type="password"
-                  placeholder="••••••••"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="bg-input text-foreground"
-                />
-              </div>
-
-              {/* Role Selection */}
-              <div className="space-y-3">
-                <label className="block text-sm font-medium text-foreground">I am a</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { value: 'admin', label: 'Admin' },
-                    { value: 'teacher', label: 'Teacher' },
-                    { value: 'student', label: 'Student' },
-                  ].map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => setFormData({ ...formData, role: option.value })}
-                      className={`py-2 px-4 rounded-lg border-2 font-medium transition-all ${
-                        formData.role === option.value
-                          ? 'border-primary bg-primary text-primary-foreground'
-                          : 'border-border bg-background text-foreground hover:border-primary/50'
-                      }`}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Submit Button */}
-              <Button className="w-full bg-primary hover:bg-primary/90 text-lg h-11">
+              <Button className="w-full h-11 text-lg">
                 Create Account
               </Button>
 
-              {/* Login Link */}
-              <p className="text-center text-foreground/70">
+              <p className="text-center text-sm">
                 Already have an account?{' '}
-                <Link href="/login" className="text-primary hover:underline font-medium">
+                <Link href="/login" className="text-primary font-medium">
                   Sign In
                 </Link>
               </p>

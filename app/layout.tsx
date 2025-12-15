@@ -1,25 +1,27 @@
-//app/layout.tsx
 import type { Metadata } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
+import { Inter } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 
-const _geist = Geist({ subsets: ["latin"] });
-const _geistMono = Geist_Mono({ subsets: ["latin"] });
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter'
+})
 
 export const metadata: Metadata = {
   title: 'ReadnRevise - Professional Learning Management System',
-  description: 'Build and manage your online courses with ReadnRevise. Learn with our modern LMS platform.',
+  description:
+    'Build and manage your online courses with ReadnRevise. Learn with our modern LMS platform.'
 }
 
 export default function RootLayout({
-  children,
-}: Readonly<{
+  children
+}: {
   children: React.ReactNode
-}>) {
+}) {
   return (
     <html lang="en">
-      <body className={`font-sans antialiased`}>
+      <body className={`${inter.variable} font-sans antialiased`}>
         {children}
         <Analytics />
       </body>

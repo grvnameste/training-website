@@ -4,29 +4,44 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { BookOpen } from 'lucide-react'
+import { FaGoogle, FaGithub, FaLinkedin } from 'react-icons/fa'
 
 export default function LoginPage() {
   const router = useRouter()
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  })
+  const [formData, setFormData] = useState({ email: '', password: '' })
   const [error, setError] = useState('')
+
+  const redirectUser = (user: any) => {
+    localStorage.setItem('lms_current_user', JSON.stringify(user))
+    router.push(
+      user.role === 'student'
+        ? '/student/dashboard'
+        : '/teacher/dashboard'
+    )
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    setError('')
+
     if (!formData.email || !formData.password) {
       setError('Please fill in all fields')
       return
     }
 
-    // Check credentials
     const users = JSON.parse(localStorage.getItem('lms_users') || '[]')
     const user = users.find(
-      (u: any) => u.email === formData.email && u.password === formData.password
+      (u: any) =>
+        u.email === formData.email && u.password === formData.password
     )
 
     if (!user) {
@@ -34,14 +49,18 @@ export default function LoginPage() {
       return
     }
 
-    localStorage.setItem('lms_current_user', JSON.stringify(user))
+    redirectUser(user)
+  }
 
-    // Redirect based on role
-    if (user.role === 'student') {
-      router.push('/student/dashboard')
-    } else {
-      router.push('/teacher/dashboard')
+  /** Demo Social Login */
+  const socialLogin = (provider: 'google' | 'github' | 'linkedin') => {
+    const user = {
+      name: `${provider} user`,
+      email: `${provider}@demo.com`,
+      role: 'student',
+      provider
     }
+    redirectUser(user)
   }
 
   return (
@@ -52,75 +71,67 @@ export default function LoginPage() {
           <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center">
             <BookOpen className="w-7 h-7 text-primary-foreground" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground">ReadNRevise</h1>
+          <h1 className="text-3xl font-bold">ReadNRevise</h1>
         </div>
 
-        {/* Form Card */}
         <Card>
-          <CardHeader className="space-y-2">
-            <CardTitle className="text-2xl text-foreground">Welcome Back</CardTitle>
-            <CardDescription>Sign in to your account to continue</CardDescription>
+          <CardHeader>
+            <CardTitle>Welcome Back</CardTitle>
+            <CardDescription>Sign in to continue</CardDescription>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
+
+          <CardContent className="space-y-6">
+            {/* Social Login */}
+            <div className="grid grid-cols-3 gap-2">
+              <Button variant="outline" onClick={() => socialLogin('google')}>
+                <FaGoogle className="mr-2" /> Google
+              </Button>
+              <Button variant="outline" onClick={() => socialLogin('github')}>
+                <FaGithub className="mr-2" /> GitHub
+              </Button>
+              <Button variant="outline" onClick={() => socialLogin('linkedin')}>
+                <FaLinkedin className="mr-2" /> LinkedIn
+              </Button>
+            </div>
+
+            <div className="text-center text-sm text-muted-foreground">
+              or login with email
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
-                <div className="p-3 bg-red-100 text-red-700 rounded-lg text-sm">
+                <div className="p-3 bg-red-100 text-red-700 rounded text-sm">
                   {error}
                 </div>
               )}
 
-              {/* Email Field */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-foreground">Email</label>
-                <Input
-                  type="email"
-                  placeholder="john@example.com"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="bg-input text-foreground"
-                />
-              </div>
+              <Input
+                type="email"
+                placeholder="Email"
+                value={formData.email}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
+              />
 
-              {/* Password Field */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-foreground">Password</label>
-                <Input
-                  type="password"
-                  placeholder="••••••••"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="bg-input text-foreground"
-                />
-              </div>
+              <Input
+                type="password"
+                placeholder="Password"
+                value={formData.password}
+                onChange={(e) =>
+                  setFormData({ ...formData, password: e.target.value })
+                }
+              />
 
-              {/* Submit Button */}
-              <Button className="w-full bg-primary hover:bg-primary/90 text-lg h-11">
-                Sign In
-              </Button>
+              <Button className="w-full h-11 text-lg">Sign In</Button>
 
-              {/* Register Link */}
-              <p className="text-center text-foreground/70">
-                Don't have an account?{' '}
-                <Link href="/register" className="text-primary hover:underline font-medium">
+              <p className="text-center text-sm">
+                Don&apos;t have an account?{' '}
+                <Link href="/register" className="text-primary font-medium">
                   Create one
                 </Link>
               </p>
             </form>
-          </CardContent>
-        </Card>
-
-        {/* Demo Credentials */}
-        <Card className="bg-secondary/30 border-primary/20">
-          <CardContent className="pt-6">
-            <p className="text-sm text-foreground/70 mb-3 font-medium">Demo Credentials:</p>
-            <div className="space-y-2 text-sm">
-              <p className="text-foreground/60">
-                <span className="font-medium">Teacher:</span> teacher@demo.com / pass123
-              </p>
-              <p className="text-foreground/60">
-                <span className="font-medium">Admin:</span> admin@demo.com / pass123
-              </p>
-            </div>
           </CardContent>
         </Card>
       </div>
