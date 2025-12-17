@@ -1,146 +1,154 @@
+// app/register/page.tsx
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import supabase from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { BookOpen } from 'lucide-react'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { BookOpen, User, Mail, Lock, Github, Linkedin } from 'lucide-react'
+import { FaGoogle } from 'react-icons/fa'
+import Link from 'next/link'
 
 export default function RegisterPage() {
   const router = useRouter()
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    role: 'student',
-  })
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formData.name || !formData.email || !formData.password) {
-      setError('Please fill in all fields')
+    setError('')
+
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { name } },
+    })
+
+    if (error) {
+      setError(error.message)
       return
     }
 
-    // Save to localStorage for demo
-    const users = JSON.parse(localStorage.getItem('lms_users') || '[]')
-    if (users.find((u: any) => u.email === formData.email)) {
-      setError('Email already registered')
-      return
-    }
+    router.replace('/login')
+  }
 
-    users.push(formData)
-    localStorage.setItem('lms_users', JSON.stringify(users))
-    localStorage.setItem('lms_current_user', JSON.stringify(formData))
-
-    router.push(formData.role === 'student' ? '/student/dashboard' : '/teacher/dashboard')
+  const registerWithProvider = async (
+    provider: 'google' | 'github' | 'linkedin_oidc'
+  ) => {
+    await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: `${location.origin}/auth/callback`,
+      },
+    })
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-6">
-      <div className="w-full max-w-md space-y-8">
-        {/* Header */}
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center">
-            <BookOpen className="w-7 h-7 text-primary-foreground" />
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
+      <Card className="w-full max-w-md rounded-2xl shadow-lg">
+        <CardHeader className="text-center space-y-2">
+          <div className="mx-auto w-12 h-12 bg-teal-600 rounded-xl flex items-center justify-center">
+            <BookOpen className="text-white w-6 h-6" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground">ReadNRevise</h1>
-        </div>
+          <CardTitle className="text-2xl">Create Account</CardTitle>
+          <CardDescription>
+            Start your learning journey with ReadNRevise
+          </CardDescription>
+        </CardHeader>
 
-        {/* Form Card */}
-        <Card>
-          <CardHeader className="space-y-2">
-            <CardTitle className="text-2xl text-foreground">Create Account</CardTitle>
-            <CardDescription>Choose your role and sign up to get started</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {error && (
-                <div className="p-3 bg-red-100 text-red-700 rounded-lg text-sm">
-                  {error}
-                </div>
-              )}
+        <CardContent className="space-y-5">
+          {error && (
+            <div className="text-sm text-red-600 bg-red-50 p-2 rounded-lg">
+              {error}
+            </div>
+          )}
 
-              {/* Name Field */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-foreground">Full Name</label>
-                <Input
-                  type="text"
-                  placeholder="John Doe"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="bg-input text-foreground"
-                />
-              </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Full Name"
+                className="pl-10"
+                onChange={e => setName(e.target.value)}
+                required
+              />
+            </div>
 
-              {/* Email Field */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-foreground">Email</label>
-                <Input
-                  type="email"
-                  placeholder="john@example.com"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="bg-input text-foreground"
-                />
-              </div>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                type="email"
+                placeholder="Email"
+                className="pl-10"
+                onChange={e => setEmail(e.target.value)}
+                required
+              />
+            </div>
 
-              {/* Password Field */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-foreground">Password</label>
-                <Input
-                  type="password"
-                  placeholder="••••••••"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="bg-input text-foreground"
-                />
-              </div>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                type="password"
+                placeholder="Password"
+                className="pl-10"
+                onChange={e => setPassword(e.target.value)}
+                required
+              />
+            </div>
 
-              {/* Role Selection */}
-              <div className="space-y-3">
-                <label className="block text-sm font-medium text-foreground">I am a</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { value: 'admin', label: 'Admin' },
-                    { value: 'teacher', label: 'Teacher' },
-                    { value: 'student', label: 'Student' },
-                  ].map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => setFormData({ ...formData, role: option.value })}
-                      className={`py-2 px-4 rounded-lg border-2 font-medium transition-all ${
-                        formData.role === option.value
-                          ? 'border-primary bg-primary text-primary-foreground'
-                          : 'border-border bg-background text-foreground hover:border-primary/50'
-                      }`}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+            <Button className="w-full">Create Account</Button>
+          </form>
 
-              {/* Submit Button */}
-              <Button className="w-full bg-primary hover:bg-primary/90 text-lg h-11">
-                Create Account
-              </Button>
+          <div className="flex items-center gap-3">
+            <hr className="flex-1" />
+            <span className="text-xs text-muted-foreground">OR</span>
+            <hr className="flex-1" />
+          </div>
 
-              {/* Login Link */}
-              <p className="text-center text-foreground/70">
-                Already have an account?{' '}
-                <Link href="/login" className="text-primary hover:underline font-medium">
-                  Sign In
-                </Link>
-              </p>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
+          <div className="space-y-2">
+            <Button
+              variant="outline"
+              className="w-full flex gap-2"
+              onClick={() => registerWithProvider('google')}
+            >
+              <FaGoogle /> Continue with Google
+            </Button>
+
+            <Button
+              variant="outline"
+              className="w-full flex gap-2"
+              onClick={() => registerWithProvider('github')}
+            >
+              <Github /> Continue with GitHub
+            </Button>
+
+            <Button
+              variant="outline"
+              className="w-full flex gap-2"
+              onClick={() => registerWithProvider('linkedin_oidc')}
+            >
+              <Linkedin /> Continue with LinkedIn
+            </Button>
+          </div>
+
+          <p className="text-center text-sm">
+            Already have an account?{' '}
+            <Link href="/login" className="text-teal-600 font-medium">
+              Login
+            </Link>
+          </p>
+        </CardContent>
+      </Card>
     </div>
   )
 }

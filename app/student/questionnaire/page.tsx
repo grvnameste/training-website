@@ -1,13 +1,12 @@
-// app/student/questionnaire/page.tsx
 'use client'
 
 import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import supabase from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
-// NOTE: we call /api/strapi/questions (Next API route) from client.
-// The server route will call Strapi using server-side env vars.
+/* ================= TYPES ================= */
 
 type CareerAnswers = Record<string, number>
 type CareerOpenAnswers = Record<string, string>
@@ -20,511 +19,163 @@ type Question = {
   placeholder?: string
 }
 
-/* --- local fallback arrays (kept as before) --- */
+/* ================= QUESTIONS ================= */
+
 const careerQuestions: Question[] = [
-  { id: 'q1', text: 'How comfortable are you with learning new technical tools (e.g., a new programming language, cloud console, or BI tool)?', type: 'likert' },
-  { id: 'q2', text: 'Which type of tasks energize you most? (Choose the option that fits best)', type: 'likert' },
-  { id: 'q3', text: 'Rate your problem-solving style (from step-by-step to open puzzles).', type: 'likert' },
-  { id: 'q4', text: 'Which long-term role appeals to you most? (technical infra / BA / Data / Automation / AI)', type: 'likert' },
+  { id: 'q1', text: 'How comfortable are you with learning new technical tools?', type: 'likert' },
+  { id: 'q2', text: 'Which type of tasks energize you most?', type: 'likert' },
+  { id: 'q3', text: 'Rate your problem-solving style.', type: 'likert' },
+  { id: 'q4', text: 'Which long-term role appeals to you most?', type: 'likert' },
 
-  { id: 'q5', text: 'Describe one technical task you enjoyed recently. What did you like about it?', type: 'open', placeholder: 'e.g., built a small script to automate Excel tasks — I enjoyed the logic and quick results.' },
-  { id: 'q6', text: 'What kinds of problems at work or school frustrate you most?', type: 'open', placeholder: 'e.g., unclear requirements, missing data, repetitive manual tasks...' },
-  { id: 'q7', text: 'List up to three tools/languages/platforms you are familiar with and your level (beginner/intermediate/advanced).', type: 'open', placeholder: 'e.g., Excel - advanced; Python - beginner; AWS - beginner' },
-  { id: 'q8', text: 'If you had to pick a role today to enjoy for the next 2 years, what would it be and why?', type: 'open', placeholder: 'Short paragraph — what role and why.' },
-  { id: 'q9', text: 'Which industries or domains interest you most and why? (e.g., healthcare, fintech, education)', type: 'open', placeholder: 'List industries and one-line reason each.' },
-  { id: 'q10', text: 'How important is job-market fit in Australia to you? Are you open to certifications or relocation?', type: 'open', placeholder: 'e.g., Open to certs, prefer remote, willing to relocate...' },
-  { id: 'q11', text: 'Describe one transferable skill you have (communication, documentation, stakeholder management) with an example.', type: 'open', placeholder: 'e.g., wrote documentation that saved time...' },
+  { id: 'q5', text: 'Describe one technical task you enjoyed recently.', type: 'open' },
+  { id: 'q6', text: 'What kind of problems frustrate you most?', type: 'open' },
+  { id: 'q7', text: 'List tools/languages you know.', type: 'open' },
 
-  { id: 'q12', text: 'How do you prefer to communicate technical findings (document only / present / coach)?', type: 'likert' },
-  { id: 'q13', text: 'When given a repetitive manual process, how likely are you to automate it?', type: 'likert' },
-  { id: 'q14', text: 'How interested are you in roles that require formal certifications (cloud/analytics)?', type: 'likert' },
-  { id: 'q15', text: 'How flexible are you when learning something outside your comfort zone?', type: 'likert' },
+  { id: 'q12', text: 'How do you prefer to communicate technical findings?', type: 'likert' },
+  { id: 'q13', text: 'How likely are you to automate repetitive work?', type: 'likert' },
+  { id: 'q14', text: 'How interested are you in certifications?', type: 'likert' },
 ]
 
 const cultureQuestions: Question[] = [
-  { id: 'c1', text: 'I prefer working independently rather than in a large team.', type: 'likert' },
-  { id: 'c2', text: 'I like fast-paced environments with frequent changes.', type: 'likert' },
-  { id: 'c3', text: 'I seek strong mentorship and structured training initially.', type: 'likert' },
-  { id: 'c4', text: 'I prefer roles with clear procedures and stability.', type: 'likert' },
-  { id: 'c5', text: 'I am comfortable presenting technical ideas to non-technical stakeholders.', type: 'likert' },
-  { id: 'c6', text: 'I like experimentation and trying new technologies even if they fail initially.', type: 'likert' },
+  { id: 'c1', text: 'I prefer working independently.', type: 'likert' },
+  { id: 'c2', text: 'I like fast-paced environments.', type: 'likert' },
+  { id: 'c3', text: 'I seek structured mentorship.', type: 'likert' },
+  { id: 'c4', text: 'I prefer stability in work.', type: 'likert' },
 ]
 
-type PathwayKey =
-  | 'Cloud & Infrastructure'
-  | 'Business Analysis & Delivery'
-  | 'Data & Analytics'
-  | 'Automation / Low-Code'
-  | 'AI & Workflow Integration'
-
-const pathwayKeys: PathwayKey[] = [
-  'Cloud & Infrastructure',
-  'Business Analysis & Delivery',
-  'Data & Analytics',
-  'Automation / Low-Code',
-  'AI & Workflow Integration',
+const likertLabels = [
+  'Very confident',
+  'Confident',
+  'Neutral',
+  'Slightly unconfident',
+  'Not confident',
 ]
 
-// fallback weights (same as your original)
-const careerQuestionWeights: Record<string, number[]> = {
-  q1: [0.6, 0.2, 0.2, 0.2, 0.4],
-  q2: [1.0, 0, 0, 0.1, 0.2],
-  q3: [0.4, 0.2, 0.6, 0.2, 0.4],
-  q4: [0.6, 0.8, 0.5, 0.6, 0.6],
-  q12: [0.1, 0.9, 0.4, 0.3, 0.4],
-  q13: [0.2, 0.2, 0.2, 1.0, 0.4],
-  q14: [0.4, 0.4, 0.4, 0.4, 0.6],
-  q15: [0.4, 0.6, 0.6, 0.6, 0.6],
-}
+/* ================= COMPONENT ================= */
 
 export default function StudentQuestionnaire() {
   const router = useRouter()
-  const [currentUser, setCurrentUser] = useState<any>(null)
 
   const [step, setStep] = useState<'career' | 'culture'>('career')
   const [careerIndex, setCareerIndex] = useState(0)
   const [cultureIndex, setCultureIndex] = useState(0)
 
-  // answers state
-  const [careerAnswers, setCareerAnswers] = useState<CareerAnswers>(() =>
-    careerQuestions.filter(q => q.type === 'likert').reduce((acc, q) => ({ ...acc, [q.id]: 2 }), {} as CareerAnswers)
-  )
+  const [careerAnswers, setCareerAnswers] = useState<CareerAnswers>({})
+  const [careerOpenAnswers, setCareerOpenAnswers] = useState<CareerOpenAnswers>({})
+  const [cultureAnswers, setCultureAnswers] = useState<CultureAnswers>({})
 
-  const [careerOpenAnswers, setCareerOpenAnswers] = useState<CareerOpenAnswers>(() =>
-    careerQuestions.filter(q => q.type === 'open').reduce((acc, q) => ({ ...acc, [q.id]: '' }), {} as CareerOpenAnswers)
-  )
+  const [checkingAuth, setCheckingAuth] = useState(true)
 
-  const [cultureAnswers, setCultureAnswers] = useState<CultureAnswers>(() =>
-    cultureQuestions.reduce((acc, q) => ({ ...acc, [q.id]: 2 }), {} as CultureAnswers)
-  )
-
-  const [computedPathway, setComputedPathway] = useState<PathwayKey | null>(null)
-  const [pathwayScores, setPathwayScores] = useState<Record<PathwayKey, number> | null>(null)
-
-  // remote (Strapi) states
-  const [remoteCareerQuestions, setRemoteCareerQuestions] = useState<Question[] | null>(null)
-  const [remoteCultureQuestions, setRemoteCultureQuestions] = useState<Question[] | null>(null)
-  const [remoteWeights, setRemoteWeights] = useState<Record<string, number[]>>({})
-  const [loadingRemote, setLoadingRemote] = useState(false)
-  const [fetchError, setFetchError] = useState<string | null>(null)
-
+  /* 🔐 SUPABASE AUTH CHECK */
   useEffect(() => {
-    const u = (() => {
-      try {
-        return JSON.parse(localStorage.getItem('lms_current_user') || 'null')
-      } catch {
-        return null
-      }
-    })()
-    if (!u) {
-      router.push('/login')
-      return
-    }
-    setCurrentUser(u)
+    const checkSession = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
 
-    // if saved career, go to the dedicated result page
-    const c = localStorage.getItem(`questionnaire_career_${u.email}`)
-    if (c) {
-      try {
-        const parsed = JSON.parse(c)
-        if (parsed.answers) setCareerAnswers(parsed.answers)
-        if (parsed.openAnswers) setCareerOpenAnswers(parsed.openAnswers)
-        const { top, scores } = computePathwayFromAnswers(parsed.answers || careerAnswers)
-        setComputedPathway(top)
-        setPathwayScores(scores)
-        router.push('/student/rersult')
-      } catch (e) {
-        // ignore parse errors
+      if (!session) {
+        router.replace('/login')
+        return
       }
+
+      setCheckingAuth(false)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
+    checkSession()
   }, [router])
 
-  // CLIENT-SIDE fetch helper (calls our Next API proxy)
-  async function fetchQuestionsFromStrapiClient(): Promise<any[]> {
-    const url = '/api/strapi/questions'
-    const res = await fetch(url, { headers: { 'Content-Type': 'application/json' } })
-    if (!res.ok) {
-      const text = await res.text().catch(() => '')
-      throw new Error(`Failed to fetch Strapi questions (${res.status}): ${text || res.statusText}`)
-    }
-    const json = await res.json()
-    return json.data || []
+  if (checkingAuth) return null
+
+  /* ================= HANDLERS ================= */
+
+  const onSelectCareer = (val: number) => {
+    setCareerAnswers(prev => ({
+      ...prev,
+      [careerQuestions[careerIndex].id]: val,
+    }))
   }
 
-  // load questions from Strapi (client-side)
-  useEffect(() => {
-    let mounted = true
-    setLoadingRemote(true)
-    setFetchError(null)
-    fetchQuestionsFromStrapiClient()
-      .then((items) => {
-        if (!mounted) return
-        // items expected in form [{ id, attributes: { slug, text, type, placeholder, group, weights } }, ...]
-        const career: Question[] = []
-        const culture: Question[] = []
-        const weightsMap: Record<string, number[]> = {}
-
-        for (const item of items) {
-          const a = item.attributes || {}
-          if (a.isActive === false) continue
-          const slug = a.slug || `q_${item.id}`
-          const q: Question = {
-            id: slug,
-            text: a.text || '',
-            type: a.type === 'open' ? 'open' : 'likert',
-            placeholder: a.placeholder ?? undefined,
-          }
-
-          // normalize weights (support array or object keyed by pathway)
-          let wArr: number[] = []
-          if (a.weights) {
-            if (Array.isArray(a.weights)) wArr = a.weights.map((n: any) => Number(n) || 0)
-            else if (typeof a.weights === 'object') wArr = pathwayKeys.map(pk => Number(a.weights[pk] ?? 0))
-          }
-          weightsMap[slug] = wArr
-
-          if ((a.group || '').toLowerCase() === 'culture') culture.push(q)
-          else career.push(q)
-        }
-
-        setRemoteCareerQuestions(career)
-        setRemoteCultureQuestions(culture)
-        setRemoteWeights(weightsMap)
-
-        // ensure answer states have defaults for any new remote question ids
-        setCareerAnswers(prev => {
-          const merged = { ...prev }
-          for (const q of career) {
-            if (q.type === 'likert' && typeof merged[q.id] === 'undefined') merged[q.id] = 2
-          }
-          return merged
-        })
-        setCareerOpenAnswers(prev => {
-          const merged = { ...prev }
-          for (const q of career) {
-            if (q.type === 'open' && typeof merged[q.id] === 'undefined') merged[q.id] = ''
-          }
-          return merged
-        })
-      })
-      .catch((err: any) => {
-        console.error('Strapi load failed', err)
-        if (!mounted) return
-        setFetchError(String(err?.message || err))
-      })
-      .finally(() => { if (mounted) setLoadingRemote(false) })
-    return () => { mounted = false }
-  }, [])
-
-  function computePathwayFromAnswers(answersObj: CareerAnswers | Record<string, number> | undefined) {
-    const scores: Record<PathwayKey, number> = {
-      'Cloud & Infrastructure': 0,
-      'Business Analysis & Delivery': 0,
-      'Data & Analytics': 0,
-      'Automation / Low-Code': 0,
-      'AI & Workflow Integration': 0,
-    }
-    if (!answersObj) return { top: null, scores }
-    for (const q of Object.keys(answersObj)) {
-      const val = Number(answersObj[q] ?? 0)
-      const w = remoteWeights[q] ?? careerQuestionWeights[q] ?? [0, 0, 0, 0, 0]
-      pathwayKeys.forEach((pKey, idx) => {
-        scores[pKey] += (Number(w[idx] ?? 0)) * val
-      })
-    }
-    const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1])
-    const top = (sorted.length ? (sorted[0][0] as PathwayKey) : null)
-    return { top, scores }
+  const onSelectCulture = (val: number) => {
+    setCultureAnswers(prev => ({
+      ...prev,
+      [cultureQuestions[cultureIndex].id]: val,
+    }))
   }
 
-  const likertLabels = [
-    'Very confident',
-    'Confident',
-    'Neutral',
-    'Slightly unconfident',
-    'Not confident at all',
-  ]
-
-  const activeCareerQuestions = remoteCareerQuestions ?? careerQuestions
-  const activeCultureQuestions = remoteCultureQuestions ?? cultureQuestions
-
-  const careerProgress = Math.round(((careerIndex + 1) / activeCareerQuestions.length) * 100)
-  const cultureProgress = Math.round(((cultureIndex + 1) / activeCultureQuestions.length) * 100)
-  const progress = step === 'career' ? careerProgress : cultureProgress
-
-  const onSelectCareerOption = (val: number) => {
-    const q = activeCareerQuestions[careerIndex]
-    if (q.type !== 'likert') return
-    setCareerAnswers(prev => ({ ...prev, [q.id]: val }))
+  const onOpenChange = (text: string) => {
+    setCareerOpenAnswers(prev => ({
+      ...prev,
+      [careerQuestions[careerIndex].id]: text,
+    }))
   }
 
-  const onChangeCareerOpen = (text: string) => {
-    const q = activeCareerQuestions[careerIndex]
-    if (q.type !== 'open') return
-    setCareerOpenAnswers(prev => ({ ...prev, [q.id]: text }))
-  }
-
-  const onSelectCultureOption = (val: number) => {
-    const q = activeCultureQuestions[cultureIndex]
-    setCultureAnswers(prev => ({ ...prev, [q.id]: val }))
-  }
-
-  const goCareerNext = () => {
-    if (careerIndex < activeCareerQuestions.length - 1) {
+  const nextCareer = () => {
+    if (careerIndex < careerQuestions.length - 1) {
       setCareerIndex(i => i + 1)
-      window.scrollTo({ top: 0, behavior: 'smooth' })
-      return
+    } else {
+      setStep('culture')
+      setCareerIndex(0)
     }
-
-    const { top, scores } = computePathwayFromAnswers(careerAnswers)
-    setComputedPathway(top)
-    setPathwayScores(scores)
-    if (currentUser?.email) {
-      localStorage.setItem(`questionnaire_career_${currentUser.email}`, JSON.stringify({
-        answers: careerAnswers,
-        openAnswers: careerOpenAnswers,
-        computedAt: new Date().toISOString(),
-        computedTop: top,
-        scores,
-      }))
-    }
-    setStep('culture')
-    setCareerIndex(0)
   }
 
-  const goCareerPrev = () => {
-    if (careerIndex > 0) setCareerIndex(i => i - 1)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-
-  const goCultureNext = () => {
-    if (cultureIndex < activeCultureQuestions.length - 1) {
+  const nextCulture = () => {
+    if (cultureIndex < cultureQuestions.length - 1) {
       setCultureIndex(i => i + 1)
-      window.scrollTo({ top: 0, behavior: 'smooth' })
-      return
+    } else {
+      // ✅ questionnaire completed
+      router.replace('/student/dashboard')
     }
-
-    if (currentUser?.email) {
-      localStorage.setItem(`questionnaire_culture_${currentUser.email}`, JSON.stringify({
-        answers: cultureAnswers,
-        submittedAt: new Date().toISOString(),
-      }))
-      localStorage.setItem(`questionnaire_${currentUser.email}`, JSON.stringify({ careerAt: new Date().toISOString() }))
-    }
-
-    const { top, scores } = computePathwayFromAnswers(careerAnswers)
-    setComputedPathway(top)
-    setPathwayScores(scores)
-    if (currentUser?.email) {
-      localStorage.setItem(`questionnaire_career_${currentUser.email}`, JSON.stringify({
-        answers: careerAnswers,
-        openAnswers: careerOpenAnswers,
-        computedAt: new Date().toISOString(),
-        computedTop: top,
-        scores,
-      }))
-    }
-
-    router.push('/student/rersult')
   }
 
-  const goCulturePrev = () => {
-    if (cultureIndex > 0) setCultureIndex(i => i - 1)
-    else setStep('career')
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
+  const activeQuestion =
+    step === 'career'
+      ? careerQuestions[careerIndex]
+      : cultureQuestions[cultureIndex]
 
-  const retakeAll = () => {
-    if (!currentUser?.email) return
-    localStorage.removeItem(`questionnaire_career_${currentUser.email}`)
-    localStorage.removeItem(`questionnaire_culture_${currentUser.email}`)
-    localStorage.removeItem(`questionnaire_${currentUser.email}`)
-    setCareerAnswers(activeCareerQuestions.filter(q => q.type === 'likert').reduce((acc, q) => ({ ...acc, [q.id]: 2 }), {} as CareerAnswers))
-    setCareerOpenAnswers(activeCareerQuestions.filter(q => q.type === 'open').reduce((acc, q) => ({ ...acc, [q.id]: '' }), {} as CareerOpenAnswers))
-    setCultureAnswers(activeCultureQuestions.reduce((acc, q) => ({ ...acc, [q.id]: 2 }), {} as CultureAnswers))
-    setComputedPathway(null)
-    setPathwayScores(null)
-    setStep('career')
-    setCareerIndex(0)
-    setCultureIndex(0)
-  }
-
-  const renderOpenQuestion = (q: Question) => {
-    const val = careerOpenAnswers[q.id] ?? ''
-    const maxLen = 400
-    return (
-      <div className="w-full md:w-3/4 mx-auto">
-        <textarea
-          value={val}
-          onChange={(e) => onChangeCareerOpen(e.target.value)}
-          placeholder={q.placeholder || ''}
-          maxLength={maxLen}
-          rows={6}
-          className="w-full p-4 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white text-foreground shadow-sm"
-        />
-        <div className="text-sm text-foreground/60 mt-2 text-right">{val.length}/{maxLen}</div>
-      </div>
-    )
-  }
-
-  const OptionRow: React.FC<{
-    label: string
-    selected: boolean
-    onClick: () => void
-  }> = ({ label, selected, onClick }) => {
-    return (
-      <button
-        onClick={onClick}
-        className={`w-full text-left flex items-center gap-4 p-4 rounded-lg border transition-shadow
-          ${selected ? 'border-blue-500 bg-blue-50 shadow-md' : 'border-gray-200 bg-white hover:shadow-sm'}`}
-        aria-pressed={selected}
-        type="button"
-      >
-        <div className={`w-5 h-5 rounded-full flex items-center justify-center border ${selected ? 'bg-blue-600 border-blue-600' : 'bg-white border-gray-300'}`}>
-          {selected ? <div className="w-2.5 h-2.5 rounded-full bg-white" /> : <div className="w-2.5 h-2.5 rounded-full bg-white/0" />}
-        </div>
-        <div className="text-sm text-foreground/800">{label}</div>
-      </button>
-    )
-  }
+  /* ================= UI ================= */
 
   return (
     <div className="min-h-screen bg-slate-50 py-12 px-6">
-      <div className="max-w-3xl mx-auto space-y-6">
-        <Card className="p-6">
-          <CardHeader className="p-0 mb-4">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-2xl font-semibold">Career Strengths Diagnostic</CardTitle>
-              <div className="text-sm text-foreground/60">{step === 'career' ? `${careerIndex + 1}/${activeCareerQuestions.length}` : `${cultureIndex + 1}/${activeCultureQuestions.length}`}</div>
-            </div>
+      <div className="max-w-2xl mx-auto">
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              {step === 'career' ? 'Career Questionnaire' : 'Culture Fit'}
+            </CardTitle>
           </CardHeader>
 
-          <div className="mb-6">
-            <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-              <div className="h-2 bg-blue-600 rounded-full transition-all" style={{ width: `${progress}%` }} />
-            </div>
-          </div>
+          <CardContent className="space-y-6">
+            <h2 className="text-lg font-semibold">{activeQuestion.text}</h2>
 
-          <CardContent className="p-0">
-            {loadingRemote && <div className="mb-4 text-sm text-foreground/60">Loading questions from admin…</div>}
-            {fetchError && !remoteCareerQuestions && (
-              <div className="mb-4 text-sm text-foreground/60">
-                Could not load remote questions: {fetchError} — using local fallback.
-                <div className="mt-2">
-                  <Button onClick={() => {
-                    // allow quick retry
-                    setLoadingRemote(true)
-                    setFetchError(null)
-                    fetchQuestionsFromStrapiClient()
-                      .then((items) => {
-                        // reuse same processing as effect: set remote state quickly
-                        const career: Question[] = []
-                        const culture: Question[] = []
-                        const weightsMap: Record<string, number[]> = {}
-                        for (const item of items) {
-                          const a = item.attributes || {}
-                          if (a.isActive === false) continue
-                          const slug = a.slug || `q_${item.id}`
-                          const q: Question = {
-                            id: slug,
-                            text: a.text || '',
-                            type: a.type === 'open' ? 'open' : 'likert',
-                            placeholder: a.placeholder ?? undefined,
-                          }
-                          let wArr: number[] = []
-                          if (a.weights) {
-                            if (Array.isArray(a.weights)) wArr = a.weights.map((n: any) => Number(n) || 0)
-                            else if (typeof a.weights === 'object') wArr = pathwayKeys.map(pk => Number(a.weights[pk] ?? 0))
-                          }
-                          weightsMap[slug] = wArr
-                          if ((a.group || '').toLowerCase() === 'culture') culture.push(q)
-                          else career.push(q)
-                        }
-                        setRemoteCareerQuestions(career)
-                        setRemoteCultureQuestions(culture)
-                        setRemoteWeights(weightsMap)
-                      })
-                      .catch((err: any) => {
-                        console.error(err)
-                        setFetchError(String(err?.message || err))
-                      })
-                      .finally(() => setLoadingRemote(false))
-                  }}>
-                    Retry fetch
-                  </Button>
-                </div>
+            {activeQuestion.type === 'likert' ? (
+              <div className="space-y-3">
+                {likertLabels.map((label, i) => (
+                  <button
+                    key={label}
+                    onClick={() =>
+                      step === 'career'
+                        ? onSelectCareer(i)
+                        : onSelectCulture(i)
+                    }
+                    className="w-full p-3 border rounded-lg text-left hover:bg-slate-100"
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
+            ) : (
+              <textarea
+                className="w-full p-3 border rounded-lg"
+                rows={5}
+                onChange={e => onOpenChange(e.target.value)}
+              />
             )}
 
-            {/* CAREER */}
-            {step === 'career' && (
-              <>
-                <div className="text-center mb-6">
-                  <div className="text-sm text-foreground/60 mb-2">Question {careerIndex + 1} of {activeCareerQuestions.length}</div>
-                  <h2 className="text-2xl md:text-3xl font-bold text-foreground/900 leading-snug">{activeCareerQuestions[careerIndex].text}</h2>
-                </div>
-
-                <div className="space-y-4">
-                  {activeCareerQuestions[careerIndex].type === 'likert' ? (
-                    <div className="space-y-3">
-                      {likertLabels.map((lab, i) => {
-                        const id = activeCareerQuestions[careerIndex].id
-                        const selected = (careerAnswers[id] ?? 2) === i
-                        return (
-                          <OptionRow key={lab} label={lab} selected={selected} onClick={() => onSelectCareerOption(i)} />
-                        )
-                      })}
-                    </div>
-                  ) : (
-                    <div className="pt-2">{renderOpenQuestion(activeCareerQuestions[careerIndex])}</div>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-between mt-10">
-                  <button onClick={goCareerPrev} className="px-4 py-2 rounded-md border bg-white text-foreground/700">← Back</button>
-
-                  <div className="flex items-center gap-4">
-                    <div className="text-sm text-foreground/60">Progress: {progress}%</div>
-                    <button onClick={goCareerNext} className="px-5 py-3 rounded-md bg-blue-600 text-white font-medium">
-                      {careerIndex < activeCareerQuestions.length - 1 ? 'Next' : 'Continue'}
-                    </button>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* CULTURE */}
-            {step === 'culture' && (
-              <>
-                <div className="text-center mb-6">
-                  <div className="text-sm text-foreground/60 mb-2">Culture question {cultureIndex + 1} of {activeCultureQuestions.length}</div>
-                  <h2 className="text-2xl md:text-3xl font-bold text-foreground/900 leading-snug">{activeCultureQuestions[cultureIndex].text}</h2>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="space-y-3">
-                    {likertLabels.map((lab, i) => {
-                      const selected = (cultureAnswers[activeCultureQuestions[cultureIndex].id] ?? 2) === i
-                      return (
-                        <OptionRow key={lab} label={lab} selected={selected} onClick={() => onSelectCultureOption(i)} />
-                      )
-                    })}
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between mt-10">
-                  <button onClick={goCulturePrev} className="px-4 py-2 rounded-md border bg-white text-foreground/700">← Back</button>
-
-                  <div className="flex items-center gap-4">
-                    <div className="text-sm text-foreground/60">Progress: {progress}%</div>
-                    <button onClick={goCultureNext} className="px-5 py-3 rounded-md bg-blue-600 text-white font-medium">
-                      {cultureIndex < activeCultureQuestions.length - 1 ? 'Next' : 'Finish'}
-                    </button>
-                  </div>
-                </div>
-              </>
-            )}
+            <div className="flex justify-end">
+              <Button onClick={step === 'career' ? nextCareer : nextCulture}>
+                {step === 'career' ? 'Next' : 'Finish'}
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
