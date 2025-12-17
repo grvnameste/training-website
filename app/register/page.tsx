@@ -1,183 +1,150 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import supabase from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle
+  CardTitle,
 } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { BookOpen } from 'lucide-react'
-import { FaGoogle, FaGithub, FaLinkedin } from 'react-icons/fa'
+import { BookOpen, User, Mail, Lock, Github, Linkedin } from 'lucide-react'
+import { FaGoogle } from 'react-icons/fa'
+import Link from 'next/link'
+
+type OAuthProvider = 'google' | 'github' | 'linkedin'
 
 export default function RegisterPage() {
   const router = useRouter()
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    role: 'student'
-  })
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
 
-  const redirectUser = (user: any) => {
-    localStorage.setItem('lms_current_user', JSON.stringify(user))
-    router.push(
-      user.role === 'student'
-        ? '/student/dashboard'
-        : '/teacher/dashboard'
-    )
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
+  /* ================= EMAIL REGISTER ================= */
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
 
-    if (!formData.name || !formData.email || !formData.password) {
-      setError('Please fill in all fields')
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { name },
+      },
+    })
+
+    if (error) {
+      setError(error.message)
       return
     }
 
-    const users = JSON.parse(localStorage.getItem('lms_users') || '[]')
-    if (users.find((u: any) => u.email === formData.email)) {
-      setError('Email already registered')
-      return
-    }
-
-    users.push(formData)
-    localStorage.setItem('lms_users', JSON.stringify(users))
-    redirectUser(formData)
+    router.replace('/login')
   }
 
-  /** ✅ FIXED: Social Register also saves user */
-  const socialRegister = (provider: 'google' | 'github' | 'linkedin') => {
-    const users = JSON.parse(localStorage.getItem('lms_users') || '[]')
+  /* ================= SOCIAL REGISTER ================= */
+  const registerWithProvider = async (provider: OAuthProvider) => {
+    const supabaseProvider =
+      provider === 'linkedin' ? 'linkedin_oidc' : provider
 
-    const email = `${provider}@demo.com`
-    let user = users.find((u: any) => u.email === email)
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: supabaseProvider as any,
+      options: {
+        redirectTo: `${location.origin}/auth/callback`,
+      },
+    })
 
-    if (!user) {
-      user = {
-        name: `${provider} user`,
-        email,
-        role: 'student',
-        provider
-      }
-      users.push(user)
-      localStorage.setItem('lms_users', JSON.stringify(users))
-    }
-
-    redirectUser(user)
+    if (error) setError(error.message)
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-6">
-      <div className="w-full max-w-md space-y-8">
-        {/* Header */}
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center">
-            <BookOpen className="w-7 h-7 text-primary-foreground" />
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
+      <Card className="w-full max-w-md rounded-2xl shadow-lg">
+        <CardHeader className="text-center space-y-2">
+          <div className="mx-auto w-12 h-12 bg-teal-600 rounded-xl flex items-center justify-center">
+            <BookOpen className="text-white w-6 h-6" />
           </div>
-          <h1 className="text-3xl font-bold">ReadNRevise</h1>
-        </div>
+          <CardTitle className="text-2xl">Create Account</CardTitle>
+          <CardDescription>
+            Start your learning journey with ReadNRevise
+          </CardDescription>
+        </CardHeader>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Create Account</CardTitle>
-            <CardDescription>Sign up to get started</CardDescription>
-          </CardHeader>
-
-          <CardContent className="space-y-6">
-            {/* Social Register */}
-            <div className="grid grid-cols-3 gap-2">
-              <Button variant="outline" onClick={() => socialRegister('google')}>
-                <FaGoogle className="mr-2" /> Google
-              </Button>
-              <Button variant="outline" onClick={() => socialRegister('github')}>
-                <FaGithub className="mr-2" /> GitHub
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => socialRegister('linkedin')}
-              >
-                <FaLinkedin className="mr-2" /> LinkedIn
-              </Button>
+        <CardContent className="space-y-5">
+          {error && (
+            <div className="text-sm text-red-600 bg-red-50 p-2 rounded-lg">
+              {error}
             </div>
+          )}
 
-            <div className="text-center text-sm text-muted-foreground">
-              or register with email
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {error && (
-                <div className="p-3 bg-red-100 text-red-700 rounded text-sm">
-                  {error}
-                </div>
-              )}
-
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" />
               <Input
                 placeholder="Full Name"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
+                className="pl-10"
+                onChange={e => setName(e.target.value)}
+                required
               />
+            </div>
 
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" />
               <Input
                 type="email"
                 placeholder="Email"
-                value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
+                className="pl-10"
+                onChange={e => setEmail(e.target.value)}
+                required
               />
+            </div>
 
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" />
               <Input
                 type="password"
                 placeholder="Password"
-                value={formData.password}
-                onChange={(e) =>
-                  setFormData({ ...formData, password: e.target.value })
-                }
+                className="pl-10"
+                onChange={e => setPassword(e.target.value)}
+                required
               />
+            </div>
 
-              {/* Role */}
-              <div className="grid grid-cols-3 gap-2">
-                {['admin', 'teacher', 'student'].map((role) => (
-                  <button
-                    key={role}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, role })}
-                    className={`py-2 rounded border text-sm font-medium ${
-                      formData.role === role
-                        ? 'bg-primary text-white'
-                        : 'bg-background'
-                    }`}
-                  >
-                    {role}
-                  </button>
-                ))}
-              </div>
+            <Button className="w-full">Create Account</Button>
+          </form>
 
-              <Button className="w-full h-11 text-lg">
-                Create Account
-              </Button>
+          <div className="flex items-center gap-3">
+            <hr className="flex-1" />
+            <span className="text-xs text-muted-foreground">OR</span>
+            <hr className="flex-1" />
+          </div>
 
-              <p className="text-center text-sm">
-                Already have an account?{' '}
-                <Link href="/login" className="text-primary font-medium">
-                  Sign In
-                </Link>
-              </p>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
+          <div className="space-y-2">
+            <Button variant="outline" className="w-full" onClick={() => registerWithProvider('google')}>
+              <FaGoogle /> Continue with Google
+            </Button>
+
+            <Button variant="outline" className="w-full" onClick={() => registerWithProvider('github')}>
+              <Github /> Continue with GitHub
+            </Button>
+
+            <Button variant="outline" className="w-full" onClick={() => registerWithProvider('linkedin')}>
+              <Linkedin /> Continue with LinkedIn
+            </Button>
+          </div>
+
+          <p className="text-center text-sm">
+            Already have an account?{' '}
+            <Link href="/login" className="text-teal-600 font-medium">
+              Login
+            </Link>
+          </p>
+        </CardContent>
+      </Card>
     </div>
   )
 }
