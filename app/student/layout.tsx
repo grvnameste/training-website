@@ -1,4 +1,3 @@
-// app/student/layout.tsx
 'use client'
 
 import React, { useEffect, useState } from 'react'
@@ -13,7 +12,8 @@ import {
   Mic,
   BarChart3,
 } from 'lucide-react'
-import { getCurrentUser, logout } from '@/lib/auth'
+import supabase from '@/lib/supabase/client'
+import type { User } from '@supabase/supabase-js'
 
 export default function StudentLayout({
   children,
@@ -22,135 +22,77 @@ export default function StudentLayout({
 }) {
   const router = useRouter()
   const pathname = usePathname()
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<User | null>(null)
 
   useEffect(() => {
-    const currentUser = getCurrentUser()
-    if (!currentUser || currentUser.role !== 'student') {
-      router.push('/login')
-      return
-    }
-    setUser(currentUser)
+    supabase.auth.getUser().then(({ data }) => {
+      if (!data.user) {
+        router.replace('/login')
+      } else {
+        setUser(data.user)
+      }
+    })
   }, [router])
 
-  if (!user) return null
-
-  const handleLogout = () => {
-    logout()
-    router.push('/')
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.replace('/login')
   }
+
+  if (!user) return null
 
   const navItems = [
     { href: '/student/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/student/courses', label: 'Courses', icon: GraduationCap },
     { href: '/student/skills', label: 'Skills', icon: BookOpen },
-    { href: '/student/rersult', label: 'Scorecard', icon: BarChart3 },
+    { href: '/student/result', label: 'Scorecard', icon: BarChart3 },
     { href: '/student/interview', label: 'Interview Prep', icon: Mic },
   ]
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
-        <nav className="flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
-          {/* Logo */}
+    <div className="min-h-screen bg-slate-100">
+      <header className="sticky top-0 z-50 border-b bg-white">
+        <nav className="flex justify-between items-center px-6 py-4 max-w-7xl mx-auto">
           <Link href="/student/dashboard" className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-              <BookOpen className="w-6 h-6 text-primary-foreground" />
-            </div>
-            <span className="text-xl font-bold text-foreground">ReadNRevise</span>
+            <BookOpen className="w-6 h-6" />
+            <span className="font-bold">ReadNRevise</span>
           </Link>
 
-          <div className="flex items-center gap-4">
-            {/* Profile avatar (click -> profile page) */}
-            <button
-              onClick={() => router.push('/student/profile')}
-              className="w-10 h-10 rounded-full overflow-hidden border border-border flex items-center justify-center bg-gray-50"
-              title="View profile"
-              aria-label="View profile"
-            >
-              {user?.avatar ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={user.avatar}
-                  alt={user.name || user.email || 'Profile'}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <span className="text-sm text-foreground/60">
-                  {(user?.name || user?.email || 'S').charAt(0).toUpperCase()}
-                </span>
-              )}
-            </button>
-
-            {/* Logout */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleLogout}
-              className="text-foreground"
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
-            </Button>
-          </div>
+          <Button variant="outline" size="sm" onClick={handleLogout}>
+            <LogOut className="w-4 h-4 mr-2" />
+            Logout
+          </Button>
         </nav>
       </header>
 
-      {/* Main + sidebar */}
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        <div className="flex gap-6">
-          {/* Sidebar */}
-          <aside className="hidden md:flex md:flex-col w-60 rounded-3xl bg-white shadow-sm border border-slate-200 p-4">
-            <button
-              type="button"
-              onClick={() => router.push('/student/profile')}
-              className="flex items-center gap-3 rounded-2xl px-2 py-2 hover:bg-slate-50 text-left"
-            >
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-teal-600 text-white text-sm font-semibold">
-                {(user?.name || user?.email || 'S').charAt(0).toUpperCase()}
-              </div>
-              <div className="flex flex-col">
-                <span className="text-sm font-semibold text-slate-900">
-                  {user?.name || 'Student'}
-                </span>
-                <span className="text-xs text-slate-500">ReadNRevise Student</span>
-              </div>
-            </button>
+      <main className="max-w-7xl mx-auto px-6 py-8 flex gap-6">
+        <aside className="w-64 bg-white rounded-xl p-4">
+          <nav className="space-y-1">
+            {navItems.map(item => {
+              const Icon = item.icon
+              const active =
+                pathname === item.href ||
+                pathname.startsWith(item.href + '/')
 
-            <nav className="mt-6 flex-1 space-y-1">
-              {navItems.map((item) => {
-                const Icon = item.icon
-                const isActive =
-                  pathname === item.href ||
-                  pathname.startsWith(item.href + '/')
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm ${
+                    active
+                      ? 'bg-teal-600 text-white'
+                      : 'text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  {item.label}
+                </Link>
+              )
+            })}
+          </nav>
+        </aside>
 
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={[
-                      'flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors',
-                      isActive
-                        ? 'bg-teal-600 text-white shadow-sm'
-                        : 'text-slate-600 hover:bg-slate-100',
-                    ].join(' ')}
-                  >
-                    <Icon className="h-4 w-4" />
-                    <span>{item.label}</span>
-                  </Link>
-                )
-              })}
-            </nav>
-
-            <button className="mt-4 w-full rounded-xl bg-teal-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-800">
-              Upgrade Plan
-            </button>
-          </aside>
-
-          {/* Page content */}
-          <section className="flex-1">{children}</section>
-        </div>
+        <section className="flex-1">{children}</section>
       </main>
     </div>
   )
