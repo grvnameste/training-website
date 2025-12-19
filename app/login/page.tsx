@@ -44,21 +44,22 @@ export default function LoginPage() {
     }
 
     const { data } = await supabase.auth.getSession()
+    const session = data.session
 
-    if (!data.session) {
+    if (!session) {
       setError('Login failed. Try again.')
       setLoading(false)
       return
     }
 
-    if (data.session.user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
+    if (session.user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
       router.replace('/teacher/dashboard')
     } else {
       router.replace('/student/dashboard')
     }
   }
 
-  /* ================= SOCIAL LOGIN ================= */
+  /* ================= OAUTH LOGIN ================= */
   const loginWithProvider = async (provider: OAuthProvider) => {
     const supabaseProvider =
       provider === 'linkedin' ? 'linkedin_oidc' : provider
