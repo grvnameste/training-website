@@ -42,8 +42,17 @@ export default function StudentDashboard() {
         return
       }
 
-      // 🟡 abhi demo values
-      setQuestionnaireCompleted(false)
+      // ✅ CHECK IF QUESTIONNAIRE IS COMPLETED
+      const { data: result } = await supabase
+        .from('questionnaire_results')
+        .select('id')
+        .eq('user_id', session.user.id)
+        .limit(1)
+        .single()
+
+      setQuestionnaireCompleted(!!result)
+
+      // (optional) courses load later
       setCourses([])
 
       setLoading(false)

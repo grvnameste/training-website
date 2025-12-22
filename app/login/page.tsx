@@ -38,7 +38,16 @@ export default function LoginPage() {
     })
 
     if (error) {
-      setError(error.message)
+      // ✅ Not registered / wrong credentials handling
+      if (
+        error.message.toLowerCase().includes('invalid') ||
+        error.message.toLowerCase().includes('not found') ||
+        error.message.toLowerCase().includes('credentials')
+      ) {
+        setError("Don’t have an account. Please register.")
+      } else {
+        setError(error.message)
+      }
       setLoading(false)
       return
     }
@@ -89,8 +98,19 @@ export default function LoginPage() {
 
         <CardContent className="space-y-5">
           {error && (
-            <div className="text-sm text-red-600 bg-red-50 p-2 rounded-lg">
+            <div className="text-sm text-red-600 bg-red-50 p-2 rounded-lg text-center">
               {error}
+              {error === "Don’t have an account. Please register." && (
+                <div className="mt-2">
+                  <Button
+                    variant="link"
+                    className="p-0 text-teal-600"
+                    onClick={() => router.push('/register')}
+                  >
+                    Go to Register
+                  </Button>
+                </div>
+              )}
             </div>
           )}
 
@@ -131,15 +151,27 @@ export default function LoginPage() {
           </div>
 
           <div className="space-y-2">
-            <Button variant="outline" className="w-full" onClick={() => loginWithProvider('google')}>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => loginWithProvider('google')}
+            >
               <FaGoogle /> Continue with Google
             </Button>
 
-            <Button variant="outline" className="w-full" onClick={() => loginWithProvider('github')}>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => loginWithProvider('github')}
+            >
               <Github /> Continue with GitHub
             </Button>
 
-            <Button variant="outline" className="w-full" onClick={() => loginWithProvider('linkedin')}>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => loginWithProvider('linkedin')}
+            >
               <Linkedin /> Continue with LinkedIn
             </Button>
           </div>
