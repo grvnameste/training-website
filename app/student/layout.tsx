@@ -1,7 +1,11 @@
+//app/student/layout.tsx
+
 'use client'
 
 import React, { useEffect, useState, useRef } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
+import { FileText } from 'lucide-react'
+
 import Link from 'next/link'
 import {
   BookOpen,
@@ -64,6 +68,8 @@ export default function StudentLayout({
     { href: '/student/skills', label: 'Skills', icon: BookOpen },
     { href: '/student/result', label: 'Scorecard', icon: BarChart3 },
     { href: '/student/interview', label: 'Interview Prep', icon: Mic },
+    { href: '/student/resume', label: 'Resume Builder', icon: FileText }, // ✅ NEW
+
   ]
 
   return (
