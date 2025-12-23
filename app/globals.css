@@ -3,8 +3,9 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ================= THEME VARIABLES ================= */
+
 :root {
-  /* Professional LMS Color Palette */
   --background: oklch(0.98 0 0);
   --foreground: oklch(0.15 0 0);
   --card: oklch(1 0 0);
@@ -36,9 +37,12 @@
   --ring: oklch(0.65 0.2 262.46);
 }
 
+/* ================= TAILWIND THEME ================= */
+
 @theme inline {
   --font-sans: 'Geist', 'Geist Fallback';
   --font-mono: 'Geist Mono', 'Geist Mono Fallback';
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -54,11 +58,106 @@
   --color-ring: var(--ring);
 }
 
+/* ================= BASE ================= */
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* ================= RESUME PRINT (ONLY RESUME) ================= */
+
+@media print {
+  /* Hide EVERYTHING */
+  body * {
+    visibility: hidden !important;
+  }
+
+  /* Show ONLY resume */
+  #resume-print,
+  #resume-print * {
+    visibility: visible !important;
+  }
+
+  /* Position resume at top-left */
+  #resume-print {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    background: white;
+  }
+
+  /* Force light mode */
+  :root,
+  .dark {
+    --background: white;
+    --foreground: black;
+    --card: white;
+    --card-foreground: black;
+    --border: black;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Hide interactive UI explicitly */
+  button,
+  svg,
+  input,
+  textarea,
+  .no-print {
+    display: none !important;
+  }
+
+  /* Remove card effects */
+  .shadow,
+  .shadow-sm,
+  .shadow-md,
+  .rounded,
+  .rounded-lg,
+  .rounded-md,
+  .rounded-xl {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
+  /* Typography (ATS friendly) */
+  * {
+    font-size: 12px !important;
+    line-height: 1.45 !important;
+    color: black !important;
+  }
+
+  h1 {
+    font-size: 18px !important;
+    font-weight: 700 !important;
+  }
+
+  h2 {
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    margin-top: 12px !important;
+  }
+
+  /* Avoid page breaks */
+  section {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Page size */
+  @page {
+    size: A4;
+    margin: 1in;
   }
 }
