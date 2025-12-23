@@ -6,7 +6,6 @@ import supabase from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
-
 type CareerAnswers = Record<string, number>
 type CareerOpenAnswers = Record<string, string>
 type CultureAnswers = Record<string, number>
@@ -15,20 +14,16 @@ type Question = {
   id: string
   text: string
   type: 'likert' | 'open'
-  placeholder?: string
 }
-
 
 const careerQuestions: Question[] = [
   { id: 'q1', text: 'How comfortable are you with learning new technical tools?', type: 'likert' },
   { id: 'q2', text: 'Which type of tasks energize you most?', type: 'likert' },
   { id: 'q3', text: 'Rate your problem-solving style.', type: 'likert' },
   { id: 'q4', text: 'Which long-term role appeals to you most?', type: 'likert' },
-
   { id: 'q5', text: 'Describe one technical task you enjoyed recently.', type: 'open' },
   { id: 'q6', text: 'What kind of problems frustrate you most?', type: 'open' },
   { id: 'q7', text: 'List tools/languages you know.', type: 'open' },
-
   { id: 'q12', text: 'How do you prefer to communicate technical findings?', type: 'likert' },
   { id: 'q13', text: 'How likely are you to automate repetitive work?', type: 'likert' },
   { id: 'q14', text: 'How interested are you in certifications?', type: 'likert' },
@@ -49,7 +44,6 @@ const likertLabels = [
   'Not confident',
 ]
 
-
 export default function StudentQuestionnaire() {
   const router = useRouter()
 
@@ -61,46 +55,36 @@ export default function StudentQuestionnaire() {
   const [careerOpenAnswers, setCareerOpenAnswers] = useState<CareerOpenAnswers>({})
   const [cultureAnswers, setCultureAnswers] = useState<CultureAnswers>({})
 
-  const [checkingAuth, setCheckingAuth] = useState(true)
+  const [userId, setUserId] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  /* 🔐 SUPABASE AUTH CHECK */
+  /* 🔐 AUTH CHECK */
   useEffect(() => {
-    const checkSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-
-      if (!session) {
+    const init = async () => {
+      const { data } = await supabase.auth.getUser()
+      if (!data.user) {
         router.replace('/login')
         return
       }
-
-      setCheckingAuth(false)
+      setUserId(data.user.id)
+      setLoading(false)
     }
-
-    checkSession()
+    init()
   }, [router])
 
-  if (checkingAuth) return null
-
+  if (loading) return null
 
   const onSelectCareer = (val: number) => {
-    setCareerAnswers(prev => ({
-      ...prev,
-      [careerQuestions[careerIndex].id]: val,
-    }))
+    setCareerAnswers(p => ({ ...p, [careerQuestions[careerIndex].id]: val }))
   }
 
   const onSelectCulture = (val: number) => {
-    setCultureAnswers(prev => ({
-      ...prev,
-      [cultureQuestions[cultureIndex].id]: val,
-    }))
+    setCultureAnswers(p => ({ ...p, [cultureQuestions[cultureIndex].id]: val }))
   }
 
   const onOpenChange = (text: string) => {
-    setCareerOpenAnswers(prev => ({
-      ...prev,
+    setCareerOpenAnswers(p => ({
+      ...p,
       [careerQuestions[careerIndex].id]: text,
     }))
   }
@@ -114,12 +98,30 @@ export default function StudentQuestionnaire() {
     }
   }
 
+  const finishQuestionnaire = async () => {
+    if (!userId) return
+
+    const { error } = await supabase.from('questionnaire_results').insert({
+      user_id: userId,
+      career_answers: careerAnswers,
+      career_open_answers: careerOpenAnswers,
+      culture_answers: cultureAnswers,
+    })
+
+    if (error) {
+      console.error(error)
+      alert('Failed to save questionnaire')
+      return
+    }
+
+    router.replace('/student/result')
+  }
+
   const nextCulture = () => {
     if (cultureIndex < cultureQuestions.length - 1) {
       setCultureIndex(i => i + 1)
     } else {
-      // ✅ questionnaire completed
-      router.replace('/student/dashboard')
+      finishQuestionnaire()
     }
   }
 
@@ -128,6 +130,13 @@ export default function StudentQuestionnaire() {
       ? careerQuestions[careerIndex]
       : cultureQuestions[cultureIndex]
 
+  const selectedLikert =
+    step === 'career'
+      ? careerAnswers[careerQuestions[careerIndex]?.id]
+      : cultureAnswers[cultureQuestions[cultureIndex]?.id]
+
+  const isLastCulture =
+    step === 'culture' && cultureIndex === cultureQuestions.length - 1
 
   return (
     <div className="min-h-screen bg-slate-50 py-12 px-6">
@@ -147,12 +156,17 @@ export default function StudentQuestionnaire() {
                 {likertLabels.map((label, i) => (
                   <button
                     key={label}
+                    type="button"
                     onClick={() =>
                       step === 'career'
                         ? onSelectCareer(i)
                         : onSelectCulture(i)
                     }
-                    className="w-full p-3 border rounded-lg text-left hover:bg-slate-100"
+                    className={`w-full p-3 border rounded-lg text-left
+                      ${selectedLikert === i
+                        ? 'bg-slate-200 border-slate-400'
+                        : 'hover:bg-slate-100'
+                      }`}
                   >
                     {label}
                   </button>
@@ -162,13 +176,14 @@ export default function StudentQuestionnaire() {
               <textarea
                 className="w-full p-3 border rounded-lg"
                 rows={5}
+                value={careerOpenAnswers[careerQuestions[careerIndex]?.id] || ''}
                 onChange={e => onOpenChange(e.target.value)}
               />
             )}
 
             <div className="flex justify-end">
               <Button onClick={step === 'career' ? nextCareer : nextCulture}>
-                {step === 'career' ? 'Next' : 'Finish'}
+                {step === 'career' ? 'Next' : isLastCulture ? 'Finish' : 'Next'}
               </Button>
             </div>
           </CardContent>

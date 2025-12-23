@@ -1,3 +1,4 @@
+//app/register/page.tsx
 'use client'
 
 import { useState } from 'react'
@@ -39,7 +40,15 @@ export default function RegisterPage() {
     })
 
     if (error) {
-      setError(error.message)
+      // ✅ Existing account handling
+      if (
+        error.message.toLowerCase().includes('already') ||
+        error.message.toLowerCase().includes('exists')
+      ) {
+        setError('Already have an account. Please login.')
+      } else {
+        setError(error.message)
+      }
       return
     }
 
@@ -76,8 +85,19 @@ export default function RegisterPage() {
 
         <CardContent className="space-y-5">
           {error && (
-            <div className="text-sm text-red-600 bg-red-50 p-2 rounded-lg">
+            <div className="text-sm text-red-600 bg-red-50 p-2 rounded-lg text-center">
               {error}
+              {error === 'Already have an account. Please login.' && (
+                <div className="mt-2">
+                  <Button
+                    variant="link"
+                    className="p-0 text-teal-600"
+                    onClick={() => router.push('/login')}
+                  >
+                    Go to Login
+                  </Button>
+                </div>
+              )}
             </div>
           )}
 
@@ -124,15 +144,27 @@ export default function RegisterPage() {
           </div>
 
           <div className="space-y-2">
-            <Button variant="outline" className="w-full" onClick={() => registerWithProvider('google')}>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => registerWithProvider('google')}
+            >
               <FaGoogle /> Continue with Google
             </Button>
 
-            <Button variant="outline" className="w-full" onClick={() => registerWithProvider('github')}>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => registerWithProvider('github')}
+            >
               <Github /> Continue with GitHub
             </Button>
 
-            <Button variant="outline" className="w-full" onClick={() => registerWithProvider('linkedin')}>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => registerWithProvider('linkedin')}
+            >
               <Linkedin /> Continue with LinkedIn
             </Button>
           </div>

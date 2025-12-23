@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import supabase from '@/lib/supabase/client'
 import { Card, CardContent } from '@/components/ui/card'
-import { BookOpen, Lock } from 'lucide-react'
+import { Lock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface Course {
@@ -15,35 +16,46 @@ interface Course {
   videos: { id: string; name: string; file: string }[]
 }
 
-const safeParse = (s: string | null) => {
-  try {
-    return s ? JSON.parse(s) : null
-  } catch {
-    return null
-  }
-}
-
 export default function CoursesListPage() {
   const [courses, setCourses] = useState<Course[]>([])
   const [loading, setLoading] = useState(true)
   const [questionnaireCompleted, setQuestionnaireCompleted] = useState(false)
 
   useEffect(() => {
-    const user = safeParse(localStorage.getItem('lms_current_user'))
-    if (user?.email) {
-      const q = localStorage.getItem(`questionnaire_${user.email}`)
-      setQuestionnaireCompleted(!!q)
-    }
+    const init = async () => {
+      /* 🔐 AUTH CHECK */
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
 
-    try {
-      const stored = localStorage.getItem('lms_courses') || '[]'
-      setCourses(JSON.parse(stored))
-    } catch (e) {
-      console.error('Failed to load courses', e)
-      setCourses([])
-    } finally {
+      if (!session) {
+        setLoading(false)
+        return
+      }
+
+      /* ✅ CHECK QUESTIONNAIRE COMPLETION */
+      const { data: result } = await supabase
+        .from('questionnaire_results')
+        .select('id')
+        .eq('user_id', session.user.id)
+        .limit(1)
+        .single()
+
+      setQuestionnaireCompleted(!!result)
+
+      /* 🧪 DEMO COURSES (localStorage) */
+      try {
+        const stored = localStorage.getItem('lms_courses') || '[]'
+        setCourses(JSON.parse(stored))
+      } catch (e) {
+        console.error('Failed to load courses', e)
+        setCourses([])
+      }
+
       setLoading(false)
     }
+
+    init()
   }, [])
 
   if (loading) {
@@ -65,13 +77,12 @@ export default function CoursesListPage() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {courses.map((course) => {
+        {courses.map(course => {
           const CardUI = (
             <Card className="group h-full overflow-hidden rounded-2xl border border-border/70 shadow-sm transition-all">
               <CardContent className="p-0 flex flex-col h-full">
                 {/* Thumbnail */}
                 <div className="w-full aspect-video bg-slate-100 relative overflow-hidden">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={course.thumbnail || '/placeholder.svg'}
                     alt={course.title}
