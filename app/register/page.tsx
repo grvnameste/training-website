@@ -1,4 +1,5 @@
 //app/register/page.tsx
+
 'use client'
 
 import { useState } from 'react'
@@ -13,7 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { BookOpen, User, Mail, Lock, Github, Linkedin } from 'lucide-react'
+import { BookOpen, Github, Linkedin } from 'lucide-react'
 import { FaGoogle } from 'react-icons/fa'
 import Link from 'next/link'
 
@@ -31,16 +32,34 @@ export default function RegisterPage() {
     e.preventDefault()
     setError('')
 
+    // ✅ NORMALIZE EMAILS (IMPORTANT)
+    const normalizedEmail = email.trim().toLowerCase()
+    const adminEmail =
+      process.env.NEXT_PUBLIC_ADMIN_EMAIL?.trim().toLowerCase()
+
+    // 🔍 DEBUG (temporary – remove later)
+    console.log('INPUT EMAIL:', normalizedEmail)
+    console.log('ADMIN EMAIL ENV:', adminEmail)
+    console.log(
+      'EMAIL MATCH:',
+      normalizedEmail === adminEmail
+    )
+
+    const role =
+      normalizedEmail === adminEmail ? 'teacher' : 'student'
+
     const { error } = await supabase.auth.signUp({
-      email,
+      email: normalizedEmail,
       password,
       options: {
-        data: { name },
+        data: {
+          name,
+          role, // ✅ FINAL SOURCE OF TRUTH
+        },
       },
     })
 
     if (error) {
-      // ✅ Existing account handling
       if (
         error.message.toLowerCase().includes('already') ||
         error.message.toLowerCase().includes('exists')
@@ -87,53 +106,27 @@ export default function RegisterPage() {
           {error && (
             <div className="text-sm text-red-600 bg-red-50 p-2 rounded-lg text-center">
               {error}
-              {error === 'Already have an account. Please login.' && (
-                <div className="mt-2">
-                  <Button
-                    variant="link"
-                    className="p-0 text-teal-600"
-                    onClick={() => router.push('/login')}
-                  >
-                    Go to Login
-                  </Button>
-                </div>
-              )}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" />
-              <Input
-                placeholder="Full Name"
-                className="pl-10"
-                onChange={e => setName(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" />
-              <Input
-                type="email"
-                placeholder="Email"
-                className="pl-10"
-                onChange={e => setEmail(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" />
-              <Input
-                type="password"
-                placeholder="Password"
-                className="pl-10"
-                onChange={e => setPassword(e.target.value)}
-                required
-              />
-            </div>
-
+            <Input
+              placeholder="Full Name"
+              onChange={e => setName(e.target.value)}
+              required
+            />
+            <Input
+              type="email"
+              placeholder="Email"
+              onChange={e => setEmail(e.target.value)}
+              required
+            />
+            <Input
+              type="password"
+              placeholder="Password"
+              onChange={e => setPassword(e.target.value)}
+              required
+            />
             <Button className="w-full">Create Account</Button>
           </form>
 
@@ -143,31 +136,29 @@ export default function RegisterPage() {
             <hr className="flex-1" />
           </div>
 
-          <div className="space-y-2">
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => registerWithProvider('google')}
-            >
-              <FaGoogle /> Continue with Google
-            </Button>
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => registerWithProvider('google')}
+          >
+            <FaGoogle /> Continue with Google
+          </Button>
 
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => registerWithProvider('github')}
-            >
-              <Github /> Continue with GitHub
-            </Button>
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => registerWithProvider('github')}
+          >
+            <Github /> Continue with GitHub
+          </Button>
 
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => registerWithProvider('linkedin')}
-            >
-              <Linkedin /> Continue with LinkedIn
-            </Button>
-          </div>
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => registerWithProvider('linkedin')}
+          >
+            <Linkedin /> Continue with LinkedIn
+          </Button>
 
           <p className="text-center text-sm">
             Already have an account?{' '}

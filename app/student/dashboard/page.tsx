@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { BookOpen, Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 
+
 interface Course {
   id: string
   title: string
