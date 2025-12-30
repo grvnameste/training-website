@@ -1,11 +1,7 @@
-//app/student/layout.tsx
-
 'use client'
 
 import React, { useEffect, useState, useRef } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { FileText } from 'lucide-react'
-
 import Link from 'next/link'
 import {
   BookOpen,
@@ -16,6 +12,7 @@ import {
   BarChart3,
   User,
   ChevronDown,
+  FileText,
 } from 'lucide-react'
 import supabase from '@/lib/supabase/client'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
@@ -32,13 +29,26 @@ export default function StudentLayout({
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
+    const checkUser = async () => {
+      const { data } = await supabase.auth.getUser()
+
       if (!data.user) {
         router.replace('/login')
-      } else {
-        setUser(data.user)
+        return
       }
-    })
+
+      const role = data.user.user_metadata?.role
+
+      // 🔥 IMPORTANT FIX
+      if (role !== 'student') {
+        router.replace('/teacher/dashboard')
+        return
+      }
+
+      setUser(data.user)
+    }
+
+    checkUser()
   }, [router])
 
   // close dropdown on outside click
@@ -68,8 +78,7 @@ export default function StudentLayout({
     { href: '/student/skills', label: 'Skills', icon: BookOpen },
     { href: '/student/result', label: 'Scorecard', icon: BarChart3 },
     { href: '/student/interview', label: 'Interview Prep', icon: Mic },
-    { href: '/student/resume', label: 'Resume Builder', icon: FileText }, // ✅ NEW
-
+    { href: '/student/resume', label: 'Resume Builder', icon: FileText },
   ]
 
   return (
@@ -82,7 +91,6 @@ export default function StudentLayout({
             <span className="font-bold">ReadNRevise</span>
           </Link>
 
-          {/* PROFILE DROPDOWN (only Profile now) */}
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setOpen(prev => !prev)}
@@ -139,7 +147,6 @@ export default function StudentLayout({
             })}
           </nav>
 
-          {/* LOGOUT IN SIDE MENU */}
           <button
             onClick={handleLogout}
             className="mt-4 flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50"

@@ -1,4 +1,5 @@
-// app/teacher/layout.tsx
+//app/teacher/layout.tsx
+
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -26,7 +27,6 @@ export default function TeacherLayout({
         return
       }
 
-      // 🔒 ROLE CHECK (adjust if role stored elsewhere)
       const role = data.user.user_metadata?.role
 
       if (role !== 'teacher' && role !== 'admin') {
