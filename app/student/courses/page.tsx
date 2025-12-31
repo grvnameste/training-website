@@ -11,15 +11,15 @@ interface Course {
   id: string
   title: string
   price: number
-  thumbnail: string
   description: string
-  videos: { id: string; name: string; file: string }[]
+  thumbnail_url: string | null
 }
 
 export default function CoursesListPage() {
   const [courses, setCourses] = useState<Course[]>([])
   const [loading, setLoading] = useState(true)
-  const [questionnaireCompleted, setQuestionnaireCompleted] = useState(false)
+  const [questionnaireCompleted, setQuestionnaireCompleted] =
+    useState(false)
 
   useEffect(() => {
     const init = async () => {
@@ -32,21 +32,28 @@ export default function CoursesListPage() {
         return
       }
 
+      /* ✅ Check questionnaire */
       const { data: result } = await supabase
         .from('questionnaire_results')
         .select('id')
         .eq('user_id', session.user.id)
-        .limit(1)
-        .single()
+        .maybeSingle()
 
       setQuestionnaireCompleted(!!result)
 
-      try {
-        const stored = localStorage.getItem('lms_courses') || '[]'
-        setCourses(JSON.parse(stored))
-      } catch (e) {
-        console.error('Failed to load courses', e)
+      /* ✅ FETCH COURSES (FIXED COLUMN NAME) */
+      const { data, error } = await supabase
+        .from('courses')
+        .select(
+          'id, title, price, description, thumbnail_url'
+        )
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Failed to load courses', error)
         setCourses([])
+      } else {
+        setCourses(data || [])
       }
 
       setLoading(false)
@@ -66,14 +73,12 @@ export default function CoursesListPage() {
 
   return (
     <div className="relative min-h-screen px-4 py-10 bg-gradient-to-b from-[#0b0f2a] via-[#120c2f] to-background">
-      {/* glow */}
-      <div className="pointer-events-none absolute -top-40 -left-40 h-96 w-96 rounded-full bg-primary/25 blur-3xl" />
-      <div className="pointer-events-none absolute top-40 -right-40 h-96 w-96 rounded-full bg-purple-500/25 blur-3xl" />
-
       <div className="relative mx-auto max-w-6xl space-y-8">
         {/* HEADER */}
         <div>
-          <h1 className="text-3xl font-bold text-white">All Courses</h1>
+          <h1 className="text-3xl font-bold text-white">
+            All Courses
+          </h1>
           <p className="text-sm text-white/70">
             Browse all available learning paths
           </p>
@@ -88,10 +93,15 @@ export default function CoursesListPage() {
                   {/* Thumbnail */}
                   <div className="relative w-full aspect-video overflow-hidden">
                     <img
-                      src={course.thumbnail || '/placeholder.svg'}
+                      src={
+                        course.thumbnail_url ||
+                        '/placeholder.svg'
+                      }
                       alt={course.title}
                       className={`w-full h-full object-cover transition duration-300 ${
-                        !questionnaireCompleted ? 'blur-[2px]' : 'group-hover:scale-105'
+                        !questionnaireCompleted
+                          ? 'blur-[2px]'
+                          : 'group-hover:scale-105'
                       }`}
                     />
 
@@ -101,7 +111,11 @@ export default function CoursesListPage() {
                         <p className="text-sm font-medium text-white mb-3">
                           Complete your assessment to enroll
                         </p>
-                        <Button size="sm" variant="secondary" asChild>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          asChild
+                        >
                           <Link href="/student/questionnaire">
                             Complete Assessment
                           </Link>
@@ -121,10 +135,14 @@ export default function CoursesListPage() {
 
                     <div className="mt-auto flex items-center justify-between pt-3">
                       <span className="font-semibold text-primary">
-                        {course.price === 0 ? 'Free' : `₹${course.price}`}
+                        {course.price === 0
+                          ? 'Free'
+                          : `₹${course.price}`}
                       </span>
                       <span className="text-xs text-muted-foreground">
-                        {questionnaireCompleted ? 'View details →' : 'Locked'}
+                        {questionnaireCompleted
+                          ? 'View details →'
+                          : 'Locked'}
                       </span>
                     </div>
                   </div>
