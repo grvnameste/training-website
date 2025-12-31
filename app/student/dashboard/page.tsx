@@ -1,3 +1,4 @@
+// app/student/dashboard/page.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -43,7 +44,6 @@ export default function StudentDashboard() {
         return
       }
 
-      // ✅ CHECK IF QUESTIONNAIRE IS COMPLETED
       const { data: result } = await supabase
         .from('questionnaire_results')
         .select('id')
@@ -53,9 +53,7 @@ export default function StudentDashboard() {
 
       setQuestionnaireCompleted(!!result)
 
-      // (optional) courses load later
       setCourses([])
-
       setLoading(false)
     }
 
@@ -82,85 +80,89 @@ export default function StudentDashboard() {
   })
 
   return (
-    <div className="space-y-10">
-      {/* Hero */}
-      <div className="rounded-3xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-6 py-8 text-white">
-        <p className="text-xs uppercase tracking-widest text-slate-300">
-          Dashboard
-        </p>
-        <h1 className="text-3xl font-semibold mt-2">
-          Welcome to your learning dashboard
-        </h1>
-        <p className="text-slate-300 mt-1">
-          Track progress and unlock your learning journey
-        </p>
-      </div>
+    <div className="relative min-h-screen px-4 py-10 bg-gradient-to-b from-[#0b0f2a] via-[#120c2f] to-background">
+      {/* glow */}
+      <div className="pointer-events-none absolute -top-40 -left-40 h-96 w-96 rounded-full bg-primary/30 blur-3xl" />
+      <div className="pointer-events-none absolute top-40 -right-40 h-96 w-96 rounded-full bg-purple-500/30 blur-3xl" />
 
-      {/* 🔒 LOCK CARD */}
-      {!questionnaireCompleted && (
-        <Card className="rounded-3xl border border-emerald-200 bg-emerald-50">
-          <CardContent className="p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <h2 className="text-xl font-semibold text-emerald-900">
-                Let’s get you set up 🚀
-              </h2>
-              <p className="text-sm text-emerald-800 max-w-xl mt-1">
-                Complete the questionnaire to unlock all features, courses,
-                and personalised learning paths.
-              </p>
-            </div>
+      <div className="relative mx-auto max-w-6xl space-y-10">
 
-            <Link href="/student/questionnaire">
-              <Button className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-full px-6">
-                Complete Questionnaire
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      )}
+        {/* HERO */}
+        <div className="rounded-3xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-8 py-10 text-white shadow-2xl">
+          <p className="text-xs uppercase tracking-widest text-slate-400">
+            Dashboard
+          </p>
+          <h1 className="text-3xl font-semibold mt-2">
+            Welcome to your learning dashboard
+          </h1>
+          <p className="text-slate-300 mt-1">
+            Track progress and unlock your learning journey
+          </p>
+        </div>
 
-      {/* Search & Filters */}
-      <Card className="rounded-2xl">
-        <CardContent className="pt-5 space-y-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <Input
-                placeholder="Search courses"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
+        {/* 🔒 QUESTIONNAIRE LOCK */}
+        {!questionnaireCompleted && (
+          <Card className="rounded-3xl border border-emerald-300/40 bg-emerald-50/90 backdrop-blur shadow-lg">
+            <CardContent className="p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-semibold text-emerald-900">
+                  Let’s get you set up 🚀
+                </h2>
+                <p className="text-sm text-emerald-800 max-w-xl mt-1">
+                  Complete the questionnaire to unlock all features.
+                </p>
+              </div>
+
+              <Link href="/student/questionnaire">
+                <Button className="rounded-full px-6 bg-emerald-600 hover:bg-emerald-700 text-white">
+                  Complete Questionnaire
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* SEARCH & FILTER */}
+        <Card className="rounded-3xl border bg-background/85 backdrop-blur shadow-xl">
+          <CardContent className="pt-6 space-y-4">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  placeholder="Search courses"
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  disabled={!questionnaireCompleted}
+                  className="pl-10 rounded-xl"
+                />
+              </div>
+
+              <select
                 disabled={!questionnaireCompleted}
-                className="pl-10"
-              />
+                value={priceFilter}
+                onChange={e => setPriceFilter(e.target.value)}
+                className="px-4 py-2 rounded-xl border text-sm bg-background"
+              >
+                <option value="all">All</option>
+                <option value="free">Free</option>
+                <option value="paid">Paid</option>
+              </select>
             </div>
-
-            <select
-              disabled={!questionnaireCompleted}
-              value={priceFilter}
-              onChange={e => setPriceFilter(e.target.value)}
-              className="px-3 py-2 rounded-xl border text-sm"
-            >
-              <option value="all">All</option>
-              <option value="free">Free</option>
-              <option value="paid">Paid</option>
-            </select>
-          </div>
-        </CardContent>
-      </Card>
-
-      {!questionnaireCompleted && (
-        <Card className="border-dashed border-2 rounded-3xl">
-          <CardContent className="pt-12 pb-12 text-center">
-            <BookOpen className="w-14 h-14 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold">
-              Complete questionnaire to unlock courses
-            </h3>
-            <p className="text-sm text-muted-foreground mt-1">
-              This helps us personalize your learning experience
-            </p>
           </CardContent>
         </Card>
-      )}
+
+        {/* EMPTY STATE */}
+        {!questionnaireCompleted && (
+          <Card className="border-dashed border-2 rounded-3xl bg-background/80 backdrop-blur">
+            <CardContent className="pt-14 pb-14 text-center">
+              <BookOpen className="w-14 h-14 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold">
+                Complete questionnaire to unlock courses
+              </h3>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   )
 }
