@@ -1,92 +1,129 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import supabase from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Plus, BookOpen, Users, Eye } from 'lucide-react'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import {
+  Plus,
+  BookOpen,
+  Pencil,
+} from 'lucide-react'
 
-interface Course {
+type Course = {
   id: string
   title: string
-  price: number
-  thumbnail: string
   description: string
-  enrollments: number
+  price: number
+  thumbnail_url: string | null
 }
 
 export default function TeacherDashboard() {
   const [courses, setCourses] = useState<Course[]>([])
+  const [loading, setLoading] = useState(true)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   useEffect(() => {
-    // Load courses from localStorage
-    const savedCourses = localStorage.getItem('lms_courses')
-    if (savedCourses) {
-      setCourses(JSON.parse(savedCourses))
+    const loadCourses = async () => {
+      setLoading(true)
+      setErrorMsg(null)
+
+      const { data: userData, error: userError } =
+        await supabase.auth.getUser()
+
+      if (userError || !userData.user) {
+        setErrorMsg('User not authenticated')
+        setLoading(false)
+        return
+      }
+
+      const { data, error } = await supabase
+        .from('courses')
+        .select('*')
+        .eq('teacher_id', userData.user.id)
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        setErrorMsg(error.message)
+        setCourses([])
+      } else {
+        setCourses(data || [])
+      }
+
+      setLoading(false)
     }
+
+    loadCourses()
   }, [])
 
+  /* Loading */
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 flex items-center justify-center">
+        <p className="text-blue-700">Loading your courses…</p>
+      </div>
+    )
+  }
+
+  /* Error */
+  if (errorMsg) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 flex items-center justify-center px-4">
+        <Card className="max-w-md w-full border-blue-100">
+          <CardContent className="py-12 text-center text-red-500">
+            {errorMsg}
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-bold text-foreground">My Courses</h1>
-          <p className="text-foreground/70 mt-2">Create and manage your online courses</p>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 py-12">
+      <div className="max-w-7xl mx-auto space-y-10 px-4">
+        {/* ===== Dashboard Header ===== */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 className="text-4xl font-extrabold tracking-tight text-blue-900">
+              Instructor Dashboard
+            </h1>
+            <p className="text-blue-700/70">
+              Manage and edit your courses
+            </p>
+          </div>
+
+          <Link href="/teacher/courses/create">
+            <Button
+              size="lg"
+              className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Create New Course
+            </Button>
+          </Link>
         </div>
-        <Link href="/teacher/courses/create">
-          <Button className="bg-primary hover:bg-primary/90 h-11 px-6">
-            <Plus className="w-5 h-5 mr-2" />
-            Create Course
-          </Button>
-        </Link>
-      </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-foreground/70">Total Courses</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-foreground">{courses.length}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-foreground/70">Total Students</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-foreground">
-              {courses.reduce((total, c) => total + c.enrollments, 0)}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-foreground/70">Total Revenue</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-primary">
-              ${courses.reduce((total, c) => total + c.price * c.enrollments, 0)}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Courses List */}
-      <div>
-        <h2 className="text-2xl font-bold text-foreground mb-6">Your Courses</h2>
+        {/* ===== Empty State ===== */}
         {courses.length === 0 ? (
-          <Card>
-            <CardContent className="pt-12 pb-12 text-center">
-              <BookOpen className="w-16 h-16 text-foreground/20 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-foreground mb-2">No courses yet</h3>
-              <p className="text-foreground/70 mb-6">
-                Create your first course to start teaching students
+          <Card className="border-blue-100 shadow-sm">
+            <CardContent className="py-20 text-center space-y-4">
+              <BookOpen className="mx-auto w-14 h-14 text-blue-400" />
+              <p className="text-xl font-semibold text-blue-900">
+                You haven’t created any courses yet
               </p>
+              <p className="text-sm text-blue-700/70 max-w-md mx-auto">
+                Start by creating your first course and share your
+                knowledge with students.
+              </p>
+
               <Link href="/teacher/courses/create">
-                <Button className="bg-primary hover:bg-primary/90">
+                <Button className="mt-4 bg-blue-600 hover:bg-blue-700 text-white">
                   <Plus className="w-4 h-4 mr-2" />
                   Create Course
                 </Button>
@@ -94,56 +131,60 @@ export default function TeacherDashboard() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {courses.map((course) => (
-              <CourseCard key={course.id} course={course} />
+          /* ===== Course Grid ===== */
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {courses.map(course => (
+              <Card
+                key={course.id}
+                className="border-blue-100 bg-white shadow-sm hover:shadow-lg transition"
+              >
+                {/* Thumbnail */}
+                <div className="h-40 bg-blue-100/40 flex items-center justify-center text-blue-700/60 text-sm rounded-t-xl overflow-hidden">
+                  {course.thumbnail_url ? (
+                    // future: next/image
+                    <img
+                      src={course.thumbnail_url}
+                      alt={course.title}
+                      className="object-cover w-full h-full"
+                    />
+                  ) : (
+                    'Course Thumbnail'
+                  )}
+                </div>
+
+                <CardContent className="space-y-3 pt-4">
+                  <h3 className="font-semibold text-lg text-blue-900 line-clamp-1">
+                    {course.title}
+                  </h3>
+
+                  <p className="text-sm text-blue-700/70 line-clamp-2">
+                    {course.description || 'No description provided'}
+                  </p>
+
+                  <div className="flex items-center justify-between pt-2">
+                    <span className="font-semibold text-blue-600">
+                      ₹{course.price}
+                    </span>
+
+                    <Link
+                      href={`/teacher/courses/${course.id}/edit`}
+                    >
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="hover:bg-blue-100"
+                      >
+                        <Pencil className="w-4 h-4 mr-1" />
+                        Manage
+                      </Button>
+                    </Link>
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         )}
       </div>
     </div>
-  )
-}
-
-function CourseCard({ course }: { course: Course }) {
-  return (
-    <Card className="overflow-hidden hover:shadow-lg transition-shadow">
-      {/* Thumbnail */}
-      <div className="w-full h-40 bg-primary/10 relative">
-        {course.thumbnail ? (
-          <img
-            src={course.thumbnail || "/placeholder.svg"}
-            alt={course.title}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <BookOpen className="w-12 h-12 text-primary/30" />
-          </div>
-        )}
-      </div>
-
-      <CardContent className="pt-4 space-y-3">
-        <div>
-          <h3 className="font-bold text-foreground line-clamp-2">{course.title}</h3>
-          <p className="text-2xl font-bold text-primary mt-1">${course.price}</p>
-        </div>
-
-        <p className="text-sm text-foreground/70 line-clamp-2">{course.description}</p>
-
-        <div className="flex items-center gap-4 text-sm text-foreground/60 pt-2">
-          <div className="flex items-center gap-1">
-            <Users className="w-4 h-4" />
-            {course.enrollments} students
-          </div>
-        </div>
-
-        <Link href={`/teacher/courses/${course.id}/edit`}>
-          <Button className="w-full bg-primary hover:bg-primary/90" size="sm">
-            Manage Course
-          </Button>
-        </Link>
-      </CardContent>
-    </Card>
   )
 }

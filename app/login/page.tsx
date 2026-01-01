@@ -3,8 +3,8 @@
 export const dynamic = 'force-dynamic'
 
 import { useState } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import supabase from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import {
@@ -39,7 +39,16 @@ export default function LoginPage() {
     })
 
     if (error) {
-      setError(error.message)
+      // ✅ Not registered / wrong credentials handling
+      if (
+        error.message.toLowerCase().includes('invalid') ||
+        error.message.toLowerCase().includes('not found') ||
+        error.message.toLowerCase().includes('credentials')
+      ) {
+        setError("Don’t have an account. Please register.")
+      } else {
+        setError(error.message)
+      }
       setLoading(false)
       return
     }
@@ -51,6 +60,18 @@ export default function LoginPage() {
       setError('Login failed. Try again.')
       setLoading(false)
       return
+    }
+
+    /* 🔥 STORE LOGIN ACTIVITY */
+    const { error: activityError } = await supabase
+      .from('student_activity')
+      .insert({
+        student_id: session.user.id,
+        type: 'LOGIN',
+      })
+
+    if (activityError) {
+      console.error('Login activity insert failed:', activityError.message)
     }
 
     // ✅ ONLY TRUST METADATA
@@ -81,76 +102,115 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
-      <Card className="w-full max-w-md rounded-2xl shadow-lg">
-        <CardHeader className="text-center space-y-2">
-          <div className="mx-auto w-12 h-12 bg-teal-600 rounded-xl flex items-center justify-center">
-            <BookOpen className="text-white w-6 h-6" />
+    <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-b from-[#0b0f2a] via-[#120c2f] to-background px-4 overflow-hidden">
+      {/* glow */}
+      <div className="absolute -top-40 -left-40 h-96 w-96 rounded-full bg-primary/30 blur-3xl" />
+      <div className="absolute top-40 -right-40 h-96 w-96 rounded-full bg-purple-500/30 blur-3xl" />
+
+      <Card className="relative w-full max-w-md rounded-3xl border bg-background/85 backdrop-blur shadow-2xl">
+        <CardHeader className="text-center space-y-3">
+          <div className="mx-auto w-14 h-14 rounded-2xl bg-primary flex items-center justify-center shadow-lg">
+            <BookOpen className="text-primary-foreground w-7 h-7" />
           </div>
-          <CardTitle className="text-2xl">Welcome Back</CardTitle>
+          <CardTitle className="text-2xl font-bold">
+            Welcome Back
+          </CardTitle>
           <CardDescription>
             Sign in to continue learning on ReadNRevise
           </CardDescription>
         </CardHeader>
 
-        <CardContent className="space-y-5">
+        <CardContent className="space-y-6">
           {error && (
-            <div className="text-sm text-red-600 bg-red-50 p-2 rounded-lg text-center">
+            <div className="text-sm text-red-600 bg-red-50 p-3 rounded-xl text-center">
               {error}
+              {error === "Don’t have an account. Please register." && (
+                <div className="mt-2">
+                  <Button
+                    variant="link"
+                    className="p-0 text-teal-600"
+                    onClick={() => router.push('/register')}
+                  >
+                    Go to Register
+                  </Button>
+                </div>
+              )}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Email */}
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="email"
-                placeholder="Email"
-                className="pl-10"
+                className="pl-9 rounded-xl"
+                placeholder="Email address"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
               />
             </div>
 
+            {/* Password */}
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="password"
+                className="pl-9 rounded-xl"
                 placeholder="Password"
-                className="pl-10"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required
               />
             </div>
 
-            <Button className="w-full" disabled={loading}>
+            <Button
+              className="w-full rounded-full py-5"
+              disabled={loading}
+            >
               {loading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
 
           <div className="flex items-center gap-3">
-            <hr className="flex-1" />
+            <hr className="flex-1 border-muted" />
             <span className="text-xs text-muted-foreground">OR</span>
-            <hr className="flex-1" />
+            <hr className="flex-1 border-muted" />
           </div>
 
-          <Button variant="outline" className="w-full" onClick={() => loginWithProvider('google')}>
-            <FaGoogle /> Continue with Google
-          </Button>
+          <div className="space-y-2">
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => loginWithProvider('google')}
+            >
+              <FaGoogle /> Continue with Google
+            </Button>
 
-          <Button variant="outline" className="w-full" onClick={() => loginWithProvider('github')}>
-            <Github /> Continue with GitHub
-          </Button>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => loginWithProvider('github')}
+            >
+              <Github /> Continue with GitHub
+            </Button>
 
-          <Button variant="outline" className="w-full" onClick={() => loginWithProvider('linkedin')}>
-            <Linkedin /> Continue with LinkedIn
-          </Button>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => loginWithProvider('linkedin')}
+            >
+              <Linkedin /> Continue with LinkedIn
+            </Button>
+          </div>
 
-          <p className="text-center text-sm">
+          <p className="text-center text-sm text-muted-foreground">
             Don’t have an account?{' '}
-            <Link href="/register" className="text-teal-600 font-medium">
+            <Link
+              href="/register"
+              className="text-primary font-medium hover:underline"
+            >
               Register
             </Link>
           </p>
