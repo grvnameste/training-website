@@ -9,19 +9,41 @@ export default function AuthCallback() {
 
   useEffect(() => {
     const handleAuth = async () => {
-      const { data } = await supabase.auth.getSession()
-      const session = data.session
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
 
       if (!session) {
         router.replace('/login')
         return
       }
 
-      // ✅ ONLY SOURCE OF TRUTH
-      const role = session.user.user_metadata?.role
+      const user = session.user
+      let role = user.user_metadata?.role
 
-      console.log('CALLBACK ROLE:', role) // debug
+      /* ===============================
+         FIX: SET ROLE FOR OAUTH USERS
+      =============================== */
+      if (!role) {
+        const adminEmail =
+          process.env.NEXT_PUBLIC_ADMIN_EMAIL
+            ?.trim()
+            .toLowerCase()
 
+        role =
+          user.email?.toLowerCase() === adminEmail
+            ? 'teacher'
+            : 'student'
+
+        // 🔥 IMPORTANT: persist role
+        await supabase.auth.updateUser({
+          data: { role },
+        })
+      }
+
+      /* ===============================
+         REDIRECT BY ROLE
+      =============================== */
       if (role === 'teacher') {
         router.replace('/teacher/dashboard')
       } else {
@@ -32,5 +54,9 @@ export default function AuthCallback() {
     handleAuth()
   }, [router])
 
-  return <p>Logging you in...</p>
+  return (
+    <div className="h-screen flex items-center justify-center">
+      Logging you in...
+    </div>
+  )
 }
