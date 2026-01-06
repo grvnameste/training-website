@@ -12,11 +12,19 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { ArrowLeft, Lock, CheckCircle } from 'lucide-react'
+import {
+  ArrowLeft,
+  Lock,
+  FileText,
+  MessageCircle,
+  PenTool,
+  Code,
+  TestTube,
+  Cloud,
+  RotateCcw,
+} from 'lucide-react'
 
-/* =======================
-   TYPES
-======================= */
+/* ======================= TYPES ======================= */
 interface CapstoneProject {
   id: string
   title: string
@@ -26,59 +34,49 @@ interface CapstoneProject {
 interface StudentCapstoneProgress {
   id: string
   current_stage: number
-  is_approved: boolean
-  trello_board_url: string | null
+  submitted_for_review: boolean
 }
 
-/* =======================
-   PAGE
-======================= */
+/* ======================= SDLC STAGES ======================= */
+const STAGES = [
+  { id: 1, title: 'Requirement Gathering', icon: FileText },
+  { id: 2, title: 'Clarification & Backlog', icon: MessageCircle },
+  { id: 3, title: 'System Design', icon: PenTool },
+  { id: 4, title: 'Development', icon: Code },
+  { id: 5, title: 'Testing', icon: TestTube },
+  { id: 6, title: 'Deployment', icon: Cloud },
+  { id: 7, title: 'Retrospective', icon: RotateCcw },
+]
+
 export default function CapstonePage() {
   const params = useParams()
   const router = useRouter()
   const courseId = params.id as string
 
   const [loading, setLoading] = useState(true)
-  const [actionLoading, setActionLoading] = useState(false)
-  const [capstone, setCapstone] =
-    useState<CapstoneProject | null>(null)
+  const [capstone, setCapstone] = useState<CapstoneProject | null>(null)
   const [progress, setProgress] =
     useState<StudentCapstoneProgress | null>(null)
 
-  /* =======================
-     LOAD DATA
-  ======================= */
+  /* ======================= LOAD DATA ======================= */
   useEffect(() => {
     const load = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return router.push('/login')
 
-      if (!session) {
-        router.push('/login')
-        return
-      }
-
-      /* 1️⃣ Get capstone for course */
       const { data: capstoneData } = await supabase
         .from('capstone_projects')
         .select('id, title, description')
         .eq('course_id', courseId)
         .maybeSingle()
 
-      if (!capstoneData) {
-        setLoading(false)
-        return
-      }
+      if (!capstoneData) return setLoading(false)
 
       setCapstone(capstoneData)
 
-      /* 2️⃣ Get student progress (STRICT: one row only) */
       const { data: progressData } = await supabase
         .from('student_capstone_progress')
-        .select(
-          'id, current_stage, is_approved, trello_board_url'
-        )
+        .select('id, current_stage, submitted_for_review')
         .eq('student_id', session.user.id)
         .eq('capstone_id', capstoneData.id)
         .maybeSingle()
@@ -90,91 +88,43 @@ export default function CapstonePage() {
     load()
   }, [courseId, router])
 
-  /* =======================
-     ACTIONS
-  ======================= */
+  /* ======================= START CAPSTONE ======================= */
   const startCapstone = async () => {
     if (!capstone) return
 
-    setActionLoading(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      setActionLoading(false)
-      return
-    }
-
-    /**
-     * ✅ IMPORTANT FIX
-     * - UPSERT instead of INSERT
-     * - Prevents duplicate progress rows
-     * - Idempotent (safe on double click / refresh)
-     */
-    const { error } = await supabase
+    const { data } = await supabase
       .from('student_capstone_progress')
       .upsert(
         {
           student_id: user.id,
           capstone_id: capstone.id,
           current_stage: 1,
-          is_approved: false,
+          submitted_for_review: false,
         },
-        {
-          onConflict: 'student_id,capstone_id',
-        }
+        { onConflict: 'student_id,capstone_id' }
       )
+      .select()
+      .single()
 
-    if (error) {
-      alert(error.message)
-      setActionLoading(false)
-      return
-    }
-
-    router.push(`/student/capstone/${capstone.id}/stage/1`)
+    // 🔥 KEY FIX: show SDLC flow immediately
+    setProgress(data)
   }
 
-  /* =======================
-     UI STATES
-  ======================= */
   if (loading) {
     return (
       <div className="flex justify-center py-20">
-        <div className="h-10 w-10 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+        <div className="h-10 w-10 animate-spin border-2 border-primary border-t-transparent rounded-full" />
       </div>
     )
   }
 
-  if (!capstone) {
-    return (
-      <div className="max-w-3xl mx-auto space-y-6">
-        <Link href={`/student/courses/${courseId}`}>
-          <Button variant="outline">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Course
-          </Button>
-        </Link>
+  if (!capstone) return null
 
-        <Card>
-          <CardHeader>
-            <CardTitle>No Capstone Project</CardTitle>
-            <CardDescription>
-              This course does not include a capstone project.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    )
-  }
-
-  /* =======================
-     MAIN UI
-  ======================= */
   return (
     <div className="max-w-4xl mx-auto space-y-8">
-      {/* BACK */}
       <Link href={`/student/courses/${courseId}`}>
         <Button variant="ghost" size="sm">
           <ArrowLeft className="w-4 h-4 mr-2" />
@@ -182,100 +132,78 @@ export default function CapstonePage() {
         </Button>
       </Link>
 
-      {/* CAPSTONE INFO */}
       <Card>
         <CardHeader>
           <CardTitle>{capstone.title}</CardTitle>
           <CardDescription>{capstone.description}</CardDescription>
         </CardHeader>
-
-        <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            This capstone project follows the Software Development
-            Life Cycle (SDLC)
-          </p>
-
-          <ul className="list-disc ml-6 text-sm space-y-1">
-            <li>Requirement Gathering</li>
-            <li>Requirement Clarification & Approval</li>
-            <li>System Design</li>
-            <li>Development</li>
-            <li>Testing</li>
-            <li>Deployment</li>
-            <li>Retrospective</li>
-          </ul>
-        </CardContent>
       </Card>
 
-      {/* FIRST TIME */}
       {!progress && (
         <Card>
           <CardContent className="pt-6">
-            <Button
-              className="w-full"
-              onClick={startCapstone}
-              disabled={actionLoading}
-            >
-              {actionLoading
-                ? 'Starting...'
-                : 'Start Capstone Project'}
+            <Button className="w-full" onClick={startCapstone}>
+              Start Capstone Project
             </Button>
           </CardContent>
         </Card>
       )}
 
-      {/* EXISTING PROGRESS */}
+      {/* ======================= SDLC FLOW (ALWAYS AFTER START) ======================= */}
       {progress && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Your Progress</CardTitle>
-          </CardHeader>
+        <div className="space-y-6">
+          {STAGES.map(stage => {
+            const Icon = stage.icon
 
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-2 text-sm">
-              <CheckCircle className="h-4 w-4 text-green-600" />
-              Current Stage: {progress.current_stage}
-            </div>
+            const isCompleted = progress.current_stage > stage.id
+            const isCurrent = progress.current_stage === stage.id
 
-            {/* STAGE 1 LOCK */}
-            {progress.current_stage === 1 &&
-              !progress.is_approved && (
-                <div className="flex items-center gap-2 text-sm text-orange-600">
-                  <Lock className="h-4 w-4" />
-                  Requirement document pending approval
+            const isLocked =
+              progress.current_stage < stage.id ||
+              (stage.id === progress.current_stage + 1 &&
+                progress.submitted_for_review)
+
+            return (
+              <Card key={stage.id} className="flex items-center gap-4 p-4">
+                <div
+                  className={`h-12 w-12 rounded-lg flex items-center justify-center ${
+                    isCompleted
+                      ? 'bg-green-500'
+                      : isCurrent
+                      ? 'bg-primary'
+                      : 'bg-muted'
+                  }`}
+                >
+                  <Icon className="h-6 w-6 text-white" />
                 </div>
-              )}
 
-            {/* TRELLO ACCESS */}
-            {progress.is_approved &&
-              progress.trello_board_url &&
-              progress.current_stage >= 2 && (
-                <Button
-                className="w-full"
-                onClick={() => {
-                  if (!progress.trello_board_url) return
-                  window.open(progress.trello_board_url, '_blank')
-                }}
-              >
-                Access Your Trello Board
-              </Button>
-              
-              )}
+                <div className="flex-1">
+                  <p className="font-semibold">
+                    Step {stage.id}: {stage.title}
+                  </p>
+                </div>
 
-            {/* CONTINUE */}
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() =>
-                router.push(
-                  `/student/capstone/${capstone.id}/stage/${progress.current_stage}`
-                )
-              }
-            >
-              Continue Capstone Work
-            </Button>
-          </CardContent>
-        </Card>
+                {!isLocked ? (
+                  <Button
+                    size="sm"
+                    onClick={() =>
+                      router.push(
+                        `/student/capstone/${capstone.id}/stage/${stage.id}`
+                      )
+                    }
+                  >
+                    {isCompleted ? 'View' : 'Continue'}
+                  </Button>
+                ) : (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Lock className="h-4 w-4" />
+                    Locked
+                  </div>
+                )}
+              </Card>
+            )
+          })}
+        </div>
       )}
     </div>
   )
