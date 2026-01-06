@@ -73,6 +73,25 @@ export async function POST(req: Request) {
         .eq('id', item.progress_id)
     }
 
+    /* ================= STAGE 3 ================= */
+    if (item.current_stage === 3) {
+      // ✅ Approve all uploaded files for stage 3
+      await supabase
+        .from('stage3_submissions')
+        .update({ approved: true })
+        .eq('student_id', item.student_id)
+        .eq('capstone_id', item.capstone_id)
+
+      // ✅ Move student to Stage 4
+      await supabase
+        .from('student_capstone_progress')
+        .update({
+          current_stage: 4,
+          submitted_for_review: false,
+        })
+        .eq('id', item.progress_id)
+    }
+
     return NextResponse.json({ success: true })
   } catch (err) {
     console.error(err)

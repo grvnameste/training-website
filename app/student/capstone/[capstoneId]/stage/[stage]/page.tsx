@@ -29,6 +29,7 @@ export default function CapstoneStagePage() {
 
   const [allowed, setAllowed] = useState(false)
   const [file, setFile] = useState<File | null>(null)
+  const [files, setFiles] = useState<File[]>([])
   const [loading, setLoading] = useState(false)
 
   const [submitted, setSubmitted] = useState(false)
@@ -144,14 +145,14 @@ export default function CapstoneStagePage() {
   }, [trelloBoardId, stage])
 
   /* ======================
-     STAGE 1 UPLOAD (FIXED)
+     STAGE 1 UPLOAD
   ====================== */
   const handleUpload = async () => {
     if (!file) return alert('Select a file')
 
     setLoading(true)
-
     const { data: { user } } = await supabase.auth.getUser()
+
     const ext = file.name.split('.').pop()
     const path = `${capstoneId}/${user!.id}/requirement.${ext}`
 
@@ -173,21 +174,19 @@ export default function CapstoneStagePage() {
       { onConflict: 'student_id,capstone_id' }
     )
 
-    // ✅ IMPORTANT FIX: send to teacher approval
     await supabase
       .from('student_capstone_progress')
       .update({ submitted_for_review: true })
       .eq('student_id', user!.id)
       .eq('capstone_id', capstoneId)
 
-    alert('Submitted for teacher approval')
     setSubmitted(true)
     setApproved(false)
     setLoading(false)
   }
 
   /* ======================
-     SUBMIT STAGE 2
+     STAGE 2 SUBMIT
   ====================== */
   const submitStage2 = async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -200,6 +199,32 @@ export default function CapstoneStagePage() {
       .eq('capstone_id', capstoneId)
 
     setSubmittedForReview(true)
+  }
+
+  /* ======================
+     STAGE 3 FILE SUBMIT
+  ====================== */
+  const submitStage3 = async () => {
+    if (files.length === 0) return alert('Select files')
+
+    setLoading(true)
+    const { data: { user } } = await supabase.auth.getUser()
+
+    for (const file of files) {
+      const path = `${capstoneId}/${user!.id}/stage3/${Date.now()}-${file.name}`
+      await supabase.storage
+        .from('capstone-submissions')
+        .upload(path, file)
+    }
+
+    await supabase
+      .from('student_capstone_progress')
+      .update({ submitted_for_review: true })
+      .eq('student_id', user!.id)
+      .eq('capstone_id', capstoneId)
+
+    setSubmittedForReview(true)
+    setLoading(false)
   }
 
   if (!allowed) {
@@ -217,7 +242,7 @@ export default function CapstoneStagePage() {
         Back
       </Button>
 
-      {/* STAGE 1 */}
+      {/* ================= STAGE 1 ================= */}
       {stage === 1 && (
         <Card>
           <CardHeader>
@@ -251,7 +276,7 @@ export default function CapstoneStagePage() {
         </Card>
       )}
 
-      {/* STAGE 2 */}
+      {/* ================= STAGE 2 ================= */}
       {stage === 2 && (
         <Card>
           <CardHeader>
@@ -293,17 +318,51 @@ export default function CapstoneStagePage() {
         </Card>
       )}
 
-      {/* STAGE 3 */}
+      {/* ================= STAGE 3 ================= */}
       {stage === 3 && (
         <Card>
           <CardHeader>
             <CardTitle>Stage 3: GitHub Development</CardTitle>
+            <CardDescription>
+              Push code & submit build files
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Button className="w-full">
+
+          <CardContent className="space-y-4">
+            <Button
+              className="w-full"
+              onClick={() =>
+                window.open('https://github.com/ReadNRevise', '_blank')
+              }
+            >
               <Github className="w-4 h-4 mr-2" />
-              Submit for Review
+              Go to GitHub Repository
             </Button>
+
+            {!submittedForReview ? (
+              <>
+                <input
+                  type="file"
+                  multiple
+                  onChange={e =>
+                    setFiles(Array.from(e.target.files || []))
+                  }
+                />
+                <Button
+                  className="w-full"
+                  onClick={submitStage3}
+                  disabled={loading}
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  Submit Files for Approval
+                </Button>
+              </>
+            ) : (
+              <div className="flex items-center gap-2 text-orange-600 text-sm">
+                <Lock className="w-4 h-4" />
+                Submitted for review. Waiting for teacher approval.
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
