@@ -133,12 +133,14 @@ export default function CapstoneStagePage() {
     return () => clearInterval(interval)
   }, [trelloBoardId, stage])
 
-  /* ================= ACTIONS ================= */
+  /* ======================
+     STAGE 1 UPLOAD
+  ====================== */
   const handleUpload = async () => {
     if (!file) return alert('Select a file')
     setLoading(true)
-
     const { data: { user } } = await supabase.auth.getUser()
+
     const ext = file.name.split('.').pop()
     const path = `${capstoneId}/${user!.id}/requirement.${ext}`
 
@@ -171,6 +173,9 @@ export default function CapstoneStagePage() {
     setLoading(false)
   }
 
+  /* ======================
+     STAGE 2 SUBMIT
+  ====================== */
   const submitStage2 = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
@@ -184,15 +189,20 @@ export default function CapstoneStagePage() {
     setSubmittedForReview(true)
   }
 
+  /* ======================
+     STAGE 3 FILE SUBMIT
+  ====================== */
   const submitStage3 = async () => {
     if (files.length === 0) return alert('Select files')
-    setLoading(true)
 
+    setLoading(true)
     const { data: { user } } = await supabase.auth.getUser()
 
     for (const file of files) {
       const path = `${capstoneId}/${user!.id}/stage3/${Date.now()}-${file.name}`
-      await supabase.storage.from('capstone-submissions').upload(path, file)
+      await supabase.storage
+        .from('capstone-submissions')
+        .upload(path, file)
     }
 
     await supabase
@@ -224,6 +234,7 @@ export default function CapstoneStagePage() {
         Back
       </Button>
 
+      {/* ================= STAGE 1 ================= */}
       {/* ================= STAGE 1 ================= */}
       {stage === 1 && (
         <Card className="bg-white/5 border border-white/10 rounded-3xl backdrop-blur">
@@ -294,6 +305,7 @@ export default function CapstoneStagePage() {
       )}
 
       {/* ================= STAGE 2 ================= */}
+      {/* ================= STAGE 2 ================= */}
       {stage === 2 && (
         <Card className="bg-white/5 border border-white/10 rounded-3xl backdrop-blur">
           <CardHeader className="bg-white/10 border-b border-white/10 rounded-t-3xl">
@@ -340,19 +352,17 @@ export default function CapstoneStagePage() {
       )}
 
       {/* ================= STAGE 3 ================= */}
+      {/* ================= STAGE 3 ================= */}
       {stage === 3 && (
-        <Card className="bg-white/5 border border-white/10 rounded-3xl backdrop-blur">
-          <CardHeader className="bg-white/10 border-b border-white/10 rounded-t-3xl">
-            <CardTitle className="flex items-center gap-2 text-white font-bold text-lg">
-              <Code2 className="w-6 h-6 text-teal-300" />
-              Stage 3: Development & Submission
-            </CardTitle>
-            <CardDescription className="text-white/70">
-              Push code to GitHub & upload build files
+        <Card>
+          <CardHeader>
+            <CardTitle>Stage 3: GitHub Development</CardTitle>
+            <CardDescription>
+              Push code & submit build files
             </CardDescription>
           </CardHeader>
 
-          <CardContent className="space-y-5">
+          <CardContent className="space-y-4">
             <Button
               className="w-full"
               onClick={() =>
@@ -360,53 +370,32 @@ export default function CapstoneStagePage() {
               }
             >
               <Github className="w-4 h-4 mr-2" />
-              Open GitHub Repository
+              Go to GitHub Repository
             </Button>
 
             {!submittedForReview ? (
               <>
-                <label className="flex flex-col items-center justify-center border-2 border-dashed border-white/20 rounded-xl p-8 text-center cursor-pointer hover:border-teal-400 transition">
-                  <Upload className="w-10 h-10 text-teal-400 mb-3" />
-                  <p className="text-sm text-white/90">
-                    <span className="text-teal-300 font-medium">
-                      Click to upload
-                    </span>{' '}
-                    or drag & drop
-                  </p>
-                  <p className="text-xs text-white/60 mt-1">
-                    Multiple files allowed
-                  </p>
-
-                  <input
-                    type="file"
-                    multiple
-                    className="hidden"
-                    onChange={e =>
-                      setFiles(Array.from(e.target.files || []))
-                    }
-                  />
-                </label>
-
-                {files.length > 0 && (
-                  <p className="text-sm text-teal-300">
-                    {files.length} file(s) selected
-                  </p>
-                )}
-
+                <input
+                  type="file"
+                  multiple
+                  onChange={e =>
+                    setFiles(Array.from(e.target.files || []))
+                  }
+                />
                 <Button
-                  className="w-full bg-teal-400 text-black hover:bg-teal-300"
+                  className="w-full"
                   onClick={submitStage3}
                   disabled={loading}
                 >
                   <Upload className="w-4 h-4 mr-2" />
-                  Submit for Approval
+                  Submit Files for Approval
                 </Button>
               </>
             ) : (
-              <p className="flex gap-2 text-yellow-400 text-sm">
+              <div className="flex items-center gap-2 text-orange-600 text-sm">
                 <Lock className="w-4 h-4" />
-                Waiting for teacher approval
-              </p>
+                Submitted for review. Waiting for teacher approval.
+              </div>
             )}
           </CardContent>
         </Card>
