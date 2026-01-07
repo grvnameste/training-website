@@ -1,12 +1,9 @@
-//app/student/courses/page.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import supabase from '@/lib/supabase/client'
 import { Card, CardContent } from '@/components/ui/card'
-import { Lock } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 
 interface Course {
   id: string
@@ -19,35 +16,12 @@ interface Course {
 export default function CoursesListPage() {
   const [courses, setCourses] = useState<Course[]>([])
   const [loading, setLoading] = useState(true)
-  const [questionnaireCompleted, setQuestionnaireCompleted] =
-    useState(false)
 
   useEffect(() => {
-    const init = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-
-      if (!session) {
-        setLoading(false)
-        return
-      }
-
-      /* ✅ Check questionnaire */
-      const { data: result } = await supabase
-        .from('questionnaire_results')
-        .select('id')
-        .eq('user_id', session.user.id)
-        .maybeSingle()
-
-      setQuestionnaireCompleted(!!result)
-
-      /* ✅ FETCH COURSES (FIXED COLUMN NAME) */
+    const loadCourses = async () => {
       const { data, error } = await supabase
         .from('courses')
-        .select(
-          'id, title, price, description, thumbnail_url'
-        )
+        .select('id, title, price, description, thumbnail_url')
         .order('created_at', { ascending: false })
 
       if (error) {
@@ -60,7 +34,7 @@ export default function CoursesListPage() {
       setLoading(false)
     }
 
-    init()
+    loadCourses()
   }, [])
 
   if (loading) {
@@ -87,42 +61,23 @@ export default function CoursesListPage() {
 
         {/* COURSES GRID */}
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {courses.map(course => {
-            const CardUI = (
+          {courses.map(course => (
+            <Link
+              key={course.id}
+              href={`/student/courses/${course.id}`}
+              className="block h-full"
+            >
               <Card className="group h-full overflow-hidden rounded-3xl border bg-background/85 backdrop-blur shadow-xl transition hover:-translate-y-1 hover:shadow-2xl">
                 <CardContent className="p-0 flex flex-col h-full">
                   {/* Thumbnail */}
                   <div className="relative w-full aspect-video overflow-hidden">
                     <img
                       src={
-                        course.thumbnail_url ||
-                        '/placeholder.svg'
+                        course.thumbnail_url || '/placeholder.svg'
                       }
                       alt={course.title}
-                      className={`w-full h-full object-cover transition duration-300 ${
-                        !questionnaireCompleted
-                          ? 'blur-[2px]'
-                          : 'group-hover:scale-105'
-                      }`}
+                      className="w-full h-full object-cover transition duration-300 group-hover:scale-105"
                     />
-
-                    {!questionnaireCompleted && (
-                      <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-center px-4">
-                        <Lock className="w-8 h-8 text-white mb-2" />
-                        <p className="text-sm font-medium text-white mb-3">
-                          Complete your assessment to enroll
-                        </p>
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          asChild
-                        >
-                          <Link href="/student/questionnaire">
-                            Complete Assessment
-                          </Link>
-                        </Button>
-                      </div>
-                    )}
                   </div>
 
                   {/* Content */}
@@ -141,30 +96,14 @@ export default function CoursesListPage() {
                           : `₹${course.price}`}
                       </span>
                       <span className="text-xs text-muted-foreground">
-                        {questionnaireCompleted
-                          ? 'View details →'
-                          : 'Locked'}
+                        View details →
                       </span>
                     </div>
                   </div>
                 </CardContent>
               </Card>
-            )
-
-            return questionnaireCompleted ? (
-              <Link
-                key={course.id}
-                href={`/student/courses/${course.id}`}
-                className="block h-full"
-              >
-                {CardUI}
-              </Link>
-            ) : (
-              <div key={course.id} className="h-full">
-                {CardUI}
-              </div>
-            )
-          })}
+            </Link>
+          ))}
         </div>
       </div>
     </div>
