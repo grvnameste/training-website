@@ -1,4 +1,4 @@
-//app/student/courses/[id]/page.tsx
+// app/student/courses/[id]/page.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -13,12 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import {
-  ArrowLeft,
-  ArrowRight,
-  Play,
-  BookOpen,
-} from 'lucide-react'
+import { ArrowLeft, BookOpen } from 'lucide-react'
 
 /* =======================
    TYPES
@@ -30,8 +25,6 @@ interface Lesson {
 
 interface Course {
   id: string
-  title: string
-  description: string
   price: number
   thumbnail_url: string | null
   lessons: Lesson[]
@@ -58,17 +51,13 @@ export default function CourseDetailPage() {
   useEffect(() => {
     const loadCourse = async () => {
       /* 1️⃣ Course */
-      const { data: courseData, error: courseError } =
-        await supabase
-          .from('courses')
-          .select(
-            'id, title, description, price, thumbnail_url',
-          )
-          .eq('id', courseId)
-          .single()
+      const { data: courseData, error } = await supabase
+        .from('courses')
+        .select('id, price, thumbnail_url')
+        .eq('id', courseId)
+        .single()
 
-      if (courseError || !courseData) {
-        console.error(courseError)
+      if (error || !courseData) {
         setLoading(false)
         return
       }
@@ -79,21 +68,17 @@ export default function CourseDetailPage() {
         .select('id')
         .eq('course_id', courseId)
 
-      const sectionIds =
-        sections?.map(s => s.id) || []
+      const sectionIds = sections?.map(s => s.id) || []
 
       /* 3️⃣ Lessons */
       let lessons: Lesson[] = []
 
       if (sectionIds.length > 0) {
-        const { data: lessonData } =
-          await supabase
-            .from('lessons')
-            .select('id, title')
-            .in('section_id', sectionIds)
-            .order('order_index', {
-              ascending: true,
-            })
+        const { data: lessonData } = await supabase
+          .from('lessons')
+          .select('id, title')
+          .in('section_id', sectionIds)
+          .order('order_index', { ascending: true })
 
         lessons = lessonData || []
       }
@@ -105,10 +90,7 @@ export default function CourseDetailPage() {
         .eq('course_id', courseId)
         .maybeSingle()
 
-      setCourse({
-        ...courseData,
-        lessons,
-      })
+      setCourse({ ...courseData, lessons })
       setCapstone(capstoneData || null)
       setLoading(false)
     }
@@ -128,9 +110,7 @@ export default function CourseDetailPage() {
   if (!course) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-semibold">
-          Course not found
-        </h1>
+        <h1 className="text-2xl font-semibold">Course not found</h1>
         <Link href="/student/courses">
           <Button variant="outline">
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -146,28 +126,24 @@ export default function CourseDetailPage() {
   return (
     <div className="space-y-8">
       {/* Top bar */}
-      <div className="flex items-center justify-between">
+      <div>
         <Link href="/student/courses">
           <Button variant="outline" className="rounded-full px-4">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Courses
           </Button>
         </Link>
-
-        <p className="text-sm text-foreground/70 hidden md:block">
-          Course detail
-        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* LEFT */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Thumbnail */}
+          {/* Thumbnail only */}
           <div className="aspect-video rounded-2xl overflow-hidden border bg-black">
             {course.thumbnail_url ? (
               <img
                 src={course.thumbnail_url}
-                alt={course.title}
+                alt="Course thumbnail"
                 className="w-full h-full object-cover"
               />
             ) : (
@@ -177,72 +153,17 @@ export default function CourseDetailPage() {
             )}
           </div>
 
-          {/* Title */}
-          <div>
-            <h1 className="text-2xl md:text-3xl font-semibold">
-              {course.title}
-            </h1>
-            <p className="text-foreground/70 mt-2">
-              {course.description}
-            </p>
-          </div>
-
-          {/* Lessons */}
-          {course.lessons.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Course Lessons</CardTitle>
-                <CardDescription>
-                  {course.lessons.length} lessons
-                </CardDescription>
-              </CardHeader>
-
-              <CardContent className="space-y-3">
-                {course.lessons.map((lesson, index) => (
-                  <Link
-                    key={lesson.id}
-                    href={`/student/courses/${courseId}/play/${lesson.id}`}
-                  >
-                    <div className="flex items-center gap-4 p-4 border rounded-xl hover:bg-muted transition">
-                      <div className="w-11 h-11 bg-primary rounded-lg flex items-center justify-center">
-                        <Play className="w-5 h-5 text-primary-foreground" />
-                      </div>
-
-                      <div className="flex-1">
-                        <p className="font-medium">
-                          Lesson {index + 1}: {lesson.title}
-                        </p>
-                      </div>
-
-                      <ArrowRight className="w-4 h-4 text-primary" />
-                    </div>
-                  </Link>
-                ))}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* ================= CAPSTONE ================= */}
+          {/* CAPSTONE */}
           {capstone && (
             <Card className="border-2 border-dashed border-primary/40 bg-primary/5">
               <CardHeader>
                 <CardTitle>🚀 Capstone Project</CardTitle>
                 <CardDescription>
-                  Apply what you learned by building a real-world project
+                  Real-world project based learning
                 </CardDescription>
               </CardHeader>
 
-              <CardContent className="space-y-4">
-                <ul className="list-disc ml-5 text-sm text-foreground/70 space-y-1">
-                  <li>Requirement Gathering</li>
-                  <li>Requirement Clarification & Approval</li>
-                  <li>System Design</li>
-                  <li>Development</li>
-                  <li>Testing</li>
-                  <li>Deployment</li>
-                  <li>Retrospective</li>
-                </ul>
-
+              <CardContent>
                 <Link href={`/student/courses/${courseId}/capstone`}>
                   <Button className="w-full">
                     Start Capstone Project
@@ -258,13 +179,9 @@ export default function CourseDetailPage() {
           <Card className="sticky top-24">
             <CardHeader>
               <CardTitle className="text-3xl text-primary">
-                {course.price === 0
-                  ? 'Free'
-                  : `₹${course.price}`}
+                {course.price === 0 ? 'Free' : `₹${course.price}`}
               </CardTitle>
-              <CardDescription>
-                Lifetime access
-              </CardDescription>
+              <CardDescription>Lifetime access</CardDescription>
             </CardHeader>
 
             <CardContent className="space-y-4">
@@ -280,12 +197,6 @@ export default function CourseDetailPage() {
                   Start Learning
                 </Button>
               )}
-
-              <ul className="text-sm text-foreground/70 space-y-1">
-                <li>✓ {course.lessons.length} lessons</li>
-                <li>✓ Lifetime access</li>
-                <li>✓ Certificate</li>
-              </ul>
             </CardContent>
           </Card>
         </div>
