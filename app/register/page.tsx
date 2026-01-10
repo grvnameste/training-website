@@ -150,17 +150,17 @@ export default function RegisterPage() {
               Create Account
             </Button>
           </form>
-
-          <div className="flex items-center gap-3">
+          
+          <div className="flex items-center gap-4">
             <hr className="flex-1 border-muted" />
             <span className="text-xs text-muted-foreground">OR</span>
             <hr className="flex-1 border-muted" />
           </div>
 
-          <div className="space-y-2">
+          <div className="flex w-full flex-row gap-4">
             <Button
               variant="outline"
-              className="w-full rounded-full gap-2"
+              className="w-full rounded-full gap-4"
               onClick={() => registerWithProvider('google')}
             >
               <FaGoogle className="h-4 w-4" />
@@ -169,7 +169,7 @@ export default function RegisterPage() {
 
             <Button
               variant="outline"
-              className="w-full rounded-full gap-2"
+              className="w-full rounded-full gap-4"
               onClick={() => registerWithProvider('github')}
             >
               <Github className="h-4 w-4" />

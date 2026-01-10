@@ -145,7 +145,7 @@ export default function StudentLayout({
       </header>
 
       {/* BODY */}
-      <main className="relative max-w-7xl mx-auto px-6 py-8 flex gap-6">
+      <main className="relative w-full mx-auto px-6 py-8 flex gap-6">
         {/* SIDEBAR */}
         <aside className="w-64 rounded-3xl border bg-background/85 backdrop-blur shadow-xl p-4 flex flex-col">
           <nav className="space-y-1 flex-1">

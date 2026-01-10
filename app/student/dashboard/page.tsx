@@ -85,7 +85,7 @@ export default function StudentDashboard() {
       <div className="pointer-events-none absolute -top-40 -left-40 h-96 w-96 rounded-full bg-primary/30 blur-3xl" />
       <div className="pointer-events-none absolute top-40 -right-40 h-96 w-96 rounded-full bg-purple-500/30 blur-3xl" />
 
-      <div className="relative mx-auto max-w-6xl space-y-10">
+      <div className="relative mx-full max-full space-y-10">
 
         {/* HERO */}
         <div className="rounded-3xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-8 py-10 text-white shadow-2xl">
