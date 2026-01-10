@@ -155,19 +155,17 @@ export default function RegisterPage() {
               Create Account
             </Button>
           </form>
-
-          {/* OR */}
-          <div className="flex items-center gap-3">
-            <hr className="flex-1 border-white/10" />
-            <span className="text-xs text-white/40">OR</span>
-            <hr className="flex-1 border-white/10" />
+          
+          <div className="flex items-center gap-4">
+            <hr className="flex-1 border-muted" />
+            <span className="text-xs text-muted-foreground">OR</span>
+            <hr className="flex-1 border-muted" />
           </div>
 
-          {/* OAUTH */}
-          <div className="space-y-2">
+          <div className="flex w-full flex-row gap-4">
             <Button
               variant="outline"
-              className="w-full rounded-full gap-2 border-white/20 bg-white/5 text-white hover:bg-white/10"
+              className="w-full rounded-full gap-4"
               onClick={() => registerWithProvider('google')}
             >
               <FaGoogle className="h-4 w-4" />
@@ -176,7 +174,7 @@ export default function RegisterPage() {
 
             <Button
               variant="outline"
-              className="w-full rounded-full gap-2 border-white/20 bg-white/5 text-white hover:bg-white/10"
+              className="w-full rounded-full gap-4"
               onClick={() => registerWithProvider('github')}
             >
               <Github className="h-4 w-4" />

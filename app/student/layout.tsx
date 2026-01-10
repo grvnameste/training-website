@@ -146,11 +146,11 @@ export default function StudentLayout({
         </nav>
       </header>
 
-      {/* ================= BODY ================= */}
-      <div className="flex">
-        {/* ===== SIDEBAR ===== */}
-        <aside className="fixed left-0 top-[72px] h-[calc(100vh-72px)] w-[96px] bg-black/40 backdrop-blur border-r border-white/5 flex flex-col items-center py-4">
-          <nav className="flex-1 flex flex-col gap-2">
+      {/* BODY */}
+      <main className="relative w-full mx-auto px-6 py-8 flex gap-6">
+        {/* SIDEBAR */}
+        <aside className="w-64 rounded-3xl border bg-background/85 backdrop-blur shadow-xl p-4 flex flex-col">
+          <nav className="space-y-1 flex-1">
             {navItems.map(item => {
               const Icon = item.icon
               const active =

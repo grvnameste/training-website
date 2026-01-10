@@ -57,11 +57,12 @@ export default function StudentDashboard() {
       {/* GRID BACKGROUND */}
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:40px_40px]" />
 
-      <div className="relative max-w-7xl mx-auto space-y-14">
-        {/* ================= HERO ================= */}
-        <div className="rounded-3xl border border-white/10 bg-gradient-to-r from-[#0c111a] via-[#0f172a] to-[#0c111a] px-12 py-12 shadow-2xl">
-          <p className="text-xs uppercase tracking-widest text-white/40">
-            Student Dashboard
+      <div className="relative mx-full max-full space-y-10">
+
+        {/* HERO */}
+        <div className="rounded-3xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-8 py-10 text-white shadow-2xl">
+          <p className="text-xs uppercase tracking-widest text-slate-400">
+            Dashboard
           </p>
           <h1 className="text-3xl font-semibold mt-3">
             Welcome to your learning dashboard
