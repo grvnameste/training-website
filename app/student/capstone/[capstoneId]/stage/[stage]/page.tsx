@@ -1,4 +1,3 @@
-//app/student/capstone/[capstoneId]/stage/[stage]/page.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -38,7 +37,6 @@ export default function CapstoneStagePage() {
   const [trelloUrl, setTrelloUrl] = useState<string | null>(null)
   const [trelloBoardId, setTrelloBoardId] = useState<string | null>(null)
   const [cardCount, setCardCount] = useState(0)
-
   const [submittedForReview, setSubmittedForReview] = useState(false)
 
   /* ======================
@@ -47,10 +45,7 @@ export default function CapstoneStagePage() {
   useEffect(() => {
     const guard = async () => {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        router.replace('/login')
-        return
-      }
+      if (!user) return router.replace('/login')
 
       const { data: progress } = await supabase
         .from('student_capstone_progress')
@@ -202,7 +197,7 @@ export default function CapstoneStagePage() {
   }
 
   /* ======================
-     STAGE 3 FILE SUBMIT
+     STAGE 3 SUBMIT
   ====================== */
   const submitStage3 = async () => {
     if (files.length === 0) return alert('Select files')
@@ -248,15 +243,13 @@ export default function CapstoneStagePage() {
           <CardHeader>
             <CardTitle>Stage 1: Requirement Gathering</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             {!submitted ? (
               <>
                 <input
                   type="file"
                   accept=".pdf,.doc,.docx"
-                  onChange={e =>
-                    setFile(e.target.files?.[0] || null)
-                  }
+                  onChange={e => setFile(e.target.files?.[0] || null)}
                 />
                 <Button onClick={handleUpload} disabled={loading}>
                   <Upload className="w-4 h-4 mr-2" />
@@ -264,11 +257,11 @@ export default function CapstoneStagePage() {
                 </Button>
               </>
             ) : approved ? (
-              <p className="text-green-600 flex gap-2">
+              <p className="flex gap-2 text-green-600">
                 <CheckCircle className="w-4 h-4" /> Approved
               </p>
             ) : (
-              <p className="text-orange-600 flex gap-2">
+              <p className="flex gap-2 text-orange-600">
                 <Lock className="w-4 h-4" /> Waiting for teacher approval
               </p>
             )}
@@ -285,7 +278,6 @@ export default function CapstoneStagePage() {
               Minimum 10 Trello cards required
             </CardDescription>
           </CardHeader>
-
           <CardContent className="space-y-4">
             {trelloUrl && (
               <Button
@@ -296,9 +288,9 @@ export default function CapstoneStagePage() {
               </Button>
             )}
 
-            <div className="text-sm">
+            <p className="text-sm">
               Backlogs created: <b>{cardCount}/10</b>
-            </div>
+            </p>
 
             {!submittedForReview ? (
               <Button
@@ -309,10 +301,9 @@ export default function CapstoneStagePage() {
                 Submit for Review
               </Button>
             ) : (
-              <div className="flex items-center gap-2 text-orange-600 text-sm">
-                <Lock className="w-4 h-4" />
-                Submitted for review. Waiting for teacher approval.
-              </div>
+              <p className="flex gap-2 text-orange-600 text-sm">
+                <Lock className="w-4 h-4" /> Waiting for teacher approval
+              </p>
             )}
           </CardContent>
         </Card>
@@ -327,7 +318,6 @@ export default function CapstoneStagePage() {
               Push code & submit build files
             </CardDescription>
           </CardHeader>
-
           <CardContent className="space-y-4">
             <Button
               className="w-full"
@@ -358,10 +348,9 @@ export default function CapstoneStagePage() {
                 </Button>
               </>
             ) : (
-              <div className="flex items-center gap-2 text-orange-600 text-sm">
-                <Lock className="w-4 h-4" />
-                Submitted for review. Waiting for teacher approval.
-              </div>
+              <p className="flex gap-2 text-orange-600 text-sm">
+                <Lock className="w-4 h-4" /> Waiting for teacher approval
+              </p>
             )}
           </CardContent>
         </Card>

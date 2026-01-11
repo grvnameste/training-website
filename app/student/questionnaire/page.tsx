@@ -1,12 +1,15 @@
-
-//app/student/questionnarie/page.tsx
 'use client'
 
 import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import supabase from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 
 type CareerAnswers = Record<string, number>
 type CareerOpenAnswers = Record<string, string>
@@ -18,6 +21,7 @@ type Question = {
   type: 'likert' | 'open'
 }
 
+/* ================= QUESTIONS ================= */
 const careerQuestions: Question[] = [
   { id: 'q1', text: 'How comfortable are you with learning new technical tools?', type: 'likert' },
   { id: 'q2', text: 'Which type of tasks energize you most?', type: 'likert' },
@@ -76,27 +80,21 @@ export default function StudentQuestionnaire() {
 
   if (loading) return null
 
-  const onSelectCareer = (val: number) => {
-    setCareerAnswers(p => ({ ...p, [careerQuestions[careerIndex].id]: val }))
-  }
+  const activeQuestion =
+    step === 'career'
+      ? careerQuestions[careerIndex]
+      : cultureQuestions[cultureIndex]
 
-  const onSelectCulture = (val: number) => {
-    setCultureAnswers(p => ({ ...p, [cultureQuestions[cultureIndex].id]: val }))
-  }
-
-  const onOpenChange = (text: string) => {
-    setCareerOpenAnswers(p => ({
-      ...p,
-      [careerQuestions[careerIndex].id]: text,
-    }))
-  }
+  const selectedLikert =
+    step === 'career'
+      ? careerAnswers[activeQuestion.id]
+      : cultureAnswers[activeQuestion.id]
 
   const nextCareer = () => {
     if (careerIndex < careerQuestions.length - 1) {
       setCareerIndex(i => i + 1)
     } else {
       setStep('culture')
-      setCareerIndex(0)
     }
   }
 
@@ -111,7 +109,6 @@ export default function StudentQuestionnaire() {
     })
 
     if (error) {
-      console.error(error)
       alert('Failed to save questionnaire')
       return
     }
@@ -127,70 +124,68 @@ export default function StudentQuestionnaire() {
     }
   }
 
-  const activeQuestion =
-    step === 'career'
-      ? careerQuestions[careerIndex]
-      : cultureQuestions[cultureIndex]
-
-  const selectedLikert =
-    step === 'career'
-      ? careerAnswers[careerQuestions[careerIndex]?.id]
-      : cultureAnswers[cultureQuestions[cultureIndex]?.id]
-
-  const isLastCulture =
-    step === 'culture' && cultureIndex === cultureQuestions.length - 1
-
   return (
-    <div className="min-h-screen bg-slate-50 py-12 px-6">
-      <div className="max-w-2xl mx-auto">
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              {step === 'career' ? 'Career Questionnaire' : 'Culture Fit'}
-            </CardTitle>
-          </CardHeader>
+    <div className="max-w-3xl mx-auto px-6 py-10">
+      <Card className="rounded-3xl shadow-xl">
+        <CardHeader>
+          <CardTitle className="text-2xl">
+            {step === 'career' ? 'Career Questionnaire' : 'Culture Fit'}
+          </CardTitle>
+        </CardHeader>
 
-          <CardContent className="space-y-6">
-            <h2 className="text-lg font-semibold">{activeQuestion.text}</h2>
+        <CardContent className="space-y-6">
+          <h2 className="text-lg font-semibold">{activeQuestion.text}</h2>
 
-            {activeQuestion.type === 'likert' ? (
-              <div className="space-y-3">
-                {likertLabels.map((label, i) => (
+          {activeQuestion.type === 'likert' ? (
+            <div className="space-y-3">
+              {likertLabels.map((label, i) => {
+                const score = 4 - i
+                return (
                   <button
                     key={label}
-                    type="button"
                     onClick={() =>
                       step === 'career'
-                        ? onSelectCareer(i)
-                        : onSelectCulture(i)
+                        ? setCareerAnswers(p => ({ ...p, [activeQuestion.id]: score }))
+                        : setCultureAnswers(p => ({ ...p, [activeQuestion.id]: score }))
                     }
-                    className={`w-full p-3 border rounded-lg text-left
-                      ${selectedLikert === i
-                        ? 'bg-slate-200 border-slate-400'
-                        : 'hover:bg-slate-100'
+                    className={`w-full rounded-xl border px-4 py-3 text-left
+                      ${
+                        selectedLikert === score
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted hover:bg-muted/70'
                       }`}
                   >
                     {label}
                   </button>
-                ))}
-              </div>
-            ) : (
-              <textarea
-                className="w-full p-3 border rounded-lg"
-                rows={5}
-                value={careerOpenAnswers[careerQuestions[careerIndex]?.id] || ''}
-                onChange={e => onOpenChange(e.target.value)}
-              />
-            )}
-
-            <div className="flex justify-end">
-              <Button onClick={step === 'career' ? nextCareer : nextCulture}>
-                {step === 'career' ? 'Next' : isLastCulture ? 'Finish' : 'Next'}
-              </Button>
+                )
+              })}
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          ) : (
+            <textarea
+              rows={5}
+              value={careerOpenAnswers[activeQuestion.id] || ''}
+              onChange={e =>
+                setCareerOpenAnswers(p => ({
+                  ...p,
+                  [activeQuestion.id]: e.target.value,
+                }))
+              }
+              className="w-full rounded-xl border p-4"
+            />
+          )}
+
+          <div className="flex justify-end">
+            <Button
+              onClick={step === 'career' ? nextCareer : nextCulture}
+            >
+              {step === 'culture' &&
+              cultureIndex === cultureQuestions.length - 1
+                ? 'Finish'
+                : 'Next'}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
