@@ -155,13 +155,15 @@ export default function RegisterPage() {
               Create Account
             </Button>
           </form>
-          
-          <div className="flex items-center gap-4">
-            <hr className="flex-1 border-muted" />
-            <span className="text-xs text-muted-foreground">OR</span>
-            <hr className="flex-1 border-muted" />
+
+          {/* OR */}
+          <div className="flex items-center gap-3">
+            <hr className="flex-1 border-white/10" />
+            <span className="text-xs text-white/40">OR</span>
+            <hr className="flex-1 border-white/10" />
           </div>
 
+          {/* OAUTH */}
           <div className="flex w-full flex-row gap-4">
             <Button
               variant="outline"

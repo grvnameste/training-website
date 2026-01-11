@@ -1,3 +1,4 @@
+// app/student/dashboard/page.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -8,6 +9,15 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Search, Lock } from 'lucide-react'
 import { Input } from '@/components/ui/input'
+
+interface Course {
+  id: string
+  title: string
+  price: number
+  thumbnail: string
+  description: string
+  enrollments: number
+}
 
 export default function StudentDashboard() {
   const router = useRouter()
@@ -54,6 +64,7 @@ export default function StudentDashboard() {
 
   return (
     <div className="relative min-h-screen px-10 py-16 bg-[#070b12] text-white">
+    <div className="relative min-h-screen px-10 py-16 bg-[#070b12] text-white">
       {/* GRID BACKGROUND */}
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:40px_40px]" />
 
@@ -80,7 +91,7 @@ export default function StudentDashboard() {
             <div className="relative px-12 py-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
               <div>
                 <h2 className="text-2xl font-semibold text-teal-300">
-                  Action Required 🚀
+                  Action Required
                 </h2>
                 <p className="mt-2 text-white/80 max-w-2xl">
                   Complete the questionnaire to unlock courses,
@@ -139,8 +150,8 @@ export default function StudentDashboard() {
               </h3>
 
               <p className="text-white/60 max-w-md mx-auto">
-                Complete the questionnaire to unlock your
-                personalized learning path.
+                Complete the questionnaire to unlock your personalized
+                learning path and start building real projects.
               </p>
 
               <Link href="/student/questionnaire">

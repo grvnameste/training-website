@@ -1,3 +1,5 @@
+
+//app/student/questionnarie/page.tsx
 'use client'
 
 import React, { useEffect, useState } from 'react'
@@ -109,6 +111,7 @@ export default function StudentQuestionnaire() {
     })
 
     if (error) {
+      console.error(error)
       alert('Failed to save questionnaire')
       return
     }
