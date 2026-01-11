@@ -1,4 +1,3 @@
-//app/student/courses/[id]/play/videoId/page.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -34,56 +33,42 @@ export default function CoursePlayerPage() {
 
   useEffect(() => {
     const loadCourse = async () => {
-      /* 1️⃣ Fetch course */
-      const { data: courseData, error: courseError } =
-        await supabase
-          .from('courses')
-          .select('id, title')
-          .eq('id', courseId)
-          .single()
+      const { data: courseData } = await supabase
+        .from('courses')
+        .select('id, title')
+        .eq('id', courseId)
+        .single()
 
-      if (courseError || !courseData) {
-        console.error(courseError)
+      if (!courseData) {
         setLoading(false)
         return
       }
 
-      /* 2️⃣ Fetch section IDs */
       const { data: sections } = await supabase
         .from('sections')
         .select('id')
         .eq('course_id', courseId)
 
-      const sectionIds =
-        sections?.map(s => s.id) || []
+      const sectionIds = sections?.map(s => s.id) || []
 
-      if (sectionIds.length === 0) {
-        setCourse({
-          id: courseData.id,
-          title: courseData.title,
-          lessons: [],
-        })
-        setLoading(false)
-        return
+      let lessons: Lesson[] = []
+
+      if (sectionIds.length > 0) {
+        const { data: lessonData } = await supabase
+          .from('lessons')
+          .select('id, title, video_url')
+          .in('section_id', sectionIds)
+          .order('order_index', { ascending: true })
+
+        lessons = lessonData || []
       }
 
-      /* 3️⃣ Fetch lessons using section IDs */
-      const { data: lessons } = await supabase
-        .from('lessons')
-        .select('id, title, video_url')
-        .in('section_id', sectionIds)
-        .order('order_index', { ascending: true })
-
-      const safeLessons = lessons || []
-
-      const index = safeLessons.findIndex(
-        l => l.id === videoId
-      )
+      const index = lessons.findIndex(l => l.id === videoId)
 
       setCourse({
         id: courseData.id,
         title: courseData.title,
-        lessons: safeLessons,
+        lessons,
       })
 
       setCurrentVideoIndex(index >= 0 ? index : 0)
@@ -95,9 +80,8 @@ export default function CoursePlayerPage() {
 
   if (loading || !course) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 gap-4 text-sm text-foreground/70">
-        <div className="h-10 w-10 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
-        <p>Loading lesson...</p>
+      <div className="flex justify-center py-32">
+        <div className="h-10 w-10 rounded-full border-2 border-teal-400/40 border-t-teal-400 animate-spin" />
       </div>
     )
   }
@@ -106,115 +90,130 @@ export default function CoursePlayerPage() {
   const nextLesson = course.lessons[currentVideoIndex + 1]
 
   return (
-    <div className="space-y-6 lg:space-y-8">
-      {/* Top bar */}
-      <div className="flex items-center justify-between gap-4">
-        <Link href={`/student/courses/${courseId}`}>
-          <Button variant="outline" className="rounded-full px-4">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Course
-          </Button>
-        </Link>
+    <div className="relative min-h-screen px-8 py-12 text-white">
 
-        <div className="hidden md:flex flex-col items-end">
-          <p className="text-xs text-foreground/50 uppercase">
-            Course
-          </p>
-          <p className="text-sm font-medium line-clamp-1 max-w-xs">
-            {course.title}
-          </p>
-        </div>
-      </div>
+      {/* GRID BACKGROUND */}
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:40px_40px]" />
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Player */}
-        <div className="lg:col-span-3 space-y-5">
-          <div>
-            <h1 className="text-xl md:text-2xl font-semibold">
-              Lesson {currentVideoIndex + 1}:{' '}
-              {currentLesson?.title}
-            </h1>
-            <p className="text-xs text-muted-foreground">
-              Lesson {currentVideoIndex + 1} of{' '}
-              {course.lessons.length}
+      {/* GLOW */}
+      <div className="pointer-events-none absolute -top-40 -left-40 h-96 w-96 bg-teal-400/20 blur-3xl rounded-full" />
+      <div className="pointer-events-none absolute top-40 -right-40 h-96 w-96 bg-cyan-400/20 blur-3xl rounded-full" />
+
+      <div className="relative max-w-7xl mx-auto space-y-8">
+
+        {/* TOP BAR */}
+        <div className="flex items-center justify-between">
+          <Link href={`/student/courses/${courseId}`}>
+            <Button
+              variant="ghost"
+              className="text-white/70 hover:text-white"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Course
+            </Button>
+          </Link>
+
+          <div className="hidden md:block text-right">
+            <p className="text-xs text-white/40 uppercase">
+              Course
+            </p>
+            <p className="text-sm font-medium max-w-xs truncate">
+              {course.title}
             </p>
           </div>
-
-          <div className="w-full aspect-video bg-black rounded-2xl overflow-hidden border">
-            {currentLesson?.video_url ? (
-              <video
-                src={currentLesson.video_url}
-                controls
-                autoPlay
-                className="w-full h-full"
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full text-muted-foreground">
-                Video unavailable
-              </div>
-            )}
-          </div>
-
-          {/* Progress + Next */}
-          <div className="space-y-3">
-            <div className="w-full bg-border h-1.5 rounded-full">
-              <div
-                className="bg-primary h-1.5 rounded-full"
-                style={{
-                  width: `${
-                    ((currentVideoIndex + 1) /
-                      course.lessons.length) *
-                    100
-                  }%`,
-                }}
-              />
-            </div>
-
-            {nextLesson && (
-              <Button
-                className="w-full rounded-full"
-                onClick={() => {
-                  setCurrentVideoIndex(
-                    currentVideoIndex + 1
-                  )
-                  router.push(
-                    `/student/courses/${courseId}/play/${nextLesson.id}`
-                  )
-                }}
-              >
-                Next Lesson: {nextLesson.title}
-                <ChevronRight className="w-4 h-4 ml-2" />
-              </Button>
-            )}
-          </div>
         </div>
 
-        {/* Playlist */}
-        <div className="lg:col-span-1">
-          <Card className="rounded-2xl lg:sticky lg:top-24">
-            <CardContent className="p-4 space-y-3 max-h-[420px] overflow-y-auto">
-              <h3 className="text-sm font-semibold">
-                Course Lessons
-              </h3>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
 
-              {course.lessons.map((lesson, index) => (
-                <Link
-                  key={lesson.id}
-                  href={`/student/courses/${courseId}/play/${lesson.id}`}
+          {/* PLAYER */}
+          <div className="lg:col-span-3 space-y-6">
+            <div>
+              <h1 className="text-2xl font-semibold">
+                Lesson {currentVideoIndex + 1}:{' '}
+                {currentLesson?.title}
+              </h1>
+              <p className="text-xs text-white/50">
+                Lesson {currentVideoIndex + 1} of{' '}
+                {course.lessons.length}
+              </p>
+            </div>
+
+            <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-black shadow-2xl">
+              {currentLesson?.video_url ? (
+                <video
+                  src={currentLesson.video_url}
+                  controls
+                  autoPlay
+                  className="w-full aspect-video"
+                />
+              ) : (
+                <div className="flex items-center justify-center aspect-video text-white/40">
+                  Video unavailable
+                </div>
+              )}
+            </div>
+
+            {/* PROGRESS */}
+            <div className="space-y-4">
+              <div className="w-full bg-white/10 h-2 rounded-full">
+                <div
+                  className="bg-teal-400 h-2 rounded-full transition-all"
+                  style={{
+                    width: `${
+                      ((currentVideoIndex + 1) /
+                        course.lessons.length) *
+                      100
+                    }%`,
+                  }}
+                />
+              </div>
+
+              {nextLesson && (
+                <Button
+                  className="w-full rounded-full bg-teal-400 text-black hover:bg-teal-300"
+                  onClick={() => {
+                    setCurrentVideoIndex(
+                      currentVideoIndex + 1
+                    )
+                    router.push(
+                      `/student/courses/${courseId}/play/${nextLesson.id}`
+                    )
+                  }}
                 >
-                  <div
-                    className={`p-3 rounded-xl text-sm border transition ${
-                      index === currentVideoIndex
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted hover:bg-muted/70'
-                    }`}
+                  Next Lesson: {nextLesson.title}
+                  <ChevronRight className="w-4 h-4 ml-2" />
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* PLAYLIST */}
+          <div className="lg:col-span-1">
+            <Card className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur shadow-xl lg:sticky lg:top-24">
+              <CardContent className="p-5 space-y-4 max-h-[480px] overflow-y-auto">
+                <h3 className="text-sm font-semibold text-white">
+                  Course Lessons
+                </h3>
+
+                {course.lessons.map((lesson, index) => (
+                  <Link
+                    key={lesson.id}
+                    href={`/student/courses/${courseId}/play/${lesson.id}`}
                   >
-                    {index + 1}. {lesson.title}
-                  </div>
-                </Link>
-              ))}
-            </CardContent>
-          </Card>
+                    <div
+                      className={`px-4 py-3 rounded-xl text-sm transition ${
+                        index === currentVideoIndex
+                          ? 'bg-teal-400 text-black font-semibold'
+                          : 'bg-black/40 text-white/70 hover:bg-black/60'
+                      }`}
+                    >
+                      {index + 1}. {lesson.title}
+                    </div>
+                  </Link>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </div>

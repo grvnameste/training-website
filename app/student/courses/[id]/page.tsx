@@ -1,4 +1,3 @@
-// app/student/courses/[id]/page.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -15,9 +14,7 @@ import {
 } from '@/components/ui/card'
 import { ArrowLeft, BookOpen } from 'lucide-react'
 
-/* =======================
-   TYPES
-======================= */
+/* ================= TYPES ================= */
 interface Lesson {
   id: string
   title: string
@@ -36,9 +33,7 @@ interface Capstone {
   description: string
 }
 
-/* =======================
-   PAGE
-======================= */
+/* ================= PAGE ================= */
 export default function CourseDetailPage() {
   const params = useParams()
   const router = useRouter()
@@ -50,19 +45,17 @@ export default function CourseDetailPage() {
 
   useEffect(() => {
     const loadCourse = async () => {
-      /* 1️⃣ Course */
-      const { data: courseData, error } = await supabase
+      const { data: courseData } = await supabase
         .from('courses')
         .select('id, price, thumbnail_url')
         .eq('id', courseId)
         .single()
 
-      if (error || !courseData) {
+      if (!courseData) {
         setLoading(false)
         return
       }
 
-      /* 2️⃣ Sections */
       const { data: sections } = await supabase
         .from('sections')
         .select('id')
@@ -70,7 +63,6 @@ export default function CourseDetailPage() {
 
       const sectionIds = sections?.map(s => s.id) || []
 
-      /* 3️⃣ Lessons */
       let lessons: Lesson[] = []
 
       if (sectionIds.length > 0) {
@@ -83,7 +75,6 @@ export default function CourseDetailPage() {
         lessons = lessonData || []
       }
 
-      /* 4️⃣ Capstone */
       const { data: capstoneData } = await supabase
         .from('capstone_projects')
         .select('id, title, description')
@@ -100,105 +91,107 @@ export default function CourseDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 gap-3 text-sm text-foreground/70">
-        <div className="h-10 w-10 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
-        <p>Loading course...</p>
+      <div className="flex justify-center py-32">
+        <div className="h-10 w-10 rounded-full border-2 border-teal-400/40 border-t-teal-400 animate-spin" />
       </div>
     )
   }
 
-  if (!course) {
-    return (
-      <div className="space-y-4">
-        <h1 className="text-2xl font-semibold">Course not found</h1>
-        <Link href="/student/courses">
-          <Button variant="outline">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Courses
-          </Button>
-        </Link>
-      </div>
-    )
-  }
+  if (!course) return null
 
   const firstLesson = course.lessons[0]
 
   return (
-    <div className="space-y-8">
-      {/* Top bar */}
-      <div>
+    <div className="relative min-h-screen px-8 py-12 text-white">
+
+      {/* GRID BACKGROUND */}
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:40px_40px]" />
+
+      {/* GLOW */}
+      <div className="pointer-events-none absolute -top-40 -left-40 h-96 w-96 bg-teal-400/20 blur-3xl rounded-full" />
+      <div className="pointer-events-none absolute top-40 -right-40 h-96 w-96 bg-cyan-400/20 blur-3xl rounded-full" />
+
+      <div className="relative max-w-7xl mx-auto space-y-10">
+
+        {/* BACK */}
         <Link href="/student/courses">
-          <Button variant="outline" className="rounded-full px-4">
+          <Button variant="ghost" className="text-white/70 hover:text-white">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Courses
           </Button>
         </Link>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* LEFT */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Thumbnail only */}
-          <div className="aspect-video rounded-2xl overflow-hidden border bg-black">
-            {course.thumbnail_url ? (
-              <img
-                src={course.thumbnail_url}
-                alt="Course thumbnail"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <BookOpen className="w-20 h-20 text-primary/40" />
-              </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+
+          {/* LEFT */}
+          <div className="lg:col-span-2 space-y-8">
+
+            {/* THUMBNAIL */}
+            <div className="relative overflow-hidden rounded-3xl border border-white/10 shadow-2xl">
+              {course.thumbnail_url ? (
+                <img
+                  src={course.thumbnail_url}
+                  alt="Course thumbnail"
+                  className="w-full aspect-video object-cover"
+                />
+              ) : (
+                <div className="flex items-center justify-center aspect-video bg-black/40">
+                  <BookOpen className="w-20 h-20 text-white/30" />
+                </div>
+              )}
+            </div>
+
+            {/* CAPSTONE */}
+            {capstone && (
+              <Card className="rounded-3xl border border-teal-400/40 bg-gradient-to-br from-teal-400/10 to-cyan-400/10 backdrop-blur shadow-xl">
+                <CardHeader>
+                  <CardTitle className="text-teal-300">
+                    🚀 Capstone Project
+                  </CardTitle>
+                  <CardDescription className="text-white/70">
+                    Build a real-world project following complete SDLC
+                  </CardDescription>
+                </CardHeader>
+
+                <CardContent>
+                  <Link href={`/student/courses/${courseId}/capstone`}>
+                    <Button className="w-full rounded-full bg-teal-400 text-black hover:bg-teal-300">
+                      Start Capstone Project
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
             )}
           </div>
 
-          {/* CAPSTONE */}
-          {capstone && (
-            <Card className="border-2 border-dashed border-primary/40 bg-primary/5">
+          {/* RIGHT */}
+          <div>
+            <Card className="sticky top-24 rounded-3xl border border-white/10 bg-white/5 backdrop-blur shadow-2xl">
               <CardHeader>
-                <CardTitle>🚀 Capstone Project</CardTitle>
-                <CardDescription>
-                  Real-world project based learning
+                <CardTitle className="text-3xl text-teal-300">
+                  {course.price === 0 ? 'Free' : `₹${course.price}`}
+                </CardTitle>
+                <CardDescription className="text-white/60">
+                  Lifetime access • Certificate included
                 </CardDescription>
               </CardHeader>
 
               <CardContent>
-                <Link href={`/student/courses/${courseId}/capstone`}>
-                  <Button className="w-full">
-                    Start Capstone Project
+                {firstLesson && (
+                  <Button
+                    className="w-full rounded-full bg-teal-400 text-black hover:bg-teal-300"
+                    onClick={() =>
+                      router.push(
+                        `/student/courses/${courseId}/play/${firstLesson.id}`
+                      )
+                    }
+                  >
+                    Start Learning
                   </Button>
-                </Link>
+                )}
               </CardContent>
             </Card>
-          )}
-        </div>
-
-        {/* RIGHT */}
-        <div>
-          <Card className="sticky top-24">
-            <CardHeader>
-              <CardTitle className="text-3xl text-primary">
-                {course.price === 0 ? 'Free' : `₹${course.price}`}
-              </CardTitle>
-              <CardDescription>Lifetime access</CardDescription>
-            </CardHeader>
-
-            <CardContent className="space-y-4">
-              {firstLesson && (
-                <Button
-                  className="w-full rounded-xl"
-                  onClick={() =>
-                    router.push(
-                      `/student/courses/${courseId}/play/${firstLesson.id}`,
-                    )
-                  }
-                >
-                  Start Learning
-                </Button>
-              )}
-            </CardContent>
-          </Card>
+          </div>
         </div>
       </div>
     </div>

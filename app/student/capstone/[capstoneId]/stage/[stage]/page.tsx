@@ -1,4 +1,3 @@
-//app/student/capstone/[capstoneId]/stage/[stage]/page.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -145,7 +144,7 @@ export default function CapstoneStagePage() {
   }, [trelloBoardId, stage])
 
   /* ======================
-     STAGE 1 UPLOAD
+     STAGE ACTIONS
   ====================== */
   const handleUpload = async () => {
     if (!file) return alert('Select a file')
@@ -185,9 +184,6 @@ export default function CapstoneStagePage() {
     setLoading(false)
   }
 
-  /* ======================
-     STAGE 2 SUBMIT
-  ====================== */
   const submitStage2 = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
@@ -201,9 +197,6 @@ export default function CapstoneStagePage() {
     setSubmittedForReview(true)
   }
 
-  /* ======================
-     STAGE 3 FILE SUBMIT
-  ====================== */
   const submitStage3 = async () => {
     if (files.length === 0) return alert('Select files')
 
@@ -236,13 +229,74 @@ export default function CapstoneStagePage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto py-10 space-y-6">
+    <div className="max-w-5xl mx-auto py-10 space-y-8">
       <Button variant="ghost" onClick={() => router.back()}>
         <ArrowLeft className="w-4 h-4 mr-2" />
         Back
       </Button>
 
-      {/* ================= STAGE 1 ================= */}
+      {/* ================= HORIZONTAL ROADMAP ================= */}
+      <div className="bg-background/80 backdrop-blur border rounded-3xl p-6">
+        <div className="flex items-center justify-between">
+          {[
+            { id: 1, title: 'Requirement Gathering' },
+            { id: 2, title: 'Clarification & Backlog' },
+            { id: 3, title: 'Development & Submission' },
+          ].map((s, index, arr) => {
+            const isActive = stage === s.id
+            const isCompleted = stage > s.id
+            const isLocked = stage < s.id
+
+            return (
+              <div key={s.id} className="flex items-center flex-1">
+                <div className="flex flex-col items-center">
+                  <button
+                    disabled={isLocked}
+                    onClick={() =>
+                      router.push(
+                        `/student/capstone/${capstoneId}/stage/${s.id}`
+                      )
+                    }
+                    className={`w-12 h-12 rounded-full flex items-center justify-center font-semibold transition
+                      ${
+                        isCompleted
+                          ? 'bg-green-600 text-white'
+                          : isActive
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted text-muted-foreground cursor-not-allowed'
+                      }
+                    `}
+                  >
+                    {isCompleted ? '✓' : s.id}
+                  </button>
+
+                  <span
+                    className={`mt-2 text-xs text-center max-w-[120px]
+                      ${
+                        isActive
+                          ? 'text-primary font-semibold'
+                          : 'text-muted-foreground'
+                      }
+                    `}
+                  >
+                    {s.title}
+                  </span>
+                </div>
+
+                {index !== arr.length - 1 && (
+                  <div
+                    className={`flex-1 h-[2px] mx-4 ${
+                      stage > s.id ? 'bg-green-500' : 'bg-muted'
+                    }`}
+                  />
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* ================= STAGE CONTENT ================= */}
       {stage === 1 && (
         <Card>
           <CardHeader>
@@ -276,7 +330,6 @@ export default function CapstoneStagePage() {
         </Card>
       )}
 
-      {/* ================= STAGE 2 ================= */}
       {stage === 2 && (
         <Card>
           <CardHeader>
@@ -285,7 +338,6 @@ export default function CapstoneStagePage() {
               Minimum 10 Trello cards required
             </CardDescription>
           </CardHeader>
-
           <CardContent className="space-y-4">
             {trelloUrl && (
               <Button
@@ -318,7 +370,6 @@ export default function CapstoneStagePage() {
         </Card>
       )}
 
-      {/* ================= STAGE 3 ================= */}
       {stage === 3 && (
         <Card>
           <CardHeader>
@@ -327,7 +378,6 @@ export default function CapstoneStagePage() {
               Push code & submit build files
             </CardDescription>
           </CardHeader>
-
           <CardContent className="space-y-4">
             <Button
               className="w-full"
