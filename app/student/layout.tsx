@@ -29,7 +29,7 @@ export default function StudentLayout({
   const [open, setOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  /* AUTH CHECK */
+  /* ================= AUTH CHECK ================= */
   useEffect(() => {
     const checkUser = async () => {
       const { data } = await supabase.auth.getUser()
@@ -40,8 +40,6 @@ export default function StudentLayout({
       }
 
       const role = data.user.user_metadata?.role
-
-      // ✅ student-only guard
       if (role !== 'student') {
         router.replace('/teacher/dashboard')
         return
@@ -53,7 +51,7 @@ export default function StudentLayout({
     checkUser()
   }, [router])
 
-  /* CLOSE DROPDOWN */
+  /* ================= CLOSE DROPDOWN ================= */
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (
@@ -67,7 +65,7 @@ export default function StudentLayout({
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
-  /* LOGOUT */
+  /* ================= LOGOUT ================= */
   const handleLogout = async () => {
     const {
       data: { session },
@@ -87,53 +85,57 @@ export default function StudentLayout({
   if (!user) return null
 
   const navItems = [
-    { href: '/student/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/student/courses', label: 'Courses', icon: GraduationCap },
-    { href: '/student/skills', label: 'Skills', icon: BookOpen },
-    { href: '/student/activity', label: 'Activity', icon: Activity },
-    { href: '/student/result', label: 'Scorecard', icon: BarChart3 },
-    { href: '/student/interview', label: 'Interview Prep', icon: Mic },
-    { href: '/student/resume', label: 'Resume Builder', icon: FileText },
+    { href: '/student/dashboard', icon: LayoutDashboard },
+    { href: '/student/courses', icon: GraduationCap },
+    { href: '/student/skills', icon: BookOpen },
+    { href: '/student/activity', icon: Activity },
+    { href: '/student/result', icon: BarChart3 },
+    { href: '/student/interview', icon: Mic },
+    { href: '/student/resume', icon: FileText },
   ]
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-b from-[#0b0f2a] via-[#120c2f] to-background">
-      {/* glow */}
-      <div className="pointer-events-none absolute -top-40 -left-40 h-96 w-96 rounded-full bg-primary/25 blur-3xl" />
-      <div className="pointer-events-none absolute top-40 -right-40 h-96 w-96 rounded-full bg-purple-500/25 blur-3xl" />
+    <div className="min-h-screen bg-[#070b12] text-white">
+      {/* GRID BACKGROUND */}
+      <div className="pointer-events-none fixed inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:40px_40px]" />
 
-      {/* HEADER */}
-      <header className="sticky top-0 z-50 backdrop-blur bg-background/70 border-b">
-        <nav className="flex justify-between items-center px-6 py-4 max-w-7xl mx-auto">
+      {/* GLOW */}
+      <div className="pointer-events-none fixed -top-40 -left-40 h-96 w-96 bg-teal-400/20 blur-3xl rounded-full" />
+      <div className="pointer-events-none fixed top-40 -right-40 h-96 w-96 bg-cyan-400/20 blur-3xl rounded-full" />
+
+      {/* ================= HEADER ================= */}
+      <header className="sticky top-0 z-50 h-[72px] backdrop-blur bg-black/40 border-b border-white/5">
+        <nav className="flex h-full items-center justify-between px-6">
           <Link
             href="/student/dashboard"
-            className="flex items-center gap-2 font-bold"
+            className="flex items-center gap-2 font-semibold"
           >
-            <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center text-primary-foreground shadow">
-              <BookOpen className="w-5 h-5" />
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center shadow">
+              <BookOpen className="w-5 h-5 text-black" />
             </div>
             ReadNRevise
           </Link>
 
+          {/* USER DROPDOWN */}
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setOpen(prev => !prev)}
-              className="flex items-center gap-2 rounded-full border px-3 py-1.5 bg-background hover:bg-muted"
+              className="flex items-center gap-2 rounded-full border border-white/10 px-3 py-1.5 bg-white/5 hover:bg-white/10 transition"
             >
-              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold">
+              <div className="w-8 h-8 rounded-full bg-teal-400 text-black flex items-center justify-center text-sm font-semibold">
                 {user.email?.charAt(0).toUpperCase()}
               </div>
-              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+              <ChevronDown className="w-4 h-4 text-white/60" />
             </button>
 
             {open && (
-              <div className="absolute right-0 mt-2 w-48 rounded-2xl border bg-background shadow-xl overflow-hidden">
+              <div className="absolute right-0 mt-2 w-48 rounded-2xl border border-white/10 bg-[#0b0f18] shadow-xl overflow-hidden">
                 <button
                   onClick={() => {
                     setOpen(false)
                     router.push('/student/profile')
                   }}
-                  className="flex w-full items-center gap-2 px-4 py-2 text-sm hover:bg-muted"
+                  className="flex w-full items-center gap-2 px-4 py-3 text-sm hover:bg-white/5"
                 >
                   <User className="w-4 h-4" />
                   Profile
@@ -144,11 +146,11 @@ export default function StudentLayout({
         </nav>
       </header>
 
-      {/* BODY */}
-      <main className="relative max-w-7xl mx-auto px-6 py-8 flex gap-6">
-        {/* SIDEBAR */}
-        <aside className="w-64 rounded-3xl border bg-background/85 backdrop-blur shadow-xl p-4 flex flex-col">
-          <nav className="space-y-1 flex-1">
+      {/* ================= BODY ================= */}
+      <div className="flex">
+        {/* ===== SIDEBAR ===== */}
+        <aside className="fixed left-0 top-[72px] h-[calc(100vh-72px)] w-[96px] bg-black/40 backdrop-blur border-r border-white/5 flex flex-col items-center py-4">
+          <nav className="flex-1 flex flex-col gap-2">
             {navItems.map(item => {
               const Icon = item.icon
               const active =
@@ -159,14 +161,15 @@ export default function StudentLayout({
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition ${
-                    active
-                      ? 'bg-primary text-primary-foreground shadow'
-                      : 'text-muted-foreground hover:bg-muted'
-                  }`}
+                  className={`w-12 h-12 rounded-xl flex items-center justify-center transition
+                    ${
+                      active
+                        ? 'bg-teal-400 text-black shadow-lg'
+                        : 'text-white/60 hover:bg-white/10'
+                    }
+                  `}
                 >
-                  <Icon className="w-4 h-4" />
-                  {item.label}
+                  <Icon className="w-5 h-5" />
                 </Link>
               )
             })}
@@ -174,16 +177,17 @@ export default function StudentLayout({
 
           <button
             onClick={handleLogout}
-            className="mt-4 flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-red-600 hover:bg-red-50"
+            className="mt-4 w-12 h-12 rounded-xl flex items-center justify-center text-red-400 hover:bg-red-500/10 transition"
           >
-            <LogOut className="w-4 h-4" />
-            Logout
+            <LogOut className="w-5 h-5" />
           </button>
         </aside>
 
-        {/* CONTENT */}
-        <section className="flex-1">{children}</section>
-      </main>
+        {/* ===== CONTENT ===== */}
+        <main className="ml-[96px] flex-1 px-8 py-8">
+          {children}
+        </main>
+      </div>
     </div>
   )
 }

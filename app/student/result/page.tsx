@@ -1,65 +1,63 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import supabase from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ChevronDown, Share2, Briefcase, Lock } from 'lucide-react'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Lock } from 'lucide-react'
 
 type CareerAnswers = Record<string, number>
+type CareerOpenAnswers = Record<string, string>
+type CultureAnswers = Record<string, number>
 
-type PathwayKey =
-  | 'Cloud & Infrastructure'
-  | 'Business Analysis & Delivery'
-  | 'Data & Analytics'
-  | 'Automation / Low-Code'
-  | 'AI & Workflow Integration'
-
-const pathwayRoadmaps: Record<PathwayKey, string[]> = {
-  'Cloud & Infrastructure': [
-    'Foundational Concepts',
-    'Core Compute & Storage',
-    'Networking & Databases',
-    'Security & IAM',
-    'DevOps Basics',
-    'Containers',
-    'Infrastructure as Code',
-    'Monitoring & Scaling',
-    'Serverless',
-    'Cost Optimization',
-    'High Availability',
-    'Disaster Recovery',
-    'Architecture Patterns',
-    'Mini Project',
-    'Certification Prep',
-    'Capstone Project',
-  ],
-  'Business Analysis & Delivery': [],
-  'Data & Analytics': [],
-  'Automation / Low-Code': [],
-  'AI & Workflow Integration': [],
+type Question = {
+  id: string
+  text: string
+  type: 'likert' | 'open'
 }
 
-function computePathwayFromAnswers(answers: CareerAnswers | null) {
-  const keys = Object.keys(pathwayRoadmaps) as PathwayKey[]
-  const scores = Object.fromEntries(keys.map(k => [k, 0])) as Record<PathwayKey, number>
+const likertLabels = [
+  'Very confident',
+  'Confident',
+  'Neutral',
+  'Slightly unconfident',
+  'Not confident',
+]
 
-  if (!answers) return { top: null, scores }
+/* ================= QUESTIONS ================= */
+const careerQuestions: Question[] = [
+  { id: 'q1', text: 'How comfortable are you with learning new technical tools?', type: 'likert' },
+  { id: 'q2', text: 'Which type of tasks energize you most?', type: 'likert' },
+  { id: 'q3', text: 'Rate your problem-solving style.', type: 'likert' },
+  { id: 'q4', text: 'Which long-term role appeals to you most?', type: 'likert' },
+  { id: 'q5', text: 'Describe one technical task you enjoyed recently.', type: 'open' },
+  { id: 'q6', text: 'What kind of problems frustrate you most?', type: 'open' },
+  { id: 'q7', text: 'List tools/languages you know.', type: 'open' },
+  { id: 'q12', text: 'How do you prefer to communicate technical findings?', type: 'likert' },
+  { id: 'q13', text: 'How likely are you to automate repetitive work?', type: 'likert' },
+  { id: 'q14', text: 'How interested are you in certifications?', type: 'likert' },
+]
 
-  Object.values(answers).forEach(v => {
-    keys.forEach(k => (scores[k] += v))
-  })
-
-  const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1])
-  return { top: sorted[0][0] as PathwayKey, scores }
-}
+const cultureQuestions: Question[] = [
+  { id: 'c1', text: 'I prefer working independently.', type: 'likert' },
+  { id: 'c2', text: 'I like fast-paced environments.', type: 'likert' },
+  { id: 'c3', text: 'I seek structured mentorship.', type: 'likert' },
+  { id: 'c4', text: 'I prefer stability in work.', type: 'likert' },
+]
 
 export default function QuestionnaireResult() {
   const router = useRouter()
+
   const [loading, setLoading] = useState(true)
-  const [top, setTop] = useState<PathwayKey | null>(null)
-  const [hasAssessment, setHasAssessment] = useState(false)
+  const [careerAnswers, setCareerAnswers] = useState<CareerAnswers | null>(null)
+  const [careerOpenAnswers, setCareerOpenAnswers] = useState<CareerOpenAnswers | null>(null)
+  const [cultureAnswers, setCultureAnswers] = useState<CultureAnswers | null>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -78,14 +76,13 @@ export default function QuestionnaireResult() {
         .single()
 
       if (!data) {
-        setHasAssessment(false)
         setLoading(false)
         return
       }
 
-      const res = computePathwayFromAnswers(data.career_answers)
-      setTop(res.top)
-      setHasAssessment(true)
+      setCareerAnswers(data.career_answers)
+      setCareerOpenAnswers(data.career_open_answers)
+      setCultureAnswers(data.culture_answers)
       setLoading(false)
     }
 
@@ -96,26 +93,17 @@ export default function QuestionnaireResult() {
     return <div className="p-10 text-center">Loading...</div>
   }
 
-  /* 🔒 NO ASSESSMENT GIVEN */
-  if (!hasAssessment) {
+  /* 🔒 NO ASSESSMENT */
+  if (!careerAnswers && !careerOpenAnswers && !cultureAnswers) {
     return (
-      <div className="min-h-[70vh] flex items-center justify-center bg-slate-50 px-6">
+      <div className="min-h-[70vh] flex items-center justify-center">
         <Card className="max-w-md w-full text-center">
           <CardHeader>
-            <div className="mx-auto mb-2 w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
-              <Lock className="w-6 h-6 text-slate-600" />
-            </div>
-            <CardTitle>Scorecard Locked</CardTitle>
+            <Lock className="mx-auto w-8 h-8 text-muted-foreground" />
+            <CardTitle>Assessment Required</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-slate-600">
-              Please complete the assessment first to view your personalized
-              career scorecard.
-            </p>
-            <Button
-              className="w-full"
-              onClick={() => router.push('/student/questionnaire')}
-            >
+          <CardContent>
+            <Button onClick={() => router.push('/student/questionnaire')}>
               Give Assessment
             </Button>
           </CardContent>
@@ -124,47 +112,64 @@ export default function QuestionnaireResult() {
     )
   }
 
-  if (!top) return null
-
   return (
-    <div className="min-h-screen bg-slate-50 px-8 py-10">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="max-w-5xl mx-auto px-6 py-10 space-y-8">
+      <h1 className="text-3xl font-bold text-center">
+        Your Questionnaire Responses
+      </h1>
 
-        {/* HEADER */}
-        <div className="flex justify-between items-start">
-          <div>
-            <h1 className="text-3xl font-bold">Your Career Compass Results</h1>
-            <p className="text-slate-600 mt-2 max-w-xl">
-              Based on your assessment, we’ve identified a pathway that aligns
-              with your strengths and interests.
-            </p>
-          </div>
-          <Button variant="outline">
-            <Share2 className="w-4 h-4 mr-2" />
-            Share My Results
-          </Button>
-        </div>
+      {/* ================= CAREER ================= */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Career Assessment</CardTitle>
+        </CardHeader>
 
-        {/* ROADMAP */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Your Personalized 16-Week Roadmap</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {pathwayRoadmaps[top].map((w, i) => (
-              <div
-                key={w}
-                className="flex justify-between items-center p-4 border rounded-lg bg-white"
-              >
-                <span className="font-medium">
-                  Week {i + 1}: {w}
+        <CardContent className="space-y-4">
+          {careerQuestions.map(q => (
+            <div key={q.id} className="border rounded-xl p-4 bg-white">
+              <p className="font-medium">{q.text}</p>
+
+              {q.type === 'likert' ? (
+                <p className="mt-1 text-slate-600">
+                  Answer:
+                  <span className="ml-2 font-semibold">
+                    {careerAnswers?.[q.id] !== undefined
+                      ? likertLabels[4 - careerAnswers[q.id]]
+                      : '—'}
+                  </span>
+                </p>
+              ) : (
+                <p className="mt-2 text-slate-600 whitespace-pre-line">
+                  {careerOpenAnswers?.[q.id] || '—'}
+                </p>
+              )}
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      {/* ================= CULTURE ================= */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Culture Fit Assessment</CardTitle>
+        </CardHeader>
+
+        <CardContent className="space-y-4">
+          {cultureQuestions.map(q => (
+            <div key={q.id} className="border rounded-xl p-4 bg-white">
+              <p className="font-medium">{q.text}</p>
+              <p className="mt-1 text-slate-600">
+                Answer:
+                <span className="ml-2 font-semibold">
+                  {cultureAnswers?.[q.id] !== undefined
+                    ? likertLabels[4 - cultureAnswers[q.id]]
+                    : '—'}
                 </span>
-                <ChevronDown className="w-4 h-4 text-slate-500" />
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
+              </p>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
     </div>
   )
 }

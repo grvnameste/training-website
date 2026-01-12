@@ -1,9 +1,13 @@
-// app/student/interview/page.tsx
 'use client'
 
 import { useState } from 'react'
 import { Search, Video, Mic, Sparkles } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
 type Question = {
@@ -28,19 +32,19 @@ const categories: Category[] = [
         id: 'q1',
         text: 'Tell me about a time you handled a difficult stakeholder.',
         type: 'Behavioral Question',
-        tags: 'Behavioral | Communication',
+        tags: 'Behavioral · Communication',
       },
       {
         id: 'q2',
         text: 'How do you prioritize requirements?',
         type: 'Interview Question',
-        tags: 'Technical | Prioritization',
+        tags: 'Technical · Prioritization',
       },
       {
         id: 'q3',
         text: 'What is the difference between Agile and Scrum?',
         type: 'Interview Question',
-        tags: 'Technical | Methodology',
+        tags: 'Technical · Methodology',
       },
     ],
   },
@@ -52,13 +56,13 @@ const categories: Category[] = [
         id: 'q4',
         text: 'Explain the difference between IaaS, PaaS, and SaaS.',
         type: 'Interview Question',
-        tags: 'Cloud | Fundamentals',
+        tags: 'Cloud · Fundamentals',
       },
       {
         id: 'q5',
         text: 'How would you design a scalable web application?',
         type: 'System Design Question',
-        tags: 'Architecture | Scalability',
+        tags: 'Architecture · Scalability',
       },
     ],
   },
@@ -70,7 +74,7 @@ const categories: Category[] = [
         id: 'q6',
         text: 'What is the difference between regression and re-testing?',
         type: 'Interview Question',
-        tags: 'Testing | Concepts',
+        tags: 'Testing · Concepts',
       },
     ],
   },
@@ -81,214 +85,179 @@ export default function InterviewPage() {
   const [activeQuestionId, setActiveQuestionId] = useState(
     categories[0].questions[0].id
   )
-  const [activeTab, setActiveTab] = useState<'example' | 'feedback'>('example')
+  const [activeTab, setActiveTab] =
+    useState<'example' | 'feedback'>('example')
 
   const activeCategory =
-    categories.find((c) => c.id === activeCategoryId) ?? categories[0]
+    categories.find(c => c.id === activeCategoryId) ?? categories[0]
+
   const activeQuestion =
-    activeCategory.questions.find((q) => q.id === activeQuestionId) ??
+    activeCategory.questions.find(q => q.id === activeQuestionId) ??
     activeCategory.questions[0]
 
   return (
-    <div className="flex flex-col gap-6 rounded-3xl bg-slate-50 p-4 md:p-6 lg:p-8">
-      {/* Header */}
-      <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
+    <div className="relative min-h-screen px-6 py-10 text-white">
+      {/* GRID BG */}
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:40px_40px]" />
+
+      {/* GLOWS */}
+      <div className="pointer-events-none absolute -top-40 -left-40 h-96 w-96 rounded-full bg-teal-400/20 blur-3xl" />
+      <div className="pointer-events-none absolute top-40 -right-40 h-96 w-96 rounded-full bg-cyan-400/20 blur-3xl" />
+
+      <div className="relative max-w-7xl mx-auto space-y-6">
+        {/* HEADER */}
         <div>
-          <h1 className="text-2xl font-semibold md:text-3xl">
+          <h1 className="text-3xl font-bold tracking-tight">
             Interview Preparation
           </h1>
-          <p className="mt-1 text-sm text-slate-600">
-            Record your answers, get instant AI feedback, and practice with expert
-            examples.
+          <p className="mt-1 text-sm text-white/70 max-w-2xl">
+            Practice interview questions, record answers, and get AI-powered feedback to improve clarity and confidence.
           </p>
         </div>
-      </div>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1.4fr)_minmax(0,1.1fr)]">
-        {/* LEFT: categories + questions */}
-        <Card className="border-0 bg-white shadow-sm">
-          <CardHeader className="pb-4">
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search questions..."
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm outline-none placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-2 focus:ring-teal-100"
-              />
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {categories.map((category) => (
-              <div key={category.id} className="rounded-2xl bg-slate-50 p-3">
-                <button
-                  type="button"
-                  className="mb-2 flex w-full items-center justify-between text-left"
-                  onClick={() => {
-                    setActiveCategoryId(category.id)
-                    setActiveQuestionId(category.questions[0]?.id ?? '')
-                  }}
-                >
-                  <span className="text-sm font-semibold text-slate-800">
-                    {category.title}
-                  </span>
-                </button>
-                <div className="space-y-1.5">
-                  {category.questions.map((q) => {
-                    const isActive = q.id === activeQuestionId
-                    return (
-                      <button
-                        key={q.id}
-                        type="button"
-                        onClick={() => {
-                          setActiveCategoryId(category.id)
-                          setActiveQuestionId(q.id)
-                        }}
-                        className={[
-                          'w-full rounded-xl border px-3 py-2 text-left text-xs transition-colors',
-                          isActive
-                            ? 'border-teal-600 bg-teal-50 text-teal-900'
-                            : 'border-transparent bg-white text-slate-700 hover:bg-slate-100',
-                        ].join(' ')}
-                      >
-                        <div className="line-clamp-2 font-medium">{q.text}</div>
-                        <div className="mt-1 text-[11px] text-slate-500">
-                          {q.tags}
-                        </div>
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        {/* MIDDLE: question + video area */}
-        <div className="space-y-4">
-          <Card className="border-0 bg-white shadow-sm">
+        <div className="grid gap-6 lg:grid-cols-[1.15fr_1.5fr_1.15fr]">
+          {/* LEFT */}
+          <Card className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur shadow-xl">
             <CardHeader className="pb-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-teal-600">
-                {activeQuestion.type}
-              </p>
-              <CardTitle className="text-base md:text-lg">
-                {activeQuestion.text}
-              </CardTitle>
+              <div className="relative">
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-white/40" />
+                <input
+                  placeholder="Search questions…"
+                  className="w-full rounded-xl bg-black/40 border border-white/10 py-2 pl-9 pr-3 text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-teal-400/40"
+                />
+              </div>
             </CardHeader>
-          </Card>
 
-          <Card className="relative overflow-hidden border-0 bg-slate-900 text-white shadow-lg">
-            <CardContent className="flex flex-col items-center justify-center gap-3 py-10">
-              <div className="rounded-2xl bg-black/40 px-4 py-3 text-center text-xs text-slate-100">
-                <p className="mb-1 font-medium">Ready to Record?</p>
-                <p className="text-[11px] text-slate-200/80">
-                  Enable your camera and microphone to start practicing. Your
-                  recording will begin after a short countdown.
-                </p>
-              </div>
+            <CardContent className="space-y-4">
+              {categories.map(category => (
+                <div key={category.id} className="rounded-2xl bg-black/30 p-3">
+                  <button
+                    className="mb-2 w-full text-left text-sm font-semibold text-teal-300"
+                    onClick={() => {
+                      setActiveCategoryId(category.id)
+                      setActiveQuestionId(category.questions[0]?.id ?? '')
+                    }}
+                  >
+                    {category.title}
+                  </button>
 
-              <div className="mt-4 flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-black/40">
-                  <Video className="h-4 w-4" />
+                  <div className="space-y-2">
+                    {category.questions.map(q => {
+                      const isActive = q.id === activeQuestionId
+                      return (
+                        <button
+                          key={q.id}
+                          onClick={() => {
+                            setActiveCategoryId(category.id)
+                            setActiveQuestionId(q.id)
+                          }}
+                          className={`w-full rounded-xl border px-3 py-2 text-left text-xs transition
+                            ${
+                              isActive
+                                ? 'bg-teal-400/20 border-teal-400 text-teal-200'
+                                : 'bg-black/40 border-white/10 text-white/70 hover:bg-black/60'
+                            }`}
+                        >
+                          <div className="line-clamp-2 font-medium text-white">
+                            {q.text}
+                          </div>
+                          <div className="mt-1 text-[11px] text-white/50">
+                            {q.tags}
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-black/40">
-                  <Mic className="h-4 w-4" />
-                </div>
-              </div>
+              ))}
             </CardContent>
           </Card>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <Button className="flex items-center gap-2 rounded-full bg-teal-600 px-5 py-2 text-sm font-semibold hover:bg-teal-700">
-              <span className="inline-block h-2 w-2 rounded-full bg-red-500" />
-              Start Recording
-            </Button>
-            <Button
-              variant="outline"
-              className="flex items-center gap-2 rounded-full border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-100"
-            >
-              <Sparkles className="h-4 w-4" />
-              View Example Answer
-            </Button>
-          </div>
-        </div>
+          {/* MIDDLE */}
+          <div className="space-y-4">
+            <Card className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur shadow-xl">
+              <CardHeader>
+                <p className="text-xs uppercase tracking-wide text-teal-300">
+                  {activeQuestion.type}
+                </p>
+                <CardTitle className="text-lg text-white">
+                  {activeQuestion.text}
+                </CardTitle>
+              </CardHeader>
+            </Card>
 
-        {/* RIGHT: Example Answer / AI Feedback */}
-        <Card className="border-0 bg-white shadow-sm">
-          <CardHeader className="pb-3">
-            <div className="flex border-b border-slate-200 text-sm">
-              <button
-                type="button"
-                onClick={() => setActiveTab('example')}
-                className={[
-                  'px-4 py-2',
-                  activeTab === 'example'
-                    ? 'border-b-2 border-teal-600 font-semibold text-teal-700'
-                    : 'text-slate-500',
-                ].join(' ')}
+            <Card className="rounded-3xl border border-white/10 bg-black/60 backdrop-blur shadow-xl">
+              <CardContent className="flex flex-col items-center justify-center gap-4 py-12">
+                <p className="text-sm text-white/70 text-center max-w-sm">
+                  Enable your camera and microphone to start recording your answer.
+                </p>
+
+                <div className="flex gap-3">
+                  <div className="h-10 w-10 rounded-full bg-black/40 flex items-center justify-center">
+                    <Video className="w-4 h-4" />
+                  </div>
+                  <div className="h-10 w-10 rounded-full bg-black/40 flex items-center justify-center">
+                    <Mic className="w-4 h-4" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="flex flex-wrap gap-3">
+              <Button className="rounded-full bg-teal-400 text-black hover:bg-teal-300">
+                <span className="mr-2 inline-block h-2 w-2 rounded-full bg-red-500" />
+                Start Recording
+              </Button>
+
+              <Button
+                variant="outline"
+                className="rounded-full border-white/20 bg-black/40 text-white hover:bg-black/60"
               >
-                Example Answer
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('feedback')}
-                className={[
-                  'px-4 py-2',
-                  activeTab === 'feedback'
-                    ? 'border-b-2 border-teal-600 font-semibold text-teal-700'
-                    : 'text-slate-500',
-                ].join(' ')}
-              >
-                AI Feedback
-              </button>
+                <Sparkles className="w-4 h-4 mr-2" />
+                View Example
+              </Button>
             </div>
-          </CardHeader>
-          <CardContent className="max-h-[460px] space-y-3 overflow-y-auto text-sm text-slate-700">
-            {activeTab === 'example' ? (
-              <>
-                <p className="font-semibold">
-                  Structure your answer using the STAR method:
-                </p>
-                <p className="mt-2 font-semibold">Situation</p>
-                <p>
-                  &quot;In my previous role as a Business Analyst, we were launching a
-                  new CRM system. One of the key stakeholders was very resistant to the
-                  change and worried it would slow down his team.&quot;
-                </p>
+          </div>
 
-                <p className="mt-2 font-semibold">Task</p>
-                <p>
-                  &quot;My task was to ensure the project moved forward smoothly and to
-                  get his buy-in without delaying the launch.&quot;
-                </p>
+          {/* RIGHT */}
+          <Card className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur shadow-xl">
+            <CardHeader className="pb-3">
+              <div className="flex border-b border-white/10 text-sm">
+                {['example', 'feedback'].map(tab => (
+                  <button
+                    key={tab}
+                    onClick={() =>
+                      setActiveTab(tab as 'example' | 'feedback')
+                    }
+                    className={`px-4 py-2 transition ${
+                      activeTab === tab
+                        ? 'border-b-2 border-teal-400 text-teal-300 font-semibold'
+                        : 'text-white/50'
+                    }`}
+                  >
+                    {tab === 'example'
+                      ? 'Example Answer'
+                      : 'AI Feedback'}
+                  </button>
+                ))}
+              </div>
+            </CardHeader>
 
-                <p className="mt-2 font-semibold">Action</p>
+            <CardContent className="max-h-[460px] overflow-y-auto text-sm text-white/80 space-y-3">
+              {activeTab === 'example' ? (
                 <p>
-                  &quot;I set up a one-on-one meeting, listened to his concerns,
-                  prepared a tailored demo, and involved him in refining the final
-                  workflow.&quot;
+                  Use the <b>STAR</b> method: Situation, Task, Action, Result.
                 </p>
-
-                <p className="mt-2 font-semibold">Result</p>
-                <p>
-                  &quot;He became a strong supporter of the new system, and the rollout
-                  completed on time with minimal disruption.&quot;
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="font-semibold">AI Feedback (sample)</p>
-                <ul className="mt-2 list-disc space-y-1 pl-5">
-                  <li>Good use of the STAR framework.</li>
-                  <li>Try to quantify your impact with numbers where possible.</li>
-                  <li>Mention specific tools or techniques you used.</li>
-                  <li>
-                    Keep your answer concise (around 1.5–2 minutes) for real interviews.
-                  </li>
+              ) : (
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>Good structure and clarity</li>
+                  <li>Try to add metrics or outcomes</li>
+                  <li>Keep the answer concise</li>
                 </ul>
-              </>
-            )}
-          </CardContent>
-        </Card>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   )
