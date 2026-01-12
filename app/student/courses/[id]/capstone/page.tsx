@@ -22,6 +22,8 @@ import {
   TestTube,
   Cloud,
   RotateCcw,
+  ChevronRight,
+  CheckCircle,
 } from 'lucide-react'
 
 /* ======================= TYPES ======================= */
@@ -61,8 +63,14 @@ export default function CapstonePage() {
   /* ======================= LOAD DATA ======================= */
   useEffect(() => {
     const load = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) return router.push('/login')
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+
+      if (!session) {
+        router.replace('/login')
+        return
+      }
 
       const { data: capstoneData } = await supabase
         .from('capstone_projects')
@@ -70,7 +78,10 @@ export default function CapstonePage() {
         .eq('course_id', courseId)
         .maybeSingle()
 
-      if (!capstoneData) return setLoading(false)
+      if (!capstoneData) {
+        setLoading(false)
+        return
+      }
 
       setCapstone(capstoneData)
 
@@ -92,7 +103,9 @@ export default function CapstonePage() {
   const startCapstone = async () => {
     if (!capstone) return
 
-    const { data: { user } } = await supabase.auth.getUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
     if (!user) return
 
     const { data } = await supabase
@@ -109,7 +122,6 @@ export default function CapstonePage() {
       .select()
       .single()
 
-    // 🔥 KEY FIX: show SDLC flow immediately
     setProgress(data)
   }
 
@@ -124,7 +136,7 @@ export default function CapstonePage() {
   if (!capstone) return null
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="max-w-6xl mx-auto space-y-10 py-10">
       <Link href={`/student/courses/${courseId}`}>
         <Button variant="ghost" size="sm">
           <ArrowLeft className="w-4 h-4 mr-2" />
@@ -132,6 +144,7 @@ export default function CapstonePage() {
         </Button>
       </Link>
 
+      {/* ================= CAPSTONE INTRO ================= */}
       <Card>
         <CardHeader>
           <CardTitle>{capstone.title}</CardTitle>
@@ -139,6 +152,7 @@ export default function CapstonePage() {
         </CardHeader>
       </Card>
 
+      {/* ================= START BUTTON ================= */}
       {!progress && (
         <Card>
           <CardContent className="pt-6">
@@ -149,60 +163,127 @@ export default function CapstonePage() {
         </Card>
       )}
 
-      {/* ======================= SDLC FLOW (ALWAYS AFTER START) ======================= */}
+      {/* ================= HORIZONTAL SDLC ROADMAP ================= */}
       {progress && (
-        <div className="space-y-6">
-          {STAGES.map(stage => {
-            const Icon = stage.icon
+        <Card className="bg-background/80 backdrop-blur">
+          <CardHeader>
+            <CardTitle className="text-lg">
+              Capstone Project Roadmap
+            </CardTitle>
+            <CardDescription>
+              Follow the steps from left to right. Click the highlighted step to
+              continue.
+            </CardDescription>
+          </CardHeader>
 
-            const isCompleted = progress.current_stage > stage.id
-            const isCurrent = progress.current_stage === stage.id
+          <CardContent>
+            <div className="flex items-center">
+              {STAGES.map((stage, index) => {
+                const Icon = stage.icon
 
-            const isLocked =
-              progress.current_stage < stage.id ||
-              (stage.id === progress.current_stage + 1 &&
-                progress.submitted_for_review)
+                const isCompleted = progress.current_stage > stage.id
+                const isActive = progress.current_stage === stage.id
+                const isLocked =
+                  progress.current_stage < stage.id ||
+                  (stage.id === progress.current_stage + 1 &&
+                    progress.submitted_for_review)
 
-            return (
-              <Card key={stage.id} className="flex items-center gap-4 p-4">
-                <div
-                  className={`h-12 w-12 rounded-lg flex items-center justify-center ${
-                    isCompleted
-                      ? 'bg-green-500'
-                      : isCurrent
-                      ? 'bg-primary'
-                      : 'bg-muted'
-                  }`}
-                >
-                  <Icon className="h-6 w-6 text-white" />
-                </div>
+                return (
+                  <div key={stage.id} className="flex items-center flex-1">
+                    {/* STEP */}
+                    <div className="flex flex-col items-center relative z-10">
+                      <button
+                        disabled={isLocked}
+                        onClick={() =>
+                          router.push(
+                            `/student/capstone/${capstone.id}/stage/${stage.id}`
+                          )
+                        }
+                        className={`relative w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200
+                          ${
+                            isCompleted
+                              ? 'bg-green-600 text-white'
+                              : isActive
+                              ? 'bg-primary text-primary-foreground ring-4 ring-primary/30 scale-105'
+                              : 'bg-muted text-muted-foreground cursor-not-allowed'
+                          }
+                          ${!isLocked && 'hover:scale-110 hover:shadow-lg'}
+                        `}
+                      >
+                        {isCompleted ? (
+                          <CheckCircle className="w-6 h-6" />
+                        ) : (
+                          <Icon className="w-6 h-6" />
+                        )}
+                      </button>
 
-                <div className="flex-1">
-                  <p className="font-semibold">
-                    Step {stage.id}: {stage.title}
-                  </p>
-                </div>
+                      <span
+                        className={`mt-3 text-xs text-center max-w-[130px]
+                          ${
+                            isActive
+                              ? 'text-primary font-semibold'
+                              : 'text-muted-foreground'
+                          }
+                        `}
+                      >
+                        Step {stage.id}
+                        <br />
+                        {stage.title}
+                      </span>
 
-                {!isLocked ? (
-                  <Button
-                    size="sm"
-                    onClick={() =>
-                      router.push(
-                        `/student/capstone/${capstone.id}/stage/${stage.id}`
-                      )
-                    }
-                  >
-                    {isCompleted ? 'View' : 'Continue'}
-                  </Button>
-                ) : (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Lock className="h-4 w-4" />
-                    Locked
+                      {isActive && (
+                        <span className="mt-1 text-[10px] text-primary flex items-center gap-1">
+                          Click to continue
+                          <ChevronRight className="w-3 h-3" />
+                        </span>
+                      )}
+
+                      {isLocked && (
+                        <span className="mt-1 text-[10px] text-muted-foreground flex items-center gap-1">
+                          <Lock className="w-3 h-3" /> Locked
+                        </span>
+                      )}
+                    </div>
+
+                    {/* CONNECTOR */}
+                    {index !== STAGES.length - 1 && (
+                      <div className="flex-1 relative">
+                        <div
+                          className={`absolute top-1/2 left-0 right-0 h-[3px] -translate-y-1/2 rounded-full transition
+                            ${
+                              progress.current_stage > stage.id
+                                ? 'bg-green-500'
+                                : isActive
+                                ? 'bg-primary/40'
+                                : 'bg-muted'
+                            }
+                          `}
+                        />
+                      </div>
+                    )}
                   </div>
-                )}
-              </Card>
-            )
-          })}
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ================= LEGEND ================= */}
+      {progress && (
+        <div className="flex gap-8 text-xs text-muted-foreground justify-center">
+          <span className="flex items-center gap-2">
+            <span className="w-3 h-3 rounded-full bg-primary" />
+            Current
+          </span>
+          <span className="flex items-center gap-2">
+            <span className="w-3 h-3 rounded-full bg-green-600" />
+            Completed
+          </span>
+          <span className="flex items-center gap-2">
+            <span className="w-3 h-3 rounded-full bg-muted" />
+            Locked
+          </span>
         </div>
       )}
     </div>
