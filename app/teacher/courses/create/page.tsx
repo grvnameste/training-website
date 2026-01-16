@@ -227,7 +227,7 @@ export default function CreateCoursePage() {
         }
       }
 
-      alert('✅ Course published successfully')
+      alert('✅ Course Published successfully')
       router.push('/teacher/dashboard')
       router.refresh()
     } catch (err: any) {
