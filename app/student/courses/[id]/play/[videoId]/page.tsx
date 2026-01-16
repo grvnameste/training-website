@@ -135,7 +135,7 @@ export default function CoursePlayerPage() {
                 />
               ) : (
                 <div className="flex items-center justify-center aspect-video text-white/40">
-                  Video unavailable
+                  Video Unavailable
                 </div>
               )}
             </div>
