@@ -97,20 +97,20 @@ export default function StudentLayout({
   return (
     <div className="min-h-screen bg-[#070b12] text-white">
       {/* GRID BACKGROUND */}
-      <div className="pointer-events-none fixed inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:40px_40px]" />
+      <div className="pointer-events-none fixed inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-size[40px_40px]" />
 
       {/* GLOW */}
       <div className="pointer-events-none fixed -top-40 -left-40 h-96 w-96 bg-teal-400/20 blur-3xl rounded-full" />
       <div className="pointer-events-none fixed top-40 -right-40 h-96 w-96 bg-cyan-400/20 blur-3xl rounded-full" />
 
       {/* ================= HEADER ================= */}
-      <header className="sticky top-0 z-50 h-[72px] backdrop-blur bg-black/40 border-b border-white/5">
+      <header className="sticky top-0 z-50 h-18 backdrop-blur bg-black/40 border-b border-white/5">
         <nav className="flex h-full items-center justify-between px-6">
           <Link
             href="/student/dashboard"
             className="flex items-center gap-2 font-semibold"
           >
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center shadow">
+            <div className="w-9 h-9 rounded-xl bg-linear-to-br from-teal-400 to-cyan-500 flex items-center justify-center shadow">
               <BookOpen className="w-5 h-5 text-black" />
             </div>
             ReadNRevise
@@ -174,7 +174,6 @@ export default function StudentLayout({
               )
             })}
           </nav>
-
           <button
             onClick={handleLogout}
             className="mt-4 w-12 h-12 rounded-xl flex items-center justify-center text-red-400 hover:bg-red-500/10 transition"
@@ -183,11 +182,9 @@ export default function StudentLayout({
           </button>
         </aside>
 
-        {/* ===== CONTENT ===== */}
-        <main className="ml-[96px] flex-1 px-8 py-8">
-          {children}
-        </main>
-      </div>
+        {/* CONTENT */}
+        <section className="flex-1">{children}</section>
+      </main>
     </div>
   )
 }
