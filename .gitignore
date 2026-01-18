@@ -26,3 +26,10 @@ yarn-error.log*
 # vercel
 .vercel
 package-lock.json
+
+# next-video
+videos/*
+!videos/*.json
+!videos/*.js
+!videos/*.ts
+public/_next-video

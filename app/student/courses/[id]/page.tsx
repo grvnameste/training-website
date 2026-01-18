@@ -1,3 +1,4 @@
+// app/student/courses/[id]/page.tsx
 'use client'
 
 import { useEffect, useState } from 'react'

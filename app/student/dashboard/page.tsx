@@ -1,3 +1,4 @@
+// app/student/dashboard/page.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -8,6 +9,15 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Search, Lock } from 'lucide-react'
 import { Input } from '@/components/ui/input'
+
+interface Course {
+  id: string
+  title: string
+  price: number
+  thumbnail: string
+  description: string
+  enrollments: number
+}
 
 export default function StudentDashboard() {
   const router = useRouter()

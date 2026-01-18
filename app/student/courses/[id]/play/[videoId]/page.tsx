@@ -1,16 +1,21 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
-import Link from 'next/link'
-import supabase from '@/lib/supabase/client'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { ArrowLeft, ChevronRight } from 'lucide-react'
+import { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import supabase from '@/lib/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { ArrowLeft, ChevronRight } from 'lucide-react';
+import Video from 'next-video';
+import getStarted from '@/videos/get-started.mp4.json';
+import Instaplay from 'player.style/instaplay/react';
+import ReactPlayer from 'next-video/player'
 
 interface Lesson {
   id: string
   title: string
+  description: string | null
   video_url: string | null
 }
 
@@ -56,7 +61,7 @@ export default function CoursePlayerPage() {
       if (sectionIds.length > 0) {
         const { data: lessonData } = await supabase
           .from('lessons')
-          .select('id, title, video_url')
+          .select('id, title, description, video_url')
           .in('section_id', sectionIds)
           .order('order_index', { ascending: true })
 
@@ -91,32 +96,20 @@ export default function CoursePlayerPage() {
 
   return (
     <div className="relative min-h-screen px-8 py-12 text-white">
-
-      {/* GRID BACKGROUND */}
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:40px_40px]" />
 
-      {/* GLOW */}
-      <div className="pointer-events-none absolute -top-40 -left-40 h-96 w-96 bg-teal-400/20 blur-3xl rounded-full" />
-      <div className="pointer-events-none absolute top-40 -right-40 h-96 w-96 bg-cyan-400/20 blur-3xl rounded-full" />
-
       <div className="relative max-w-7xl mx-auto space-y-8">
-
         {/* TOP BAR */}
         <div className="flex items-center justify-between">
           <Link href={`/student/courses/${courseId}`}>
-            <Button
-              variant="ghost"
-              className="text-white/70 hover:text-white"
-            >
+            <Button variant="ghost" className="text-white/70 hover:text-white">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Course
             </Button>
           </Link>
 
           <div className="hidden md:block text-right">
-            <p className="text-xs text-white/40 uppercase">
-              Course
-            </p>
+            <p className="text-xs text-white/40 uppercase">Course</p>
             <p className="text-sm font-medium max-w-xs truncate">
               {course.title}
             </p>
@@ -124,34 +117,47 @@ export default function CoursePlayerPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-
           {/* PLAYER */}
           <div className="lg:col-span-3 space-y-6">
             <div>
               <h1 className="text-2xl font-semibold">
-                Lesson {currentVideoIndex + 1}:{' '}
-                {currentLesson?.title}
+                Lesson {currentVideoIndex + 1}: {currentLesson?.title}
               </h1>
               <p className="text-xs text-white/50">
-                Lesson {currentVideoIndex + 1} of{' '}
-                {course.lessons.length}
+                Lesson {currentVideoIndex + 1} of {course.lessons.length}
               </p>
             </div>
 
+            {/* VIDEO */}
             <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-black shadow-2xl">
               {currentLesson?.video_url ? (
-                <video
-                  src={currentLesson.video_url}
+                
+                <Video 
+                  src={getStarted} theme={Instaplay} 
                   controls
                   autoPlay
                   className="w-full aspect-video"
                 />
               ) : (
                 <div className="flex items-center justify-center aspect-video text-white/40">
-                  Video unavailable
+                  Video Unavailable
                 </div>
               )}
             </div>
+
+            {/* ✅ LESSON DESCRIPTION (ADDED) */}
+            {currentLesson?.description && (
+              <Card className="bg-white/5 border border-white/10 rounded-2xl">
+                <CardContent className="p-5 space-y-2">
+                  <h3 className="text-sm font-semibold text-white">
+                    Lesson Description
+                  </h3>
+                  <p className="text-sm text-white/70 leading-relaxed">
+                    {currentLesson.description}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
 
             {/* PROGRESS */}
             <div className="space-y-4">
@@ -172,9 +178,7 @@ export default function CoursePlayerPage() {
                 <Button
                   className="w-full rounded-full bg-teal-400 text-black hover:bg-teal-300"
                   onClick={() => {
-                    setCurrentVideoIndex(
-                      currentVideoIndex + 1
-                    )
+                    setCurrentVideoIndex(currentVideoIndex + 1)
                     router.push(
                       `/student/courses/${courseId}/play/${nextLesson.id}`
                     )
@@ -219,3 +223,4 @@ export default function CoursePlayerPage() {
     </div>
   )
 }
+
