@@ -1,12 +1,16 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
-import Link from 'next/link'
-import supabase from '@/lib/supabase/client'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { ArrowLeft, ChevronRight } from 'lucide-react'
+import { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import supabase from '@/lib/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { ArrowLeft, ChevronRight } from 'lucide-react';
+import Video from 'next-video';
+import getStarted from '@/videos/get-started.mp4.json';
+import Instaplay from 'player.style/instaplay/react';
+import ReactPlayer from 'next-video/player'
 
 interface Lesson {
   id: string
@@ -127,8 +131,9 @@ export default function CoursePlayerPage() {
             {/* VIDEO */}
             <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-black shadow-2xl">
               {currentLesson?.video_url ? (
-                <video
-                  src={currentLesson.video_url}
+                
+                <Video 
+                  src={getStarted} theme={Instaplay} 
                   controls
                   autoPlay
                   className="w-full aspect-video"
@@ -218,3 +223,4 @@ export default function CoursePlayerPage() {
     </div>
   )
 }
+
