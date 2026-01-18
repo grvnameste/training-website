@@ -90,8 +90,6 @@ export default function RegisterPage() {
 
       {/* GLOW */}
       <div className="absolute -top-40 -left-40 h-96 w-96 rounded-full bg-teal-400/20 blur-3xl" />
-      <div className="absolute top-40 -right-40 h-96 w-96 rounded-full bg-cyan-400/20 blur-3xl" />
-
       <Card className="relative w-full max-w-md rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-2xl">
         <CardHeader className="text-center space-y-3">
           <div className="mx-auto w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center shadow-lg">
@@ -164,10 +162,10 @@ export default function RegisterPage() {
           </div>
 
           {/* OAUTH */}
-          <div className="flex w-full flex-row gap-4">
+          <div className="space-y-2">
             <Button
               variant="outline"
-              className="w-full rounded-full gap-4"
+              className="w-full rounded-full gap-2 border-white/20 bg-white/5 text-white hover:bg-white/10"
               onClick={() => registerWithProvider('google')}
             >
               <FaGoogle className="h-4 w-4" />
@@ -176,7 +174,7 @@ export default function RegisterPage() {
 
             <Button
               variant="outline"
-              className="w-full rounded-full gap-4"
+              className="w-full rounded-full gap-2 border-white/20 bg-white/5 text-white hover:bg-white/10"
               onClick={() => registerWithProvider('github')}
             >
               <Github className="h-4 w-4" />

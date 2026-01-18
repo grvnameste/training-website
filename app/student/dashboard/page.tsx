@@ -64,16 +64,14 @@ export default function StudentDashboard() {
 
   return (
     <div className="relative min-h-screen px-10 py-16 bg-[#070b12] text-white">
-    <div className="relative min-h-screen px-10 py-16 bg-[#070b12] text-white">
       {/* GRID BACKGROUND */}
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:40px_40px]" />
 
-      <div className="relative mx-full max-full space-y-10">
-
-        {/* HERO */}
-        <div className="rounded-3xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-8 py-10 text-white shadow-2xl">
-          <p className="text-xs uppercase tracking-widest text-slate-400">
-            Dashboard
+      <div className="relative max-w-7xl mx-auto space-y-14">
+        {/* ================= HERO ================= */}
+        <div className="rounded-3xl border border-white/10 bg-gradient-to-r from-[#0c111a] via-[#0f172a] to-[#0c111a] px-12 py-12 shadow-2xl">
+          <p className="text-xs uppercase tracking-widest text-white/40">
+            Student Dashboard
           </p>
           <h1 className="text-3xl font-semibold mt-3">
             Welcome to your learning dashboard
@@ -91,7 +89,7 @@ export default function StudentDashboard() {
             <div className="relative px-12 py-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
               <div>
                 <h2 className="text-2xl font-semibold text-teal-300">
-                  Action Required
+                  Action Required 🚀
                 </h2>
                 <p className="mt-2 text-white/80 max-w-2xl">
                   Complete the questionnaire to unlock courses,
@@ -150,8 +148,8 @@ export default function StudentDashboard() {
               </h3>
 
               <p className="text-white/60 max-w-md mx-auto">
-                Complete the questionnaire to unlock your personalized
-                learning path and start building real projects.
+                Complete the questionnaire to unlock your
+                personalized learning path.
               </p>
 
               <Link href="/student/questionnaire">
