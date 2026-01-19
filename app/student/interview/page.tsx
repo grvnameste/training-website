@@ -96,43 +96,37 @@ export default function InterviewPage() {
     activeCategory.questions[0]
 
   return (
-    <div className="relative min-h-screen px-6 py-10 text-white">
-      {/* GRID BG */}
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:40px_40px]" />
-
-      {/* GLOWS */}
-      <div className="pointer-events-none absolute -top-40 -left-40 h-96 w-96 rounded-full bg-teal-400/20 blur-3xl" />
-      <div className="pointer-events-none absolute top-40 -right-40 h-96 w-96 rounded-full bg-cyan-400/20 blur-3xl" />
-
-      <div className="relative max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen px-6 py-10 bg-slate-50 text-slate-900">
+      <div className="max-w-7xl mx-auto space-y-6">
         {/* HEADER */}
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
             Interview Preparation
           </h1>
-          <p className="mt-1 text-sm text-white/70 max-w-2xl">
-            Practice interview questions, record answers, and get AI-powered feedback to improve clarity and confidence.
+          <p className="mt-1 text-sm text-slate-600 max-w-2xl">
+            Practice interview questions, record answers, and get AI-powered
+            feedback to improve clarity and confidence.
           </p>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[1.15fr_1.5fr_1.15fr]">
           {/* LEFT */}
-          <Card className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur shadow-xl">
+          <Card className="rounded-xl border bg-white shadow-sm">
             <CardHeader className="pb-3">
               <div className="relative">
-                <Search className="absolute left-3 top-2.5 h-4 w-4 text-white/40" />
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                 <input
                   placeholder="Search questions…"
-                  className="w-full rounded-xl bg-black/40 border border-white/10 py-2 pl-9 pr-3 text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-teal-400/40"
+                  className="w-full rounded-lg border py-2 pl-9 pr-3 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </CardHeader>
 
             <CardContent className="space-y-4">
               {categories.map(category => (
-                <div key={category.id} className="rounded-2xl bg-black/30 p-3">
+                <div key={category.id} className="rounded-lg bg-slate-50 p-3">
                   <button
-                    className="mb-2 w-full text-left text-sm font-semibold text-teal-300"
+                    className="mb-2 w-full text-left text-sm font-semibold text-blue-700"
                     onClick={() => {
                       setActiveCategoryId(category.id)
                       setActiveQuestionId(category.questions[0]?.id ?? '')
@@ -151,17 +145,16 @@ export default function InterviewPage() {
                             setActiveCategoryId(category.id)
                             setActiveQuestionId(q.id)
                           }}
-                          className={`w-full rounded-xl border px-3 py-2 text-left text-xs transition
-                            ${
-                              isActive
-                                ? 'bg-teal-400/20 border-teal-400 text-teal-200'
-                                : 'bg-black/40 border-white/10 text-white/70 hover:bg-black/60'
-                            }`}
+                          className={`w-full rounded-lg border px-3 py-2 text-left text-xs transition ${
+                            isActive
+                              ? 'bg-blue-50 border-blue-500 text-blue-700 font-medium'
+                              : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100'
+                          }`}
                         >
-                          <div className="line-clamp-2 font-medium text-white">
+                          <div className="line-clamp-2 font-medium">
                             {q.text}
                           </div>
-                          <div className="mt-1 text-[11px] text-white/50">
+                          <div className="mt-1 text-[11px] text-slate-500">
                             {q.tags}
                           </div>
                         </button>
@@ -175,43 +168,44 @@ export default function InterviewPage() {
 
           {/* MIDDLE */}
           <div className="space-y-4">
-            <Card className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur shadow-xl">
+            <Card className="rounded-xl border bg-white shadow-sm">
               <CardHeader>
-                <p className="text-xs uppercase tracking-wide text-teal-300">
+                <p className="text-xs uppercase tracking-wide text-blue-600">
                   {activeQuestion.type}
                 </p>
-                <CardTitle className="text-lg text-white">
+                <CardTitle className="text-lg">
                   {activeQuestion.text}
                 </CardTitle>
               </CardHeader>
             </Card>
 
-            <Card className="rounded-3xl border border-white/10 bg-black/60 backdrop-blur shadow-xl">
+            <Card className="rounded-xl border bg-white shadow-sm">
               <CardContent className="flex flex-col items-center justify-center gap-4 py-12">
-                <p className="text-sm text-white/70 text-center max-w-sm">
-                  Enable your camera and microphone to start recording your answer.
+                <p className="text-sm text-slate-600 text-center max-w-sm">
+                  Enable your camera and microphone to start recording your
+                  answer.
                 </p>
 
                 <div className="flex gap-3">
-                  <div className="h-10 w-10 rounded-full bg-black/40 flex items-center justify-center">
-                    <Video className="w-4 h-4" />
+                  <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center">
+                    <Video className="w-4 h-4 text-slate-600" />
                   </div>
-                  <div className="h-10 w-10 rounded-full bg-black/40 flex items-center justify-center">
-                    <Mic className="w-4 h-4" />
+                  <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center">
+                    <Mic className="w-4 h-4 text-slate-600" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             <div className="flex flex-wrap gap-3">
-              <Button className="rounded-full bg-teal-400 text-black hover:bg-teal-300">
+              <Button className="rounded-full bg-blue-600 hover:bg-blue-700 text-white">
                 <span className="mr-2 inline-block h-2 w-2 rounded-full bg-red-500" />
                 Start Recording
               </Button>
 
               <Button
                 variant="outline"
-                className="rounded-full border-white/20 bg-black/40 text-white hover:bg-black/60"
+                className="rounded-full border-slate-300 bg-white text-slate-700 hover:bg-slate-100"
               >
                 <Sparkles className="w-4 h-4 mr-2" />
                 View Example
@@ -220,9 +214,9 @@ export default function InterviewPage() {
           </div>
 
           {/* RIGHT */}
-          <Card className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur shadow-xl">
+          <Card className="rounded-xl border bg-white shadow-sm">
             <CardHeader className="pb-3">
-              <div className="flex border-b border-white/10 text-sm">
+              <div className="flex border-b text-sm">
                 {['example', 'feedback'].map(tab => (
                   <button
                     key={tab}
@@ -231,8 +225,8 @@ export default function InterviewPage() {
                     }
                     className={`px-4 py-2 transition ${
                       activeTab === tab
-                        ? 'border-b-2 border-teal-400 text-teal-300 font-semibold'
-                        : 'text-white/50'
+                        ? 'border-b-2 border-blue-600 text-blue-700 font-semibold'
+                        : 'text-slate-500'
                     }`}
                   >
                     {tab === 'example'
@@ -243,7 +237,7 @@ export default function InterviewPage() {
               </div>
             </CardHeader>
 
-            <CardContent className="max-h-[460px] overflow-y-auto text-sm text-white/80 space-y-3">
+            <CardContent className="max-h-[460px] overflow-y-auto text-sm text-slate-700 space-y-3">
               {activeTab === 'example' ? (
                 <p>
                   Use the <b>STAR</b> method: Situation, Task, Action, Result.

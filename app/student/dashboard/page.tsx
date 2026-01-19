@@ -1,4 +1,3 @@
-// app/student/dashboard/page.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -63,61 +62,55 @@ export default function StudentDashboard() {
   if (loading) return null
 
   return (
-    <div className="relative min-h-screen px-10 py-16 bg-[#070b12] text-white">
-      {/* GRID BACKGROUND */}
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:40px_40px]" />
+    <div className="min-h-screen px-10 py-12 bg-slate-50 text-slate-900">
+      <div className="max-w-7xl mx-auto space-y-12">
 
-      <div className="relative max-w-7xl mx-auto space-y-14">
         {/* ================= HERO ================= */}
-        <div className="rounded-3xl border border-white/10 bg-gradient-to-r from-[#0c111a] via-[#0f172a] to-[#0c111a] px-12 py-12 shadow-2xl">
-          <p className="text-xs uppercase tracking-widest text-white/40">
+        <div className="rounded-2xl border bg-white px-10 py-10 shadow-sm">
+          <p className="text-xs uppercase tracking-widest text-slate-500">
             Student Dashboard
           </p>
           <h1 className="text-3xl font-semibold mt-3">
             Welcome to your learning dashboard
           </h1>
-          <p className="text-white/60 mt-2">
+          <p className="text-slate-600 mt-2">
             Track progress and unlock your learning journey
           </p>
         </div>
 
         {/* ================= ACTION REQUIRED ================= */}
         {!questionnaireCompleted && (
-          <div className="relative rounded-[32px] border border-teal-400/60 bg-[#062b2b] shadow-[0_20px_60px_rgba(0,0,0,0.6)]">
-            <div className="absolute inset-0 rounded-[32px] bg-gradient-to-r from-teal-400/10 to-cyan-400/10 pointer-events-none" />
-
-            <div className="relative px-12 py-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-              <div>
-                <h2 className="text-2xl font-semibold text-teal-300">
-                  Action Required 🚀
-                </h2>
-                <p className="mt-2 text-white/80 max-w-2xl">
-                  Complete the questionnaire to unlock courses,
-                  capstone projects, and learning features.
-                </p>
-              </div>
-
-              <Link href="/student/questionnaire">
-                <Button className="rounded-full px-10 py-3 bg-teal-400 text-black hover:bg-teal-300 shadow-lg">
-                  Complete Questionnaire
-                </Button>
-              </Link>
+          <div className="rounded-2xl border border-blue-200 bg-blue-50 px-10 py-8 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+            <div>
+              <h2 className="text-2xl font-semibold text-blue-700">
+                Action Required
+              </h2>
+              <p className="mt-2 text-slate-700 max-w-2xl">
+                Complete the questionnaire to unlock courses,
+                capstone projects, and learning features.
+              </p>
             </div>
+
+            <Link href="/student/questionnaire">
+              <Button className="rounded-full px-10 bg-blue-600 hover:bg-blue-700 text-white">
+                Complete Questionnaire
+              </Button>
+            </Link>
           </div>
         )}
 
         {/* ================= SEARCH ================= */}
-        <Card className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur shadow-xl">
-          <CardContent className="pt-8">
+        <Card className="rounded-2xl border bg-white shadow-sm">
+          <CardContent className="pt-6">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1 relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                 <Input
                   placeholder="Search courses"
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   disabled={!questionnaireCompleted}
-                  className="pl-11 rounded-xl bg-black/30 border-white/10 text-white placeholder:text-white/40"
+                  className="pl-11"
                 />
               </div>
 
@@ -125,7 +118,7 @@ export default function StudentDashboard() {
                 disabled={!questionnaireCompleted}
                 value={priceFilter}
                 onChange={e => setPriceFilter(e.target.value)}
-                className="px-5 py-3 rounded-xl border border-white/10 bg-black/30 text-white"
+                className="px-5 py-3 rounded-lg border bg-white text-slate-700"
               >
                 <option value="all">All</option>
                 <option value="free">Free</option>
@@ -137,23 +130,23 @@ export default function StudentDashboard() {
 
         {/* ================= LOCKED STATE ================= */}
         {!questionnaireCompleted && (
-          <Card className="rounded-3xl border border-dashed border-white/20 bg-white/5 backdrop-blur shadow-xl">
+          <Card className="rounded-2xl border border-dashed bg-white shadow-sm">
             <CardContent className="py-24 text-center space-y-6">
-              <div className="mx-auto w-20 h-20 rounded-full bg-white/10 flex items-center justify-center">
-                <Lock className="w-10 h-10 text-white/40" />
+              <div className="mx-auto w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center">
+                <Lock className="w-10 h-10 text-slate-400" />
               </div>
 
               <h3 className="text-2xl font-semibold">
                 Courses are locked
               </h3>
 
-              <p className="text-white/60 max-w-md mx-auto">
+              <p className="text-slate-600 max-w-md mx-auto">
                 Complete the questionnaire to unlock your
                 personalized learning path.
               </p>
 
               <Link href="/student/questionnaire">
-                <Button className="rounded-full px-12 bg-teal-400 text-black hover:bg-teal-300">
+                <Button className="rounded-full px-12 bg-blue-600 hover:bg-blue-700 text-white">
                   Unlock Courses
                 </Button>
               </Link>

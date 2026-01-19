@@ -3,41 +3,36 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* ================= THEME VARIABLES ================= */
+/* ================= PROFESSIONAL BLUE-WHITE LMS THEME ================= */
 
 :root {
-  --background: oklch(0.98 0 0);
-  --foreground: oklch(0.15 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.15 0 0);
-  --primary: oklch(0.42 0.26 262.46);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.95 0.01 252.35);
-  --secondary-foreground: oklch(0.42 0.26 262.46);
-  --accent: oklch(0.65 0.2 29.23);
-  --accent-foreground: oklch(1 0 0);
-  --border: oklch(0.92 0 0);
-  --input: oklch(0.98 0 0);
-  --ring: oklch(0.42 0.26 262.46);
+  /* ========== BASE ========== */
+  --background: #ffffff;          /* pure white */
+  --foreground: #0f172a;          /* slate-900 */
+
+  /* ========== CARDS ========== */
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+
+  /* ========== PRIMARY BRAND BLUE ========== */
+  --primary: #2563eb;             /* blue-600 */
+  --primary-foreground: #ffffff;
+
+  /* ========== SOFT SECTIONS ========== */
+  --secondary: #f1f5f9;           /* slate-100 */
+  --secondary-foreground: #0f172a;
+
+  /* ========== ACCENTS ========== */
+  --accent: #3b82f6;              /* blue-500 */
+  --accent-foreground: #ffffff;
+
+  /* ========== UI ELEMENTS ========== */
+  --border: #e5e7eb;              /* gray-200 */
+  --input: #ffffff;
+  --ring: #2563eb;
 }
 
-.dark {
-  --background: oklch(0.12 0 0);
-  --foreground: oklch(0.95 0 0);
-  --card: oklch(0.2 0 0);
-  --card-foreground: oklch(0.95 0 0);
-  --primary: oklch(0.65 0.2 262.46);
-  --primary-foreground: oklch(0.12 0 0);
-  --secondary: oklch(0.25 0 0);
-  --secondary-foreground: oklch(0.95 0 0);
-  --accent: oklch(0.72 0.22 29.23);
-  --accent-foreground: oklch(0.12 0 0);
-  --border: oklch(0.25 0 0);
-  --input: oklch(0.2 0 0);
-  --ring: oklch(0.65 0.2 262.46);
-}
-
-/* ================= TAILWIND THEME ================= */
+/* ================= TAILWIND THEME TOKENS ================= */
 
 @theme inline {
   --font-sans: 'Geist', 'Geist Fallback';
@@ -66,98 +61,6 @@
   }
 
   body {
-    @apply bg-background text-foreground;
-  }
-}
-
-/* ================= RESUME PRINT (ONLY RESUME) ================= */
-
-@media print {
-  /* Hide EVERYTHING */
-  body * {
-    visibility: hidden !important;
-  }
-
-  /* Show ONLY resume */
-  #resume-print,
-  #resume-print * {
-    visibility: visible !important;
-  }
-
-  /* Position resume at top-left */
-  #resume-print {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    background: white;
-  }
-
-  /* Force light mode */
-  :root,
-  .dark {
-    --background: white;
-    --foreground: black;
-    --card: white;
-    --card-foreground: black;
-    --border: black;
-  }
-
-  body {
-    background: white !important;
-    color: black !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-
-  /* Hide interactive UI explicitly */
-  button,
-  svg,
-  input,
-  textarea,
-  .no-print {
-    display: none !important;
-  }
-
-  /* Remove card effects */
-  .shadow,
-  .shadow-sm,
-  .shadow-md,
-  .rounded,
-  .rounded-lg,
-  .rounded-md,
-  .rounded-xl {
-    box-shadow: none !important;
-    border-radius: 0 !important;
-  }
-
-  /* Typography (ATS friendly) */
-  * {
-    font-size: 12px !important;
-    line-height: 1.45 !important;
-    color: black !important;
-  }
-
-  h1 {
-    font-size: 18px !important;
-    font-weight: 700 !important;
-  }
-
-  h2 {
-    font-size: 13px !important;
-    font-weight: 700 !important;
-    margin-top: 12px !important;
-  }
-
-  /* Avoid page breaks */
-  section {
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-
-  /* Page size */
-  @page {
-    size: A4;
-    margin: 1in;
+    @apply bg-background text-foreground font-sans antialiased;
   }
 }

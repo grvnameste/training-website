@@ -1,14 +1,14 @@
-//app/api/trello/board-cards-count/route.ts
 import { NextResponse } from 'next/server'
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url)
     const boardId = searchParams.get('boardId')
+    const label = searchParams.get('label')
 
-    if (!boardId) {
+    if (!boardId || !label) {
       return NextResponse.json(
-        { error: 'boardId required' },
+        { error: 'boardId and label required' },
         { status: 400 }
       )
     }
@@ -28,8 +28,12 @@ export async function GET(req: Request) {
 
     const cards = await res.json()
 
+    const studentCards = cards.filter((card: any) =>
+      card.labels?.some((l: any) => l.name === label)
+    )
+
     return NextResponse.json({
-      count: cards.length,
+      count: studentCards.length,
     })
   } catch (err) {
     console.error('Trello count error:', err)

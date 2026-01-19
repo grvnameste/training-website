@@ -1,4 +1,4 @@
-//app/layout.tsx
+// app/layout.tsx
 import type { Metadata } from 'next'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
@@ -16,7 +16,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="font-sans antialiased bg-background text-foreground">
+      {/* ❌ global bg/theme hata diya */}
+      <body className="font-sans antialiased">
         {children}
         <Analytics />
       </body>

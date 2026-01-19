@@ -26,7 +26,6 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  /* ================= EMAIL LOGIN ================= */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -60,22 +59,15 @@ export default function LoginPage() {
       return
     }
 
-    /* STORE LOGIN ACTIVITY */
     await supabase.from('student_activity').insert({
       student_id: session.user.id,
       type: 'LOGIN',
     })
 
     const role = session.user.user_metadata?.role
-
-    if (role === 'teacher') {
-      router.replace('/teacher/dashboard')
-    } else {
-      router.replace('/student/dashboard')
-    }
+    router.replace(role === 'teacher' ? '/teacher/dashboard' : '/student/dashboard')
   }
 
-  /* ================= OAUTH LOGIN ================= */
   const loginWithProvider = async (provider: OAuthProvider) => {
     const supabaseProvider =
       provider === 'linkedin' ? 'linkedin_oidc' : provider
@@ -91,38 +83,31 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-[#070b12] px-4 overflow-hidden text-white">
-      {/* GRID */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:40px_40px]" />
-
-      {/* GLOW */}
-      <div className="absolute -top-40 -left-40 h-96 w-96 rounded-full bg-teal-400/20 blur-3xl" />
-      <div className="absolute top-40 -right-40 h-96 w-96 rounded-full bg-cyan-400/20 blur-3xl" />
-
-      <Card className="relative w-full max-w-md rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-2xl">
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
+      <Card className="w-full max-w-md rounded-xl border bg-white shadow-lg">
         <CardHeader className="text-center space-y-3">
-          <div className="mx-auto w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center shadow-lg">
-            <BookOpen className="text-black w-7 h-7" />
+          <div className="mx-auto w-14 h-14 rounded-xl bg-blue-600 flex items-center justify-center">
+            <BookOpen className="text-white w-7 h-7" />
           </div>
 
-          <CardTitle className="text-2xl font-bold">
+          <CardTitle className="text-2xl font-semibold">
             Welcome Back
           </CardTitle>
 
-          <CardDescription className="text-white/60">
+          <CardDescription className="text-slate-500">
             Sign in to continue learning on ReadNRevise
           </CardDescription>
         </CardHeader>
 
         <CardContent className="space-y-6">
           {error && (
-            <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 p-3 rounded-xl text-center">
+            <div className="text-sm text-red-600 bg-red-50 border border-red-200 p-3 rounded-lg text-center">
               {error}
               {error === "Don’t have an account. Please register." && (
                 <div className="mt-2">
                   <Button
                     variant="link"
-                    className="p-0 text-teal-300"
+                    className="p-0 text-blue-600"
                     onClick={() => router.push('/register')}
                   >
                     Go to Register
@@ -133,12 +118,11 @@ export default function LoginPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* EMAIL */}
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
                 type="email"
-                className="pl-9 rounded-xl bg-white/5 border-white/10 text-white placeholder:text-white/40 focus:border-teal-400"
+                className="pl-9"
                 placeholder="Email address"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
@@ -146,12 +130,11 @@ export default function LoginPage() {
               />
             </div>
 
-            {/* PASSWORD */}
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
                 type="password"
-                className="pl-9 rounded-xl bg-white/5 border-white/10 text-white placeholder:text-white/40 focus:border-teal-400"
+                className="pl-9"
                 placeholder="Password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
@@ -160,25 +143,23 @@ export default function LoginPage() {
             </div>
 
             <Button
-              className="w-full rounded-full py-6 bg-teal-400 text-black hover:bg-teal-300 font-semibold"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6"
               disabled={loading}
             >
               {loading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
 
-          {/* OR */}
           <div className="flex items-center gap-3">
-            <hr className="flex-1 border-white/10" />
-            <span className="text-xs text-white/40">OR</span>
-            <hr className="flex-1 border-white/10" />
+            <hr className="flex-1" />
+            <span className="text-xs text-slate-400">OR</span>
+            <hr className="flex-1" />
           </div>
 
-          {/* OAUTH */}
           <div className="space-y-2">
             <Button
               variant="outline"
-              className="w-full rounded-full gap-2 border-white/20 bg-white/5 text-white hover:bg-white/10"
+              className="w-full gap-2"
               onClick={() => loginWithProvider('google')}
             >
               <FaGoogle className="h-4 w-4" />
@@ -187,7 +168,7 @@ export default function LoginPage() {
 
             <Button
               variant="outline"
-              className="w-full rounded-full gap-2 border-white/20 bg-white/5 text-white hover:bg-white/10"
+              className="w-full gap-2"
               onClick={() => loginWithProvider('github')}
             >
               <Github className="h-4 w-4" />
@@ -196,7 +177,7 @@ export default function LoginPage() {
 
             <Button
               variant="outline"
-              className="w-full rounded-full gap-2 border-white/20 bg-white/5 text-white hover:bg-white/10"
+              className="w-full gap-2"
               onClick={() => loginWithProvider('linkedin')}
             >
               <Linkedin className="h-4 w-4" />
@@ -204,12 +185,9 @@ export default function LoginPage() {
             </Button>
           </div>
 
-          <p className="text-center text-sm text-white/50">
+          <p className="text-center text-sm text-slate-500">
             Don’t have an account?{' '}
-            <Link
-              href="/register"
-              className="text-teal-300 font-medium hover:underline"
-            >
+            <Link href="/register" className="text-blue-600 font-medium hover:underline">
               Register
             </Link>
           </p>

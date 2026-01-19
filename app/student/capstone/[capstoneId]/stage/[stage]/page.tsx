@@ -1,4 +1,3 @@
-//app/student/capstone/[capstoneId]/stage/[stage]/page.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -92,14 +91,14 @@ export default function CapstoneStagePage() {
         .eq('student_id', user.id)
         .eq('capstone_id', capstoneId)
         .maybeSingle()
-        
+
         if (progress) {
-          if (progress.trello_board_url) {
+          // ⚠️ IMPORTANT: sirf tab overwrite karo jab DB me value ho
+          if (progress.trello_board_url && progress.trello_board_id) {
             setTrelloUrl(progress.trello_board_url)
-          }
-          if (progress.trello_board_id) {
             setTrelloBoardId(progress.trello_board_id)
           }
+        
           setSubmittedForReview(!!progress.submitted_for_review)
         }
         
@@ -122,20 +121,14 @@ export default function CapstoneStagePage() {
     load()
   }, [stage, capstoneId])
 
-/* ================= INIT PREDEFINED TRELLO BOARD ================= */
-useEffect(() => {
-  if (stage !== 2) return
-
-  const boardId =
-    process.env.NEXT_PUBLIC_TRELLO_BOARD_ID || 'V5iqYo6a'
-
-  const boardUrl = `https://trello.com/b/${boardId}/capstoneproject`
-
-  setTrelloBoardId(boardId)
-  setTrelloUrl(boardUrl)
-}, [stage])
-
-
+  /* ================= INIT TRELLO ================= */
+  useEffect(() => {
+    if (stage !== 2) return
+    const boardId =
+      process.env.NEXT_PUBLIC_TRELLO_BOARD_ID || 'V5iqYo6a'
+    setTrelloBoardId(boardId)
+    setTrelloUrl(`https://trello.com/b/${boardId}/capstoneproject`)
+  }, [stage])
 
   /* ================= TRELLO COUNT ================= */
   useEffect(() => {
@@ -229,31 +222,27 @@ useEffect(() => {
   if (!allowed) {
     return (
       <div className="flex justify-center py-20">
-        <div className="h-8 w-8 rounded-full border-2 border-teal-400/30 border-t-teal-400 animate-spin" />
+        <div className="h-8 w-8 rounded-full border-2 border-blue-200 border-t-blue-600 animate-spin" />
       </div>
     )
   }
 
   return (
-    <div className="max-w-4xl mx-auto py-10 space-y-8 text-white">
-      <Button
-        variant="ghost"
-        onClick={() => router.back()}
-        className="text-white/70 hover:text-white"
-      >
+    <div className="max-w-4xl mx-auto py-10 space-y-8 bg-slate-50 text-slate-900">
+      <Button variant="ghost" onClick={() => router.back()}>
         <ArrowLeft className="w-4 h-4 mr-2" />
         Back
       </Button>
 
       {/* ================= STAGE 1 ================= */}
       {stage === 1 && (
-        <Card className="bg-white/5 border border-white/10 rounded-3xl backdrop-blur">
-          <CardHeader className="bg-white/10 border-b border-white/10 rounded-t-3xl">
-            <CardTitle className="flex items-center gap-2 text-white font-semibold">
-              <FileText className="w-5 h-5 text-teal-300" />
+        <Card className="rounded-xl border bg-white shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-blue-600" />
               Stage 1: Requirement Gathering
             </CardTitle>
-            <CardDescription className="text-white/70">
+            <CardDescription>
               Upload your requirement document for teacher approval
             </CardDescription>
           </CardHeader>
@@ -261,19 +250,17 @@ useEffect(() => {
           <CardContent className="space-y-5">
             {!submitted ? (
               <>
-                {/* Upload Box */}
-                <label className="flex flex-col items-center justify-center border-2 border-dashed border-white/20 rounded-xl p-8 text-center cursor-pointer hover:border-teal-400 transition">
-                  <Upload className="w-10 h-10 text-teal-400 mb-3" />
-                  <p className="text-sm text-white/90">
-                    <span className="text-teal-300 font-medium">
+                <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-300 rounded-lg p-8 cursor-pointer hover:border-blue-500 transition">
+                  <Upload className="w-8 h-8 text-blue-600 mb-2" />
+                  <p className="text-sm">
+                    <span className="text-blue-600 font-medium">
                       Click to upload
                     </span>{' '}
                     or drag & drop
                   </p>
-                  <p className="text-xs text-white/60 mt-1">
+                  <p className="text-xs text-slate-500">
                     PDF / DOC / DOCX allowed
                   </p>
-
                   <input
                     type="file"
                     accept=".pdf,.doc,.docx"
@@ -285,27 +272,26 @@ useEffect(() => {
                 </label>
 
                 {file && (
-                  <p className="text-sm text-teal-300">
-                    Selected file: {file.name}
+                  <p className="text-sm text-blue-600">
+                    Selected: {file.name}
                   </p>
                 )}
 
                 <Button
                   onClick={handleUpload}
                   disabled={loading}
-                  className="w-full bg-teal-400 text-black hover:bg-teal-300"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                 >
-                  <Upload className="w-4 h-4 mr-2" />
                   Submit Requirement
                 </Button>
               </>
             ) : approved ? (
-              <p className="flex gap-2 text-green-400">
+              <p className="flex gap-2 text-green-600">
                 <CheckCircle className="w-4 h-4" />
                 Approved by Teacher
               </p>
             ) : (
-              <p className="flex gap-2 text-yellow-400">
+              <p className="flex gap-2 text-yellow-600">
                 <Lock className="w-4 h-4" />
                 Pending Teacher Approval
               </p>
@@ -316,59 +302,65 @@ useEffect(() => {
 
       {/* ================= STAGE 2 ================= */}
       {stage === 2 && (
-        <Card className="bg-white/5 border border-white/10 rounded-3xl backdrop-blur">
-          <CardHeader className="bg-white/10 border-b border-white/10 rounded-t-3xl">
-            <CardTitle className="flex items-center gap-2 text-white font-semibold">
-              <KanbanSquare className="w-5 h-5 text-teal-300" />
+        <Card className="rounded-xl border bg-white shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <KanbanSquare className="w-5 h-5 text-blue-600" />
               Stage 2: Backlog Creation
             </CardTitle>
-            <CardDescription className="text-white/70">
+            <CardDescription>
               Create minimum 10 Trello tasks
             </CardDescription>
           </CardHeader>
 
           <CardContent className="space-y-4">
-            {trelloUrl && (
-              <Button
-                className="w-full"
-                onClick={() => window.open(trelloUrl, '_blank')}
-              >
-                Open Trello Board
-              </Button>
-            )}
+  {/* STEP 1: Always show Trello access */}
+  {trelloUrl && (
+    <Button
+      className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+      onClick={() => window.open(trelloUrl, '_blank')}
+    >
+      Access Trello Board
+    </Button>
+  )}
 
-            <p className="text-sm">
-              Tasks created:{' '}
-              <b className="text-teal-300">{cardCount}/10</b>
-            </p>
+  {/* STEP 2: Show progress only after Trello exists */}
+  {trelloBoardId && (
+    <p className="text-sm">
+      Tasks created:{' '}
+      <b className="text-blue-600">{cardCount}/10</b>
+    </p>
+  )}
 
-            {!submittedForReview ? (
-              <Button
-                className="w-full"
-                disabled={cardCount < 10}
-                onClick={submitStage2}
-              >
-                Submit for Review
-              </Button>
-            ) : (
-              <p className="flex gap-2 text-yellow-400 text-sm">
-                <Lock className="w-4 h-4" />
-                Waiting for teacher approval
-              </p>
-            )}
-          </CardContent>
+  {/* STEP 3: Submission logic */}
+  {!submittedForReview ? (
+    <Button
+      className="w-full"
+      disabled={cardCount < 10}
+      onClick={submitStage2}
+    >
+      Submit for Review
+    </Button>
+  ) : (
+    <p className="flex gap-2 text-yellow-600 text-sm">
+      <Lock className="w-4 h-4" />
+      Waiting for teacher approval
+    </p>
+  )}
+</CardContent>
+
         </Card>
       )}
 
       {/* ================= STAGE 3 ================= */}
       {stage === 3 && (
-        <Card className="bg-white/5 border border-white/10 rounded-3xl backdrop-blur">
-          <CardHeader className="bg-white/10 border-b border-white/10 rounded-t-3xl">
-            <CardTitle className="flex items-center gap-2 text-white font-bold text-lg">
-              <Code2 className="w-6 h-6 text-teal-300" />
+        <Card className="rounded-xl border bg-white shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Code2 className="w-5 h-5 text-blue-600" />
               Stage 3: Development & Submission
             </CardTitle>
-            <CardDescription className="text-white/70">
+            <CardDescription>
               Push code to GitHub & upload build files
             </CardDescription>
           </CardHeader>
@@ -386,18 +378,17 @@ useEffect(() => {
 
             {!submittedForReview ? (
               <>
-                <label className="flex flex-col items-center justify-center border-2 border-dashed border-white/20 rounded-xl p-8 text-center cursor-pointer hover:border-teal-400 transition">
-                  <Upload className="w-10 h-10 text-teal-400 mb-3" />
-                  <p className="text-sm text-white/90">
-                    <span className="text-teal-300 font-medium">
+                <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-300 rounded-lg p-8 cursor-pointer hover:border-blue-500 transition">
+                  <Upload className="w-8 h-8 text-blue-600 mb-2" />
+                  <p className="text-sm">
+                    <span className="text-blue-600 font-medium">
                       Click to upload
                     </span>{' '}
                     or drag & drop
                   </p>
-                  <p className="text-xs text-white/60 mt-1">
+                  <p className="text-xs text-slate-500">
                     Multiple files allowed
                   </p>
-
                   <input
                     type="file"
                     multiple
@@ -409,22 +400,21 @@ useEffect(() => {
                 </label>
 
                 {files.length > 0 && (
-                  <p className="text-sm text-teal-300">
+                  <p className="text-sm text-blue-600">
                     {files.length} file(s) selected
                   </p>
                 )}
 
                 <Button
-                  className="w-full bg-teal-400 text-black hover:bg-teal-300"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                   onClick={submitStage3}
                   disabled={loading}
                 >
-                  <Upload className="w-4 h-4 mr-2" />
                   Submit for Approval
                 </Button>
               </>
             ) : (
-              <p className="flex gap-2 text-yellow-400 text-sm">
+              <p className="flex gap-2 text-yellow-600 text-sm">
                 <Lock className="w-4 h-4" />
                 Waiting for teacher approval
               </p>
