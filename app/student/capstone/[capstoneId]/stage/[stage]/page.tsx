@@ -1,3 +1,4 @@
+//app/student/capstone/[capstoneId]/stage/[stage]/page.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -91,12 +92,17 @@ export default function CapstoneStagePage() {
         .eq('student_id', user.id)
         .eq('capstone_id', capstoneId)
         .maybeSingle()
-
-      if (progress) {
-        setTrelloUrl(progress.trello_board_url)
-        setTrelloBoardId(progress.trello_board_id)
-        setSubmittedForReview(!!progress.submitted_for_review)
-      }
+        
+        if (progress) {
+          if (progress.trello_board_url) {
+            setTrelloUrl(progress.trello_board_url)
+          }
+          if (progress.trello_board_id) {
+            setTrelloBoardId(progress.trello_board_id)
+          }
+          setSubmittedForReview(!!progress.submitted_for_review)
+        }
+        
 
       if (stage === 1) {
         const { data } = await supabase
@@ -115,6 +121,21 @@ export default function CapstoneStagePage() {
 
     load()
   }, [stage, capstoneId])
+
+/* ================= INIT PREDEFINED TRELLO BOARD ================= */
+useEffect(() => {
+  if (stage !== 2) return
+
+  const boardId =
+    process.env.NEXT_PUBLIC_TRELLO_BOARD_ID || 'V5iqYo6a'
+
+  const boardUrl = `https://trello.com/b/${boardId}/capstoneproject`
+
+  setTrelloBoardId(boardId)
+  setTrelloUrl(boardUrl)
+}, [stage])
+
+
 
   /* ================= TRELLO COUNT ================= */
   useEffect(() => {
