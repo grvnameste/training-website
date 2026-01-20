@@ -10,91 +10,82 @@ export async function POST(req: Request) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
-    /* ================= STAGE 1 ================= */
-    if (item.current_stage === 1) {
-      const { data: progress } = await supabase
-        .from('student_capstone_progress')
-        .select('submitted_for_review')
-        .eq('id', item.progress_id)
-        .single()
+    const { student_id, capstone_id, current_stage } = item
 
-      if (!progress?.submitted_for_review) {
-        return NextResponse.json(
-          { error: 'Not submitted for review' },
-          { status: 400 }
-        )
-      }
-
-      const { data: userData } =
-        await supabase.auth.admin.getUserById(item.student_id)
-
-      const studentEmail = userData?.user?.email
-      if (!studentEmail) throw new Error('Student email not found')
-
-      const trelloRes = await fetch(
-        new URL('/api/trello/create-board', req.url),
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            projectName: item.title,
-            studentEmail,
-          }),
-        }
-      )
-
-      const { boardId, boardUrl } = await trelloRes.json()
-
-      await supabase
+    /* ================= STAGE 1 APPROVAL ================= */
+    if (current_stage === 1) {
+      // ✅ Approve requirement document
+      const { error: reqErr } = await supabase
         .from('requirement_documents')
         .update({ approved: true })
-        .eq('student_id', item.student_id)
-        .eq('capstone_id', item.capstone_id)
+        .eq('student_id', student_id)
+        .eq('capstone_id', capstone_id)
 
-      await supabase
+      if (reqErr) throw reqErr
+
+      // ✅ Move student to Stage 2
+      const { error: progErr } = await supabase
         .from('student_capstone_progress')
         .update({
           current_stage: 2,
-          trello_board_id: boardId,
-          trello_board_url: boardUrl,
-          submitted_for_review: false,
+          stage1_submitted: false,
         })
-        .eq('id', item.progress_id)
+        .eq('student_id', student_id)
+        .eq('capstone_id', capstone_id)
+
+      if (progErr) throw progErr
+
+      return NextResponse.json({ success: true })
     }
 
-    /* ================= STAGE 2 ================= */
-    if (item.current_stage === 2) {
-      await supabase
+    /* ================= STAGE 2 APPROVAL ================= */
+    if (current_stage === 2) {
+      const { error } = await supabase
         .from('student_capstone_progress')
         .update({
           current_stage: 3,
-          submitted_for_review: false,
+          stage2_submitted: false,
         })
-        .eq('id', item.progress_id)
+        .eq('student_id', student_id)
+        .eq('capstone_id', capstone_id)
+
+      if (error) throw error
+
+      return NextResponse.json({ success: true })
     }
 
-    /* ================= STAGE 3 ================= */
-    if (item.current_stage === 3) {
-      // ✅ Approve all uploaded files for stage 3
-      await supabase
+    /* ================= STAGE 3 APPROVAL ================= */
+    if (current_stage === 3) {
+      // ✅ Approve all Stage 3 files
+      const { error: filesErr } = await supabase
         .from('stage3_submissions')
         .update({ approved: true })
-        .eq('student_id', item.student_id)
-        .eq('capstone_id', item.capstone_id)
+        .eq('student_id', student_id)
+        .eq('capstone_id', capstone_id)
 
-      // ✅ Move student to Stage 4
-      await supabase
+      if (filesErr) throw filesErr
+
+      // ✅ Mark capstone completed
+      const { error: progErr } = await supabase
         .from('student_capstone_progress')
         .update({
-          current_stage: 4,
-          submitted_for_review: false,
+          stage3_submitted: false,
+          completed: true,
         })
-        .eq('id', item.progress_id)
+        .eq('student_id', student_id)
+        .eq('capstone_id', capstone_id)
+
+      if (progErr) throw progErr
+
+      return NextResponse.json({ success: true })
     }
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json(
+      { error: 'Invalid stage' },
+      { status: 400 }
+    )
   } catch (err) {
-    console.error(err)
+    console.error('APPROVAL ERROR:', err)
     return NextResponse.json(
       { error: 'Approval failed' },
       { status: 500 }

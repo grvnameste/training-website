@@ -1,4 +1,3 @@
-// app/student/courses/[id]/page.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -93,7 +92,7 @@ export default function CourseDetailPage() {
   if (loading) {
     return (
       <div className="flex justify-center py-32">
-        <div className="h-10 w-10 rounded-full border-2 border-teal-400/40 border-t-teal-400 animate-spin" />
+        <div className="h-10 w-10 rounded-full border-2 border-blue-200 border-t-blue-600 animate-spin" />
       </div>
     )
   }
@@ -103,18 +102,12 @@ export default function CourseDetailPage() {
   const firstLesson = course.lessons[0]
 
   return (
-    <div className="relative min-h-screen px-8 py-12 text-white">
-      {/* GRID BACKGROUND */}
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:40px_40px]" />
+    <div className="min-h-screen px-8 py-12 bg-slate-50 text-slate-900">
+      <div className="max-w-7xl mx-auto space-y-10">
 
-      {/* GLOW */}
-      <div className="pointer-events-none absolute -top-40 -left-40 h-96 w-96 bg-teal-400/20 blur-3xl rounded-full" />
-      <div className="pointer-events-none absolute top-40 -right-40 h-96 w-96 bg-cyan-400/20 blur-3xl rounded-full" />
-
-      <div className="relative max-w-7xl mx-auto space-y-10">
         {/* BACK */}
         <Link href="/student/courses">
-          <Button variant="ghost" className="text-white/70 hover:text-white">
+          <Button variant="ghost" className="px-0 text-slate-600 hover:text-slate-900">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Courses
           </Button>
@@ -124,7 +117,7 @@ export default function CourseDetailPage() {
           {/* LEFT */}
           <div className="lg:col-span-2 space-y-8">
             {/* THUMBNAIL */}
-            <div className="relative overflow-hidden rounded-3xl border border-white/10 shadow-2xl">
+            <div className="relative overflow-hidden rounded-2xl border bg-white shadow-sm">
               {course.thumbnail_url ? (
                 <img
                   src={course.thumbnail_url}
@@ -132,27 +125,27 @@ export default function CourseDetailPage() {
                   className="w-full aspect-video object-cover"
                 />
               ) : (
-                <div className="flex items-center justify-center aspect-video bg-black/40">
-                  <BookOpen className="w-20 h-20 text-white/30" />
+                <div className="flex items-center justify-center aspect-video bg-slate-100">
+                  <BookOpen className="w-20 h-20 text-slate-300" />
                 </div>
               )}
             </div>
 
             {/* CAPSTONE */}
             {capstone && (
-              <Card className="rounded-3xl border border-teal-400/40 bg-gradient-to-br from-teal-400/10 to-cyan-400/10 backdrop-blur shadow-xl">
+              <Card className="rounded-2xl border border-blue-200 bg-blue-50 shadow-sm">
                 <CardHeader>
-                  <CardTitle className="text-teal-300">
-                    🚀 Capstone Project
+                  <CardTitle className="text-blue-700">
+                    Capstone Project
                   </CardTitle>
-                  <CardDescription className="text-white/70">
-                    Build a real-world project following complete SDLC
+                  <CardDescription className="text-slate-700">
+                    Build a real-world project following the complete SDLC
                   </CardDescription>
                 </CardHeader>
 
                 <CardContent>
                   <Link href={`/student/courses/${courseId}/capstone`}>
-                    <Button className="w-full rounded-full bg-teal-400 text-black hover:bg-teal-300">
+                    <Button className="w-full rounded-full bg-blue-600 hover:bg-blue-700 text-white">
                       Start Capstone Project
                     </Button>
                   </Link>
@@ -163,12 +156,12 @@ export default function CourseDetailPage() {
 
           {/* RIGHT */}
           <div>
-            <Card className="sticky top-24 rounded-3xl border border-white/10 bg-white/5 backdrop-blur shadow-2xl">
+            <Card className="sticky top-24 rounded-2xl border bg-white shadow-sm">
               <CardHeader>
-                <CardTitle className="text-3xl text-teal-300">
+                <CardTitle className="text-3xl text-blue-600">
                   {course.price === 0 ? 'Free' : `₹${course.price}`}
                 </CardTitle>
-                <CardDescription className="text-white/60">
+                <CardDescription className="text-slate-600">
                   Lifetime access • Certificate included
                 </CardDescription>
               </CardHeader>
@@ -176,7 +169,7 @@ export default function CourseDetailPage() {
               <CardContent>
                 {firstLesson && (
                   <Button
-                    className="w-full rounded-full bg-teal-400 text-black hover:bg-teal-300"
+                    className="w-full rounded-full bg-blue-600 hover:bg-blue-700 text-white"
                     onClick={() =>
                       router.push(
                         `/student/courses/${courseId}/play/${firstLesson.id}`

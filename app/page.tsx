@@ -20,31 +20,28 @@ import type { ReactNode } from 'react'
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen flex flex-col bg-[#070b12] text-white">
+<div className="min-h-screen flex flex-col">
 
       {/* ================= HEADER ================= */}
-      <header className="sticky top-0 z-50 backdrop-blur bg-black/40 border-b border-white/5">
+      <header className="sticky top-0 z-50 bg-white border-b">
         <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-teal-400 to-cyan-500 shadow-lg">
-              <BookOpen className="h-5 w-5 text-black" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600">
+              <BookOpen className="h-5 w-5 text-white" />
             </div>
-            <span className="text-lg font-semibold tracking-wide">
+            <span className="text-lg font-semibold">
               ReadNRevise
             </span>
           </div>
 
           <div className="flex items-center gap-3">
             <Link href="/login">
-              <Button
-                variant="ghost"
-                className="text-white/80 hover:text-white"
-              >
+              <Button variant="ghost">
                 Sign In
               </Button>
             </Link>
             <Link href="/register">
-              <Button className="rounded-full bg-teal-400 text-black hover:bg-teal-300 px-6">
+              <Button className="bg-blue-600 hover:bg-blue-700 text-white px-6">
                 Get Started
               </Button>
             </Link>
@@ -54,27 +51,20 @@ export default function LandingPage() {
 
       {/* ================= HERO ================= */}
       <main className="flex-1">
-        <section className="relative overflow-hidden">
-          {/* grid background */}
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:40px_40px]" />
-
-          {/* glow */}
-          <div className="absolute -top-40 -left-40 h-96 w-96 bg-teal-400/20 blur-3xl rounded-full" />
-          <div className="absolute top-20 -right-40 h-96 w-96 bg-cyan-500/20 blur-3xl rounded-full" />
-
-          <div className="relative mx-auto max-w-7xl px-6 py-28 text-center">
-            <span className="inline-flex items-center gap-2 rounded-full bg-white/5 px-4 py-1 text-sm text-teal-300 border border-white/10">
-              ● Now in Beta — Join 500+ developers
+      <section className="bg-gradient-to-b from-blue-50 to-white">
+      <div className="mx-auto max-w-7xl px-6 py-24 text-center">
+            <span className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-4 py-1 text-sm text-blue-700">
+              Now in Beta — Join 500+ developers
             </span>
 
-            <h1 className="mt-8 text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight">
+            <h1 className="mt-8 text-4xl sm:text-5xl lg:text-6xl font-bold">
               Learn to Build Software
-              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-cyan-400 mt-2">
+              <span className="block text-blue-600 mt-2">
                 The Way Professionals Do
               </span>
             </h1>
 
-            <p className="mx-auto mt-6 max-w-2xl text-lg text-white/60">
+            <p className="mx-auto mt-6 max-w-2xl text-lg text-slate-600">
               Master the complete Software Development Life Cycle through
               hands-on, team-based projects — just like in real companies.
             </p>
@@ -83,26 +73,17 @@ export default function LandingPage() {
               <Link href="/register">
                 <Button
                   size="lg"
-                  className="rounded-full bg-teal-400 text-black hover:bg-teal-300 px-10"
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-10"
                 >
                   Start Building Real Projects
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
 
-              {/* ✅ UPDATED BUTTON */}
               <Button
                 size="lg"
-                className="
-                  rounded-full
-                  border border-white/20
-                  bg-white/5
-                  text-white
-                  backdrop-blur
-                  hover:bg-white/10
-                  hover:shadow-lg
-                  transition
-                "
+                variant="outline"
+                className="px-8"
               >
                 <Play className="mr-2 h-5 w-5" />
                 See How It Works
@@ -115,17 +96,17 @@ export default function LandingPage() {
         <section className="py-24">
           <div className="mx-auto max-w-7xl px-6 grid gap-8 md:grid-cols-3">
             <FeatureCard
-              icon={<BookOpen className="h-7 w-7" />}
+              icon={<BookOpen className="h-7 w-7 text-blue-600" />}
               title="Structured SDLC Projects"
               description="Follow industry-standard software development lifecycle."
             />
             <FeatureCard
-              icon={<Users className="h-7 w-7" />}
+              icon={<Users className="h-7 w-7 text-blue-600" />}
               title="Team-Based Learning"
               description="Work like real development teams with roles & reviews."
             />
             <FeatureCard
-              icon={<TrendingUp className="h-7 w-7" />}
+              icon={<TrendingUp className="h-7 w-7 text-blue-600" />}
               title="Track Real Progress"
               description="Move step-by-step from requirements to deployment."
             />
@@ -133,17 +114,17 @@ export default function LandingPage() {
         </section>
 
         {/* ================= CTA ================= */}
-        <section className="py-28 text-center bg-gradient-to-r from-teal-400/10 to-cyan-400/10 border-t border-white/5">
+        <section className="py-24 bg-blue-600 text-white text-center">
           <h2 className="text-3xl sm:text-4xl font-bold">
             Build Your First Professional Project
           </h2>
-          <p className="mt-4 text-white/60">
+          <p className="mt-4 text-blue-100">
             Stop watching tutorials. Start building real software.
           </p>
           <Link href="/register">
             <Button
               size="lg"
-              className="mt-10 rounded-full bg-teal-400 text-black hover:bg-teal-300 px-12"
+              className="mt-10 bg-white text-blue-600 hover:bg-blue-50 px-12"
             >
               Get Started Free
               <ArrowRight className="ml-2 h-5 w-5" />
@@ -153,7 +134,7 @@ export default function LandingPage() {
       </main>
 
       {/* ================= FOOTER ================= */}
-      <footer className="border-t border-white/5 py-8 text-center text-sm text-white/50">
+      <footer className="border-t py-8 text-center text-sm text-slate-500">
         © 2025 ReadNRevise. All rights reserved.
       </footer>
     </div>
@@ -172,13 +153,13 @@ function FeatureCard({
   description: string
 }) {
   return (
-    <Card className="group rounded-2xl border border-white/10 bg-white/5 backdrop-blur transition hover:-translate-y-1 hover:shadow-xl">
+    <Card className="rounded-xl border bg-white shadow-sm hover:shadow-md transition">
       <CardHeader className="text-center">
-        <div className="mx-auto mb-4 inline-flex rounded-xl bg-teal-400/10 p-3 text-teal-300">
+        <div className="mx-auto mb-4 inline-flex rounded-lg bg-blue-50 p-3">
           {icon}
         </div>
-        <CardTitle className="text-white">{title}</CardTitle>
-        <CardDescription className="text-white/60">
+        <CardTitle>{title}</CardTitle>
+        <CardDescription className="text-slate-600">
           {description}
         </CardDescription>
       </CardHeader>

@@ -1,16 +1,15 @@
 'use client'
 
-import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
-import supabase from '@/lib/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, ChevronRight } from 'lucide-react';
-import Video from 'next-video';
-import getStarted from '@/videos/get-started.mp4.json';
-import Instaplay from 'player.style/instaplay/react';
-import ReactPlayer from 'next-video/player'
+import { useEffect, useState } from 'react'
+import { useParams, useRouter } from 'next/navigation'
+import Link from 'next/link'
+import supabase from '@/lib/supabase/client'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { ArrowLeft, ChevronRight } from 'lucide-react'
+import Video from 'next-video'
+import getStarted from '@/videos/get-started.mp4.json'
+import Instaplay from 'player.style/instaplay/react'
 
 interface Lesson {
   id: string
@@ -86,7 +85,7 @@ export default function CoursePlayerPage() {
   if (loading || !course) {
     return (
       <div className="flex justify-center py-32">
-        <div className="h-10 w-10 rounded-full border-2 border-teal-400/40 border-t-teal-400 animate-spin" />
+        <div className="h-10 w-10 rounded-full border-2 border-blue-200 border-t-blue-600 animate-spin" />
       </div>
     )
   }
@@ -95,21 +94,20 @@ export default function CoursePlayerPage() {
   const nextLesson = course.lessons[currentVideoIndex + 1]
 
   return (
-    <div className="relative min-h-screen px-8 py-12 text-white">
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:40px_40px]" />
+    <div className="min-h-screen px-8 py-10 bg-slate-50 text-slate-900">
+      <div className="max-w-7xl mx-auto space-y-8">
 
-      <div className="relative max-w-7xl mx-auto space-y-8">
         {/* TOP BAR */}
         <div className="flex items-center justify-between">
           <Link href={`/student/courses/${courseId}`}>
-            <Button variant="ghost" className="text-white/70 hover:text-white">
+            <Button variant="ghost" className="px-0 text-slate-600 hover:text-slate-900">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Course
             </Button>
           </Link>
 
           <div className="hidden md:block text-right">
-            <p className="text-xs text-white/40 uppercase">Course</p>
+            <p className="text-xs text-slate-500 uppercase">Course</p>
             <p className="text-sm font-medium max-w-xs truncate">
               {course.title}
             </p>
@@ -123,36 +121,36 @@ export default function CoursePlayerPage() {
               <h1 className="text-2xl font-semibold">
                 Lesson {currentVideoIndex + 1}: {currentLesson?.title}
               </h1>
-              <p className="text-xs text-white/50">
+              <p className="text-xs text-slate-500">
                 Lesson {currentVideoIndex + 1} of {course.lessons.length}
               </p>
             </div>
 
             {/* VIDEO */}
-            <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-black shadow-2xl">
+            <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
               {currentLesson?.video_url ? (
-                
-                <Video 
-                  src={getStarted} theme={Instaplay} 
+                <Video
+                  src={getStarted}
+                  theme={Instaplay}
                   controls
                   autoPlay
                   className="w-full aspect-video"
                 />
               ) : (
-                <div className="flex items-center justify-center aspect-video text-white/40">
+                <div className="flex items-center justify-center aspect-video text-slate-400">
                   Video Unavailable
                 </div>
               )}
             </div>
 
-            {/* ✅ LESSON DESCRIPTION (ADDED) */}
+            {/* DESCRIPTION */}
             {currentLesson?.description && (
-              <Card className="bg-white/5 border border-white/10 rounded-2xl">
+              <Card className="rounded-xl border bg-white shadow-sm">
                 <CardContent className="p-5 space-y-2">
-                  <h3 className="text-sm font-semibold text-white">
+                  <h3 className="text-sm font-semibold">
                     Lesson Description
                   </h3>
-                  <p className="text-sm text-white/70 leading-relaxed">
+                  <p className="text-sm text-slate-600 leading-relaxed">
                     {currentLesson.description}
                   </p>
                 </CardContent>
@@ -161,9 +159,9 @@ export default function CoursePlayerPage() {
 
             {/* PROGRESS */}
             <div className="space-y-4">
-              <div className="w-full bg-white/10 h-2 rounded-full">
+              <div className="w-full bg-slate-200 h-2 rounded-full">
                 <div
-                  className="bg-teal-400 h-2 rounded-full transition-all"
+                  className="bg-blue-600 h-2 rounded-full transition-all"
                   style={{
                     width: `${
                       ((currentVideoIndex + 1) /
@@ -176,7 +174,7 @@ export default function CoursePlayerPage() {
 
               {nextLesson && (
                 <Button
-                  className="w-full rounded-full bg-teal-400 text-black hover:bg-teal-300"
+                  className="w-full rounded-full bg-blue-600 hover:bg-blue-700 text-white"
                   onClick={() => {
                     setCurrentVideoIndex(currentVideoIndex + 1)
                     router.push(
@@ -193,9 +191,9 @@ export default function CoursePlayerPage() {
 
           {/* PLAYLIST */}
           <div className="lg:col-span-1">
-            <Card className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur shadow-xl lg:sticky lg:top-24">
-              <CardContent className="p-5 space-y-4 max-h-[480px] overflow-y-auto">
-                <h3 className="text-sm font-semibold text-white">
+            <Card className="rounded-xl border bg-white shadow-sm lg:sticky lg:top-24">
+              <CardContent className="p-5 space-y-3 max-h-[480px] overflow-y-auto">
+                <h3 className="text-sm font-semibold">
                   Course Lessons
                 </h3>
 
@@ -205,10 +203,10 @@ export default function CoursePlayerPage() {
                     href={`/student/courses/${courseId}/play/${lesson.id}`}
                   >
                     <div
-                      className={`px-4 py-3 rounded-xl text-sm transition ${
+                      className={`px-4 py-3 rounded-lg text-sm transition ${
                         index === currentVideoIndex
-                          ? 'bg-teal-400 text-black font-semibold'
-                          : 'bg-black/40 text-white/70 hover:bg-black/60'
+                          ? 'bg-blue-600 text-white font-semibold'
+                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                       }`}
                     >
                       {index + 1}. {lesson.title}
@@ -223,4 +221,3 @@ export default function CoursePlayerPage() {
     </div>
   )
 }
-

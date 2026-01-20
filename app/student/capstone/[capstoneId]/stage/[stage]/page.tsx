@@ -1,3 +1,4 @@
+//app/student/capstone/[capstoneId]/stage/[stage]/page.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -26,6 +27,9 @@ export default function CapstoneStagePage() {
   const params = useParams()
   const router = useRouter()
 
+
+
+
   const capstoneId = params.capstoneId as string
   const stage = Number(params.stage)
 
@@ -40,86 +44,99 @@ export default function CapstoneStagePage() {
   const [trelloUrl, setTrelloUrl] = useState<string | null>(null)
   const [trelloBoardId, setTrelloBoardId] = useState<string | null>(null)
   const [cardCount, setCardCount] = useState(0)
-  const [submittedForReview, setSubmittedForReview] = useState(false)
+  // const [submittedForReview, setSubmittedForReview] = useState(false)
+  // ✅ STAGE-2 SPECIFIC STATES
+const [trelloRequested, setTrelloRequested] = useState(false)
+const [stage2Submitted, setStage2Submitted] = useState(false)
+const [stage3Submitted, setStage3Submitted] = useState(false)
+
+
 
   /* ================= ACCESS GUARD ================= */
   useEffect(() => {
-    const guard = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return router.replace('/login')
+  const load = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
 
-      const { data: progress } = await supabase
-        .from('student_capstone_progress')
-        .select('current_stage, submitted_for_review')
+    // ✅ STEP 1: STUDENT LABEL GENERATE (YAHI KARNA THA)
+ 
+    // ✅ STEP 2: PROGRESS LOAD
+    const { data: progress } = await supabase
+      .from('student_capstone_progress')
+      .select(`
+        current_stage,
+        trello_board_url,
+        trello_board_id,
+        stage2_submitted,
+        stage3_submitted
+      `)
+            .eq('student_id', user.id)
+      .eq('capstone_id', capstoneId)
+      .maybeSingle()
+
+      // 🔥 AUTO REDIRECT BASED ON DB STAGE
+if (progress?.current_stage && progress.current_stage !== stage) {
+  router.replace(
+    `/student/capstone/${capstoneId}/stage/${progress.current_stage}`
+  )
+  return
+}
+
+if (progress) {
+  if (progress.trello_board_url && progress.trello_board_id) {
+    setTrelloUrl(progress.trello_board_url)
+    setTrelloBoardId(progress.trello_board_id)
+    setTrelloRequested(true)
+  }
+
+  setStage2Submitted(!!progress.stage2_submitted)
+  setStage3Submitted(!!progress.stage3_submitted)
+}
+
+      
+
+    // Stage 1 logic (unchanged)
+    if (stage === 1) {
+      const { data } = await supabase
+        .from('requirement_documents')
+        .select('approved')
         .eq('student_id', user.id)
         .eq('capstone_id', capstoneId)
         .maybeSingle()
 
-      if (!progress) return router.replace('/student/dashboard')
-
-      if (stage > progress.current_stage) {
-        router.replace(
-          `/student/capstone/${capstoneId}/stage/${progress.current_stage}`
-        )
-        return
-      }
-
-      if (
-        stage === 3 &&
-        progress.current_stage === 2 &&
-        progress.submitted_for_review
-      ) {
-        router.replace(`/student/capstone/${capstoneId}/stage/2`)
-        return
-      }
-
-      setAllowed(true)
-    }
-
-    guard()
-  }, [stage, capstoneId, router])
-
-  /* ================= LOAD DATA ================= */
-  useEffect(() => {
-    const load = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      const { data: progress } = await supabase
-        .from('student_capstone_progress')
-        .select('trello_board_url, trello_board_id, submitted_for_review')
-        .eq('student_id', user.id)
-        .eq('capstone_id', capstoneId)
-        .maybeSingle()
-
-      if (progress) {
-        setTrelloUrl(progress.trello_board_url)
-        setTrelloBoardId(progress.trello_board_id)
-        setSubmittedForReview(!!progress.submitted_for_review)
-      }
-
-      if (stage === 1) {
-        const { data } = await supabase
-          .from('requirement_documents')
-          .select('approved')
-          .eq('student_id', user.id)
-          .eq('capstone_id', capstoneId)
-          .maybeSingle()
-
-        if (data) {
-          setSubmitted(true)
-          setApproved(!!data.approved)
-        }
+      if (data) {
+        setSubmitted(true)
+        setApproved(!!data.approved)
       }
     }
+    setAllowed(true)
 
-    load()
-  }, [stage, capstoneId])
+  }
+
+  load()
+}, [stage, capstoneId])
+
+
+
+
+
+  /* ================= INIT TRELLO ================= */
+  // useEffect(() => {
+  //   if (stage !== 2) return
+  //   if (trelloBoardId) return
+  
+  //   const boardId =
+  //     process.env.NEXT_PUBLIC_TRELLO_BOARD_ID || 'V5iqYo6a'
+  
+  //   setTrelloBoardId(boardId)
+  //   setTrelloUrl(`https://trello.com/b/${boardId}/capstoneproject`)
+  // }, [stage, trelloBoardId])
+  
 
   /* ================= TRELLO COUNT ================= */
   useEffect(() => {
     if (!trelloBoardId || stage !== 2) return
-
+  
     const fetchCount = async () => {
       const res = await fetch(
         `/api/trello/board-cards-count?boardId=${trelloBoardId}`
@@ -127,11 +144,13 @@ export default function CapstoneStagePage() {
       const data = await res.json()
       setCardCount(data.count || 0)
     }
-
+  
     fetchCount()
     const interval = setInterval(fetchCount, 5000)
     return () => clearInterval(interval)
   }, [trelloBoardId, stage])
+  
+
 
   /* ================= ACTIONS ================= */
   const handleUpload = async () => {
@@ -139,7 +158,8 @@ export default function CapstoneStagePage() {
     setLoading(true)
 
     const { data: { user } } = await supabase.auth.getUser()
-    const ext = file.name.split('.').pop()
+    if (!user) return
+        const ext = file.name.split('.').pop()
     const path = `${capstoneId}/${user!.id}/requirement.${ext}`
 
     await supabase.storage
@@ -161,28 +181,66 @@ export default function CapstoneStagePage() {
     )
 
     await supabase
-      .from('student_capstone_progress')
-      .update({ submitted_for_review: true })
-      .eq('student_id', user!.id)
-      .eq('capstone_id', capstoneId)
+    .from('student_capstone_progress')
+    .update({ stage1_submitted: true })
+    .eq('student_id', user!.id)
+    .eq('capstone_id', capstoneId)
+  
 
     setSubmitted(true)
     setApproved(false)
     setLoading(false)
   }
 
-  const submitStage2 = async () => {
+  // const submitStage2 = async () => {
+  //   const { data: { user } } = await supabase.auth.getUser()
+  //   if (!user) return
+
+  //   await supabase
+  //     .from('student_capstone_progress')
+  //     .update({ submitted_for_review: true })
+  //     .eq('student_id', user.id)
+  //     .eq('capstone_id', capstoneId)
+
+  //   setSubmittedForReview(true)
+  // }
+
+  const requestTrelloAccess = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-
-    await supabase
-      .from('student_capstone_progress')
-      .update({ submitted_for_review: true })
+  
+    // ✅ DUPLICATE REQUEST BLOCK
+    const { data: existing } = await supabase
+      .from('trello_access_requests')
+      .select('id')
       .eq('student_id', user.id)
       .eq('capstone_id', capstoneId)
-
-    setSubmittedForReview(true)
+      .eq('status', 'pending')
+      .maybeSingle()
+  
+    if (existing) {
+      alert('Access request already sent')
+      return
+    }
+  
+    const { error } = await supabase
+      .from('trello_access_requests')
+      .insert({
+        student_id: user.id,
+        capstone_id: capstoneId,
+        status: 'pending',
+      })
+  
+    if (error) {
+      console.error(error)
+      alert('Failed to send request')
+      return
+    }
+  
+    // setSubmittedForReview(true)
   }
+  
+
 
   const submitStage3 = async () => {
     if (files.length === 0) return alert('Select files')
@@ -197,42 +255,38 @@ export default function CapstoneStagePage() {
 
     await supabase
       .from('student_capstone_progress')
-      .update({ submitted_for_review: true })
+      .update({ stage3_submitted: true })
       .eq('student_id', user!.id)
       .eq('capstone_id', capstoneId)
 
-    setSubmittedForReview(true)
-    setLoading(false)
+      setStage3Submitted(true)
+      setLoading(false)
   }
 
   if (!allowed) {
     return (
       <div className="flex justify-center py-20">
-        <div className="h-8 w-8 rounded-full border-2 border-teal-400/30 border-t-teal-400 animate-spin" />
+        <div className="h-8 w-8 rounded-full border-2 border-blue-200 border-t-blue-600 animate-spin" />
       </div>
     )
   }
 
   return (
-    <div className="max-w-4xl mx-auto py-10 space-y-8 text-white">
-      <Button
-        variant="ghost"
-        onClick={() => router.back()}
-        className="text-white/70 hover:text-white"
-      >
+    <div className="max-w-4xl mx-auto py-10 space-y-8 bg-slate-50 text-slate-900">
+      <Button variant="ghost" onClick={() => router.back()}>
         <ArrowLeft className="w-4 h-4 mr-2" />
         Back
       </Button>
 
       {/* ================= STAGE 1 ================= */}
       {stage === 1 && (
-        <Card className="bg-white/5 border border-white/10 rounded-3xl backdrop-blur">
-          <CardHeader className="bg-white/10 border-b border-white/10 rounded-t-3xl">
-            <CardTitle className="flex items-center gap-2 text-white font-semibold">
-              <FileText className="w-5 h-5 text-teal-300" />
+        <Card className="rounded-xl border bg-white shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-blue-600" />
               Stage 1: Requirement Gathering
             </CardTitle>
-            <CardDescription className="text-white/70">
+            <CardDescription>
               Upload your requirement document for teacher approval
             </CardDescription>
           </CardHeader>
@@ -240,19 +294,17 @@ export default function CapstoneStagePage() {
           <CardContent className="space-y-5">
             {!submitted ? (
               <>
-                {/* Upload Box */}
-                <label className="flex flex-col items-center justify-center border-2 border-dashed border-white/20 rounded-xl p-8 text-center cursor-pointer hover:border-teal-400 transition">
-                  <Upload className="w-10 h-10 text-teal-400 mb-3" />
-                  <p className="text-sm text-white/90">
-                    <span className="text-teal-300 font-medium">
+                <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-300 rounded-lg p-8 cursor-pointer hover:border-blue-500 transition">
+                  <Upload className="w-8 h-8 text-blue-600 mb-2" />
+                  <p className="text-sm">
+                    <span className="text-blue-600 font-medium">
                       Click to upload
                     </span>{' '}
                     or drag & drop
                   </p>
-                  <p className="text-xs text-white/60 mt-1">
+                  <p className="text-xs text-slate-500">
                     PDF / DOC / DOCX allowed
                   </p>
-
                   <input
                     type="file"
                     accept=".pdf,.doc,.docx"
@@ -264,27 +316,26 @@ export default function CapstoneStagePage() {
                 </label>
 
                 {file && (
-                  <p className="text-sm text-teal-300">
-                    Selected file: {file.name}
+                  <p className="text-sm text-blue-600">
+                    Selected: {file.name}
                   </p>
                 )}
 
                 <Button
                   onClick={handleUpload}
                   disabled={loading}
-                  className="w-full bg-teal-400 text-black hover:bg-teal-300"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                 >
-                  <Upload className="w-4 h-4 mr-2" />
                   Submit Requirement
                 </Button>
               </>
             ) : approved ? (
-              <p className="flex gap-2 text-green-400">
+              <p className="flex gap-2 text-green-600">
                 <CheckCircle className="w-4 h-4" />
                 Approved by Teacher
               </p>
             ) : (
-              <p className="flex gap-2 text-yellow-400">
+              <p className="flex gap-2 text-yellow-600">
                 <Lock className="w-4 h-4" />
                 Pending Teacher Approval
               </p>
@@ -295,59 +346,95 @@ export default function CapstoneStagePage() {
 
       {/* ================= STAGE 2 ================= */}
       {stage === 2 && (
-        <Card className="bg-white/5 border border-white/10 rounded-3xl backdrop-blur">
-          <CardHeader className="bg-white/10 border-b border-white/10 rounded-t-3xl">
-            <CardTitle className="flex items-center gap-2 text-white font-semibold">
-              <KanbanSquare className="w-5 h-5 text-teal-300" />
+        <Card className="rounded-xl border bg-white shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <KanbanSquare className="w-5 h-5 text-blue-600" />
               Stage 2: Backlog Creation
             </CardTitle>
-            <CardDescription className="text-white/70">
+            <CardDescription>
               Create minimum 10 Trello tasks
             </CardDescription>
           </CardHeader>
 
           <CardContent className="space-y-4">
-            {trelloUrl && (
-              <Button
-                className="w-full"
-                onClick={() => window.open(trelloUrl, '_blank')}
-              >
-                Open Trello Board
-              </Button>
-            )}
 
-            <p className="text-sm">
-              Tasks created:{' '}
-              <b className="text-teal-300">{cardCount}/10</b>
-            </p>
+{/* Open Trello board */}
+{trelloUrl && (
+  <Button
+    variant="outline"
+    className="w-full"
+    onClick={() => window.open(trelloUrl, '_blank')}
+  >
+    Open Trello Board
+  </Button>
+)}
 
-            {!submittedForReview ? (
-              <Button
-                className="w-full"
-                disabled={cardCount < 10}
-                onClick={submitStage2}
-              >
-                Submit for Review
-              </Button>
-            ) : (
-              <p className="flex gap-2 text-yellow-400 text-sm">
-                <Lock className="w-4 h-4" />
-                Waiting for teacher approval
-              </p>
-            )}
-          </CardContent>
+
+{/* Request access */}
+{!trelloRequested ? (
+
+  <Button
+    className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+    onClick={requestTrelloAccess}
+  >
+    Request Access
+  </Button>
+) : (
+  <p className="flex gap-2 text-yellow-600 text-sm">
+  <Lock className="w-4 h-4" />
+  Trello access granted
+</p>
+
+)}
+
+{/* Card count */}
+<p className="text-sm">
+  Tasks created: <b>{cardCount}/10</b>
+</p>
+
+{/* Stage 2 Submit */}
+{trelloRequested && cardCount >= 10 && !stage2Submitted && (
+  <Button
+    className="w-full bg-green-600 hover:bg-green-700 text-white"
+    onClick={async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+
+      await supabase
+        .from('student_capstone_progress')
+        .update({ stage2_submitted: true })
+        .eq('student_id', user!.id)
+        .eq('capstone_id', capstoneId)
+
+      setStage2Submitted(true)
+    }}
+  >
+    Submit Stage 2 for Review
+  </Button>
+)}
+
+{stage2Submitted && (
+  <p className="flex gap-2 text-green-600 text-sm">
+    <CheckCircle className="w-4 h-4" />
+    Stage 2 submitted for review
+  </p>
+)}
+
+</CardContent>
+
+
         </Card>
       )}
 
       {/* ================= STAGE 3 ================= */}
       {stage === 3 && (
-        <Card className="bg-white/5 border border-white/10 rounded-3xl backdrop-blur">
-          <CardHeader className="bg-white/10 border-b border-white/10 rounded-t-3xl">
-            <CardTitle className="flex items-center gap-2 text-white font-bold text-lg">
-              <Code2 className="w-6 h-6 text-teal-300" />
+        <Card className="rounded-xl border bg-white shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Code2 className="w-5 h-5 text-blue-600" />
               Stage 3: Development & Submission
             </CardTitle>
-            <CardDescription className="text-white/70">
+            <CardDescription>
               Push code to GitHub & upload build files
             </CardDescription>
           </CardHeader>
@@ -363,20 +450,20 @@ export default function CapstoneStagePage() {
               Open GitHub Repository
             </Button>
 
-            {!submittedForReview ? (
+            {!stage3Submitted ? (
+
               <>
-                <label className="flex flex-col items-center justify-center border-2 border-dashed border-white/20 rounded-xl p-8 text-center cursor-pointer hover:border-teal-400 transition">
-                  <Upload className="w-10 h-10 text-teal-400 mb-3" />
-                  <p className="text-sm text-white/90">
-                    <span className="text-teal-300 font-medium">
+                <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-300 rounded-lg p-8 cursor-pointer hover:border-blue-500 transition">
+                  <Upload className="w-8 h-8 text-blue-600 mb-2" />
+                  <p className="text-sm">
+                    <span className="text-blue-600 font-medium">
                       Click to upload
                     </span>{' '}
                     or drag & drop
                   </p>
-                  <p className="text-xs text-white/60 mt-1">
+                  <p className="text-xs text-slate-500">
                     Multiple files allowed
                   </p>
-
                   <input
                     type="file"
                     multiple
@@ -388,22 +475,21 @@ export default function CapstoneStagePage() {
                 </label>
 
                 {files.length > 0 && (
-                  <p className="text-sm text-teal-300">
+                  <p className="text-sm text-blue-600">
                     {files.length} file(s) selected
                   </p>
                 )}
 
                 <Button
-                  className="w-full bg-teal-400 text-black hover:bg-teal-300"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                   onClick={submitStage3}
                   disabled={loading}
                 >
-                  <Upload className="w-4 h-4 mr-2" />
                   Submit for Approval
                 </Button>
               </>
             ) : (
-              <p className="flex gap-2 text-yellow-400 text-sm">
+              <p className="flex gap-2 text-yellow-600 text-sm">
                 <Lock className="w-4 h-4" />
                 Waiting for teacher approval
               </p>

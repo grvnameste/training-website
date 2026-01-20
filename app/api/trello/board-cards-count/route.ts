@@ -1,4 +1,3 @@
-//app/api/trello/board-cards-count/route.ts
 import { NextResponse } from 'next/server'
 
 export async function GET(req: Request) {
@@ -17,6 +16,7 @@ export async function GET(req: Request) {
       `https://api.trello.com/1/boards/${boardId}/cards?` +
         new URLSearchParams({
           filter: 'open',
+          fields: 'id',
           key: process.env.TRELLO_KEY!,
           token: process.env.TRELLO_TOKEN!,
         })
