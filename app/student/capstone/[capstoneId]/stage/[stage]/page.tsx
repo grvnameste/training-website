@@ -44,10 +44,12 @@ export default function CapstoneStagePage() {
   const [trelloUrl, setTrelloUrl] = useState<string | null>(null)
   const [trelloBoardId, setTrelloBoardId] = useState<string | null>(null)
   const [cardCount, setCardCount] = useState(0)
-  const [submittedForReview, setSubmittedForReview] = useState(false)
+  // const [submittedForReview, setSubmittedForReview] = useState(false)
   // ✅ STAGE-2 SPECIFIC STATES
 const [trelloRequested, setTrelloRequested] = useState(false)
 const [stage2Submitted, setStage2Submitted] = useState(false)
+const [stage3Submitted, setStage3Submitted] = useState(false)
+
 
 
   /* ================= ACCESS GUARD ================= */
@@ -61,23 +63,36 @@ const [stage2Submitted, setStage2Submitted] = useState(false)
     // ✅ STEP 2: PROGRESS LOAD
     const { data: progress } = await supabase
       .from('student_capstone_progress')
-      .select('trello_board_url, trello_board_id, submitted_for_review')
-      .eq('student_id', user.id)
+      .select(`
+        current_stage,
+        trello_board_url,
+        trello_board_id,
+        stage2_submitted,
+        stage3_submitted
+      `)
+            .eq('student_id', user.id)
       .eq('capstone_id', capstoneId)
       .maybeSingle()
 
-      if (progress) {
-        if (progress.trello_board_url && progress.trello_board_id) {
-          setTrelloUrl(progress.trello_board_url)
-          setTrelloBoardId(progress.trello_board_id)
-      
-          // ✅ Trello access mil chuka hai
-          setTrelloRequested(true)
-        }
-      
-        // ✅ Stage-2 review submit status
-        setStage2Submitted(!!progress.submitted_for_review)
-      }
+      // 🔥 AUTO REDIRECT BASED ON DB STAGE
+if (progress?.current_stage && progress.current_stage !== stage) {
+  router.replace(
+    `/student/capstone/${capstoneId}/stage/${progress.current_stage}`
+  )
+  return
+}
+
+if (progress) {
+  if (progress.trello_board_url && progress.trello_board_id) {
+    setTrelloUrl(progress.trello_board_url)
+    setTrelloBoardId(progress.trello_board_id)
+    setTrelloRequested(true)
+  }
+
+  setStage2Submitted(!!progress.stage2_submitted)
+  setStage3Submitted(!!progress.stage3_submitted)
+}
+
       
 
     // Stage 1 logic (unchanged)
@@ -143,7 +158,8 @@ const [stage2Submitted, setStage2Submitted] = useState(false)
     setLoading(true)
 
     const { data: { user } } = await supabase.auth.getUser()
-    const ext = file.name.split('.').pop()
+    if (!user) return
+        const ext = file.name.split('.').pop()
     const path = `${capstoneId}/${user!.id}/requirement.${ext}`
 
     await supabase.storage
@@ -165,10 +181,11 @@ const [stage2Submitted, setStage2Submitted] = useState(false)
     )
 
     await supabase
-      .from('student_capstone_progress')
-      .update({ submitted_for_review: true })
-      .eq('student_id', user!.id)
-      .eq('capstone_id', capstoneId)
+    .from('student_capstone_progress')
+    .update({ stage1_submitted: true })
+    .eq('student_id', user!.id)
+    .eq('capstone_id', capstoneId)
+  
 
     setSubmitted(true)
     setApproved(false)
@@ -220,7 +237,7 @@ const [stage2Submitted, setStage2Submitted] = useState(false)
       return
     }
   
-    setSubmittedForReview(true)
+    // setSubmittedForReview(true)
   }
   
 
@@ -238,12 +255,12 @@ const [stage2Submitted, setStage2Submitted] = useState(false)
 
     await supabase
       .from('student_capstone_progress')
-      .update({ submitted_for_review: true })
+      .update({ stage3_submitted: true })
       .eq('student_id', user!.id)
       .eq('capstone_id', capstoneId)
 
-    setSubmittedForReview(true)
-    setLoading(false)
+      setStage3Submitted(true)
+      setLoading(false)
   }
 
   if (!allowed) {
@@ -385,7 +402,7 @@ const [stage2Submitted, setStage2Submitted] = useState(false)
 
       await supabase
         .from('student_capstone_progress')
-        .update({ submitted_for_review: true })
+        .update({ stage2_submitted: true })
         .eq('student_id', user!.id)
         .eq('capstone_id', capstoneId)
 
@@ -433,7 +450,8 @@ const [stage2Submitted, setStage2Submitted] = useState(false)
               Open GitHub Repository
             </Button>
 
-            {!submittedForReview ? (
+            {!stage3Submitted ? (
+
               <>
                 <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-300 rounded-lg p-8 cursor-pointer hover:border-blue-500 transition">
                   <Upload className="w-8 h-8 text-blue-600 mb-2" />
