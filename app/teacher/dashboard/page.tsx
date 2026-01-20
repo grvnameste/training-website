@@ -1,3 +1,4 @@
+//app/teacher/dashboard/page.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -97,25 +98,34 @@ export default function TeacherDashboard() {
               Manage courses & capstone approvals
             </p>
           </div>
+          </div>
 
           <div className="flex gap-3">
-            {/* NEW: Capstone Approvals */}
-            <Link href="/teacher/capstone/approvals">
-              <Button variant="outline">
-                <ClipboardCheck className="w-4 h-4 mr-2" />
-                Capstone Approvals
-              </Button>
-            </Link>
+  {/* Capstone Stage Approvals */}
+  <Link href="/teacher/capstone/approvals">
+    <Button variant="outline">
+      <ClipboardCheck className="w-4 h-4 mr-2" />
+      Capstone Approvals
+    </Button>
+  </Link>
 
-            {/* Create Course */}
-            <Link href="/teacher/courses/create">
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Create Course
-              </Button>
-            </Link>
-          </div>
-        </div>
+  {/* Trello Access Approvals */}
+  <Link href="/teacher/capstone/trello-approvals">
+    <Button variant="outline">
+      <ClipboardCheck className="w-4 h-4 mr-2" />
+      Trello Access
+    </Button>
+  </Link>
+
+  {/* Create Course */}
+  <Link href="/teacher/courses/create">
+    <Button>
+      <Plus className="w-4 h-4 mr-2" />
+      Create Course
+    </Button>
+  </Link>
+</div>
+
 
         {/* ===== EMPTY STATE ===== */}
         {courses.length === 0 ? (

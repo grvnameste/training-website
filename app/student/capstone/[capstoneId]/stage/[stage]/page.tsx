@@ -1,4 +1,4 @@
-
+//app/student/capstone/[capstoneId]/stage/[stage]/page.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -28,7 +28,6 @@ export default function CapstoneStagePage() {
   const router = useRouter()
 
 
-  const [studentLabel, setStudentLabel] = useState<string | null>(null)
 
 
   const capstoneId = params.capstoneId as string
@@ -46,6 +45,10 @@ export default function CapstoneStagePage() {
   const [trelloBoardId, setTrelloBoardId] = useState<string | null>(null)
   const [cardCount, setCardCount] = useState(0)
   const [submittedForReview, setSubmittedForReview] = useState(false)
+  // ✅ STAGE-2 SPECIFIC STATES
+const [trelloRequested, setTrelloRequested] = useState(false)
+const [stage2Submitted, setStage2Submitted] = useState(false)
+
 
   /* ================= ACCESS GUARD ================= */
   useEffect(() => {
@@ -54,9 +57,7 @@ export default function CapstoneStagePage() {
     if (!user) return
 
     // ✅ STEP 1: STUDENT LABEL GENERATE (YAHI KARNA THA)
-    const label = `student-${user.id.slice(0, 8)}`
-    setStudentLabel(label)
-
+ 
     // ✅ STEP 2: PROGRESS LOAD
     const { data: progress } = await supabase
       .from('student_capstone_progress')
@@ -65,14 +66,19 @@ export default function CapstoneStagePage() {
       .eq('capstone_id', capstoneId)
       .maybeSingle()
 
-    if (progress) {
-      if (progress.trello_board_url && progress.trello_board_id) {
-        setTrelloUrl(progress.trello_board_url)
-        setTrelloBoardId(progress.trello_board_id)
+      if (progress) {
+        if (progress.trello_board_url && progress.trello_board_id) {
+          setTrelloUrl(progress.trello_board_url)
+          setTrelloBoardId(progress.trello_board_id)
+      
+          // ✅ Trello access mil chuka hai
+          setTrelloRequested(true)
+        }
+      
+        // ✅ Stage-2 review submit status
+        setStage2Submitted(!!progress.submitted_for_review)
       }
-
-      setSubmittedForReview(!!progress.submitted_for_review)
-    }
+      
 
     // Stage 1 logic (unchanged)
     if (stage === 1) {
@@ -100,34 +106,35 @@ export default function CapstoneStagePage() {
 
 
   /* ================= INIT TRELLO ================= */
-  useEffect(() => {
-    if (stage !== 2) return
-    if (trelloBoardId) return
+  // useEffect(() => {
+  //   if (stage !== 2) return
+  //   if (trelloBoardId) return
   
-    const boardId =
-      process.env.NEXT_PUBLIC_TRELLO_BOARD_ID || 'V5iqYo6a'
+  //   const boardId =
+  //     process.env.NEXT_PUBLIC_TRELLO_BOARD_ID || 'V5iqYo6a'
   
-    setTrelloBoardId(boardId)
-    setTrelloUrl(`https://trello.com/b/${boardId}/capstoneproject`)
-  }, [stage, trelloBoardId])
+  //   setTrelloBoardId(boardId)
+  //   setTrelloUrl(`https://trello.com/b/${boardId}/capstoneproject`)
+  // }, [stage, trelloBoardId])
   
 
   /* ================= TRELLO COUNT ================= */
-useEffect(() => {
-  if (!trelloBoardId || !studentLabel || stage !== 2) return
-
-  const fetchCount = async () => {
-    const res = await fetch(
-      `/api/trello/board-cards-count?boardId=${trelloBoardId}&label=${studentLabel}`
-    )
-    const data = await res.json()
-    setCardCount(data.count || 0)
-  }
-
-  fetchCount()
-  const interval = setInterval(fetchCount, 5000)
-  return () => clearInterval(interval)
-}, [trelloBoardId, studentLabel, stage])
+  useEffect(() => {
+    if (!trelloBoardId || stage !== 2) return
+  
+    const fetchCount = async () => {
+      const res = await fetch(
+        `/api/trello/board-cards-count?boardId=${trelloBoardId}`
+      )
+      const data = await res.json()
+      setCardCount(data.count || 0)
+    }
+  
+    fetchCount()
+    const interval = setInterval(fetchCount, 5000)
+    return () => clearInterval(interval)
+  }, [trelloBoardId, stage])
+  
 
 
   /* ================= ACTIONS ================= */
@@ -168,18 +175,55 @@ useEffect(() => {
     setLoading(false)
   }
 
-  const submitStage2 = async () => {
+  // const submitStage2 = async () => {
+  //   const { data: { user } } = await supabase.auth.getUser()
+  //   if (!user) return
+
+  //   await supabase
+  //     .from('student_capstone_progress')
+  //     .update({ submitted_for_review: true })
+  //     .eq('student_id', user.id)
+  //     .eq('capstone_id', capstoneId)
+
+  //   setSubmittedForReview(true)
+  // }
+
+  const requestTrelloAccess = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-
-    await supabase
-      .from('student_capstone_progress')
-      .update({ submitted_for_review: true })
+  
+    // ✅ DUPLICATE REQUEST BLOCK
+    const { data: existing } = await supabase
+      .from('trello_access_requests')
+      .select('id')
       .eq('student_id', user.id)
       .eq('capstone_id', capstoneId)
-
+      .eq('status', 'pending')
+      .maybeSingle()
+  
+    if (existing) {
+      alert('Access request already sent')
+      return
+    }
+  
+    const { error } = await supabase
+      .from('trello_access_requests')
+      .insert({
+        student_id: user.id,
+        capstone_id: capstoneId,
+        status: 'pending',
+      })
+  
+    if (error) {
+      console.error(error)
+      alert('Failed to send request')
+      return
+    }
+  
     setSubmittedForReview(true)
   }
+  
+
 
   const submitStage3 = async () => {
     if (files.length === 0) return alert('Select files')
@@ -297,40 +341,70 @@ useEffect(() => {
           </CardHeader>
 
           <CardContent className="space-y-4">
-  {/* STEP 1: Always show Trello access */}
-  {trelloUrl && (
-    <Button
-      className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-      onClick={() => window.open(trelloUrl, '_blank')}
-    >
-      Access Trello Board
-    </Button>
-  )}
 
-  {/* STEP 2: Show progress only after Trello exists */}
-  {trelloBoardId && (
-    <p className="text-sm">
-      Tasks created:{' '}
-      <b className="text-blue-600">{cardCount}/10</b>
-    </p>
-  )}
+{/* Open Trello board */}
+{trelloUrl && (
+  <Button
+    variant="outline"
+    className="w-full"
+    onClick={() => window.open(trelloUrl, '_blank')}
+  >
+    Open Trello Board
+  </Button>
+)}
 
-  {/* STEP 3: Submission logic */}
-  {!submittedForReview ? (
-    <Button
-      className="w-full"
-      disabled={cardCount < 10}
-      onClick={submitStage2}
-    >
-      Submit for Review
-    </Button>
-  ) : (
-    <p className="flex gap-2 text-yellow-600 text-sm">
-      <Lock className="w-4 h-4" />
-      Waiting for teacher approval
-    </p>
-  )}
+
+{/* Request access */}
+{!trelloRequested ? (
+
+  <Button
+    className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+    onClick={requestTrelloAccess}
+  >
+    Request Access
+  </Button>
+) : (
+  <p className="flex gap-2 text-yellow-600 text-sm">
+  <Lock className="w-4 h-4" />
+  Trello access granted
+</p>
+
+)}
+
+{/* Card count */}
+<p className="text-sm">
+  Tasks created: <b>{cardCount}/10</b>
+</p>
+
+{/* Stage 2 Submit */}
+{trelloRequested && cardCount >= 10 && !stage2Submitted && (
+  <Button
+    className="w-full bg-green-600 hover:bg-green-700 text-white"
+    onClick={async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+
+      await supabase
+        .from('student_capstone_progress')
+        .update({ submitted_for_review: true })
+        .eq('student_id', user!.id)
+        .eq('capstone_id', capstoneId)
+
+      setStage2Submitted(true)
+    }}
+  >
+    Submit Stage 2 for Review
+  </Button>
+)}
+
+{stage2Submitted && (
+  <p className="flex gap-2 text-green-600 text-sm">
+    <CheckCircle className="w-4 h-4" />
+    Stage 2 submitted for review
+  </p>
+)}
+
 </CardContent>
+
 
         </Card>
       )}

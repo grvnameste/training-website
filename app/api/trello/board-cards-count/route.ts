@@ -4,11 +4,10 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url)
     const boardId = searchParams.get('boardId')
-    const label = searchParams.get('label')
 
-    if (!boardId || !label) {
+    if (!boardId) {
       return NextResponse.json(
-        { error: 'boardId and label required' },
+        { error: 'boardId required' },
         { status: 400 }
       )
     }
@@ -17,6 +16,7 @@ export async function GET(req: Request) {
       `https://api.trello.com/1/boards/${boardId}/cards?` +
         new URLSearchParams({
           filter: 'open',
+          fields: 'id',
           key: process.env.TRELLO_KEY!,
           token: process.env.TRELLO_TOKEN!,
         })
@@ -28,12 +28,8 @@ export async function GET(req: Request) {
 
     const cards = await res.json()
 
-    const studentCards = cards.filter((card: any) =>
-      card.labels?.some((l: any) => l.name === label)
-    )
-
     return NextResponse.json({
-      count: studentCards.length,
+      count: cards.length,
     })
   } catch (err) {
     console.error('Trello count error:', err)
