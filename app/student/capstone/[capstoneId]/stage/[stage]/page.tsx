@@ -49,7 +49,6 @@ export default function CapstoneStagePage() {
 const [trelloRequested, setTrelloRequested] = useState(false)
 const [stage2Submitted, setStage2Submitted] = useState(false)
 const [stage3Submitted, setStage3Submitted] = useState(false)
-const [currentStage, setCurrentStage] = useState<number | null>(null)
 
 
 
@@ -76,21 +75,14 @@ const [currentStage, setCurrentStage] = useState<number | null>(null)
       .maybeSingle()
 
       // 🔥 AUTO REDIRECT BASED ON DB STAGE
-// 🔒 Block only FUTURE stages, allow going back
-if (
-  progress?.current_stage &&
-  stage > progress.current_stage
-) {
+if (progress?.current_stage && progress.current_stage !== stage) {
   router.replace(
     `/student/capstone/${capstoneId}/stage/${progress.current_stage}`
   )
   return
 }
 
-
 if (progress) {
-  setCurrentStage(progress.current_stage) // ⭐ VERY IMPORTANT
-
   if (progress.trello_board_url && progress.trello_board_id) {
     setTrelloUrl(progress.trello_board_url)
     setTrelloBoardId(progress.trello_board_id)
@@ -100,7 +92,6 @@ if (progress) {
   setStage2Submitted(!!progress.stage2_submitted)
   setStage3Submitted(!!progress.stage3_submitted)
 }
-
 
       
 
@@ -403,27 +394,23 @@ if (progress) {
 </p>
 
 {/* Stage 2 Submit */}
-{/* Stage 2 Submit */}
-{trelloRequested &&
-  cardCount >= 10 &&
-  !stage2Submitted &&
-  currentStage === 2 && (   // ⭐ YAHI MAIN CHECK HAI
-    <Button
-      className="w-full bg-green-600 hover:bg-green-700 text-white"
-      onClick={async () => {
-        const { data: { user } } = await supabase.auth.getUser()
+{trelloRequested && cardCount >= 10 && !stage2Submitted && (
+  <Button
+    className="w-full bg-green-600 hover:bg-green-700 text-white"
+    onClick={async () => {
+      const { data: { user } } = await supabase.auth.getUser()
 
-        await supabase
-          .from('student_capstone_progress')
-          .update({ stage2_submitted: true })
-          .eq('student_id', user!.id)
-          .eq('capstone_id', capstoneId)
+      await supabase
+        .from('student_capstone_progress')
+        .update({ stage2_submitted: true })
+        .eq('student_id', user!.id)
+        .eq('capstone_id', capstoneId)
 
-        setStage2Submitted(true)
-      }}
-    >
-      Submit Stage 2 for Review
-    </Button>
+      setStage2Submitted(true)
+    }}
+  >
+    Submit Stage 2 for Review
+  </Button>
 )}
 
 {stage2Submitted && (
