@@ -1,3 +1,4 @@
+//app/teacher/capstone/approvals/page.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -9,6 +10,8 @@ interface ApprovalItem {
   progress_id: string
   student_id: string
   capstone_id: string
+  student_name: string   // ⭐ ADD THIS
+
   title: string
   current_stage: number
   requirement_url: string | null
@@ -31,7 +34,7 @@ export default function CapstoneApprovalsPage() {
 
       /* ================= AUTH ================= */
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      if (!user) return setLoading(false)
 
       /* ============ TEACHER COURSES ============ */
       const { data: courses } = await supabase
@@ -42,89 +45,87 @@ export default function CapstoneApprovalsPage() {
       const courseIds = courses?.map(c => c.id) ?? []
       if (!courseIds.length) {
         setItems([])
-        return
+        return setLoading(false)
       }
 
+      /* ========= STUDENT PROGRESS ========= */
+      const { data: progressRows } = await supabase
+        .from('student_capstone_progress')
+        .select('id, student_id, capstone_id, current_stage, trello_board_url')
+        .eq('submitted_for_review', true)
+
+      if (!progressRows?.length) {
+        setItems([])
+        return setLoading(false)
+      }
+
+
+/* ============ PROFILES ============ */
+const studentIds = progressRows.map(p => p.student_id)
+
+const res = await fetch('/api/teacher/student-profiles', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ studentIds }),
+})
+
+const profiles: { id: string; name: string }[] = await res.json()
+
+
+
+      
       /* ============ CAPSTONES ============ */
+      const capstoneIds = progressRows.map(p => p.capstone_id)
+
       const { data: capstones } = await supabase
         .from('capstone_projects')
         .select('id, title, course_id')
-        .in('course_id', courseIds)
+        .in('id', capstoneIds)
 
-      /* ============ STAGE 1 (Requirements) ============ */
-      const { data: stage1 } = await supabase
+      /* ============ REQUIREMENTS ============ */
+      const { data: requirements } = await supabase
         .from('requirement_documents')
-        .select('student_id, capstone_id, file_url, approved')
-        .eq('approved', false)
-
-      /* ============ STAGE 2 & 3 (Progress) ============ */
-      const { data: progress } = await supabase
-        .from('student_capstone_progress')
-        .select(
-          'id, student_id, capstone_id, stage2_submitted, stage3_submitted, trello_board_url'
-        )
+        .select('student_id, capstone_id, file_url')
 
       /* ============ STAGE 3 FILES ============ */
       const { data: stage3Files } = await supabase
         .from('stage3_submissions')
         .select('id, student_id, capstone_id, file_name, file_url, approved')
 
+      /* ================= MERGE ================= */
       const merged: ApprovalItem[] = []
 
-      /* ========= MERGE STAGE 1 ========= */
-      for (const r of stage1 ?? []) {
-        const cap = capstones?.find(c => c.id === r.capstone_id)
-        if (!cap || !courseIds.includes(cap.course_id)) continue
+      for (const row of progressRows) {
+        const capstone = capstones?.find(c => c.id === row.capstone_id)
+        if (!capstone) continue
+        if (!courseIds.includes(capstone.course_id)) continue
+
+        const req = requirements?.find(
+          r =>
+            r.student_id === row.student_id &&
+            r.capstone_id === row.capstone_id
+        )
+
+        const stage3 = stage3Files?.filter(
+          f =>
+            f.student_id === row.student_id &&
+            f.capstone_id === row.capstone_id
+        )
+
+        const profile = profiles?.find(p => p.id === row.student_id)
 
         merged.push({
-          progress_id: `stage1-${r.student_id}-${r.capstone_id}`,
-          student_id: r.student_id,
-          capstone_id: r.capstone_id,
-          title: cap.title,
-          current_stage: 1,
-          requirement_url: r.file_url,
-          trello_board_url: null,
-          stage3_files: [],
+          progress_id: row.id,
+          student_id: row.student_id,
+          student_name: profile?.name ?? 'Unknown Student', // ⭐ IMPORTANT
+          capstone_id: row.capstone_id,
+          title: capstone.title,
+          current_stage: row.current_stage,
+          requirement_url: req?.file_url ?? null,
+          trello_board_url: row.trello_board_url ?? null,
+          stage3_files: stage3 ?? [],
         })
-      }
-
-      /* ========= MERGE STAGE 2 & 3 ========= */
-      for (const p of progress ?? []) {
-        const cap = capstones?.find(c => c.id === p.capstone_id)
-        if (!cap || !courseIds.includes(cap.course_id)) continue
-
-        if (p.stage2_submitted) {
-          merged.push({
-            progress_id: p.id,
-            student_id: p.student_id,
-            capstone_id: p.capstone_id,
-            title: cap.title,
-            current_stage: 2,
-            requirement_url: null,
-            trello_board_url: p.trello_board_url,
-            stage3_files: [],
-          })
-        }
-
-        if (p.stage3_submitted) {
-          const files =
-            stage3Files?.filter(
-              f =>
-                f.student_id === p.student_id &&
-                f.capstone_id === p.capstone_id
-            ) ?? []
-
-          merged.push({
-            progress_id: p.id,
-            student_id: p.student_id,
-            capstone_id: p.capstone_id,
-            title: cap.title,
-            current_stage: 3,
-            requirement_url: null,
-            trello_board_url: null,
-            stage3_files: files,
-          })
-        }
+        
       }
 
       setItems(merged)
@@ -174,53 +175,67 @@ export default function CapstoneApprovalsPage() {
       {items.map(item => (
         <Card key={item.progress_id} className="p-4 space-y-3">
           <p className="font-medium">{item.title}</p>
-          <p className="text-sm">Student ID: {item.student_id}</p>
+          <p className="text-sm">
+  Student: <b>{item.student_name}</b>
+</p>
           <p className="text-sm">
             Current Stage: <b>{item.current_stage}</b>
           </p>
 
+          {/* ========= STAGE 1 ========= */}
           {item.current_stage === 1 && (
             <>
-              <a
-                href={item.requirement_url!}
-                target="_blank"
-                className="text-blue-600 underline text-sm"
-              >
-                View Requirement Document
-              </a>
+              {item.requirement_url && (
+                <a
+                  href={item.requirement_url}
+                  target="_blank"
+                  className="text-blue-600 underline text-sm"
+                >
+                  View Requirement Document
+                </a>
+              )}
               <Button onClick={() => approve(item)}>
                 Approve Stage 1
               </Button>
             </>
           )}
 
+          {/* ========= STAGE 2 ========= */}
           {item.current_stage === 2 && (
             <>
-              <a
-                href={item.trello_board_url!}
-                target="_blank"
-                className="text-blue-600 underline text-sm"
-              >
-                View Trello Board
-              </a>
+              {item.trello_board_url && (
+                <a
+                  href={item.trello_board_url}
+                  target="_blank"
+                  className="text-blue-600 underline text-sm"
+                >
+                  View Trello Board
+                </a>
+              )}
               <Button onClick={() => approve(item)}>
                 Approve Stage 2
               </Button>
             </>
           )}
 
+          {/* ========= STAGE 3 ========= */}
           {item.current_stage === 3 && (
             <>
-              {item.stage3_files?.map(f => (
-                <a
-                  key={f.id}
-                  href={f.file_url}
-                  target="_blank"
-                  className="block text-blue-600 underline text-sm"
-                >
-                  ⬇️ {f.file_name}
-                </a>
-              ))}
+              <div className="space-y-2 text-sm">
+                {item.stage3_files?.map(file => (
+                  <a
+                    key={file.id}
+                    href={file.file_url}
+                    download
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-blue-600 underline"
+                  >
+                    ⬇️ {file.file_name}
+                  </a>
+                ))}
+              </div>
+
               <Button onClick={() => approve(item)}>
                 Approve Stage 3
               </Button>
