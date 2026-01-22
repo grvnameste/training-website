@@ -172,7 +172,7 @@ if (user) {
             </div>
 
             {/* CAPSTONE */}
-            {capstone && isEnrolled && (
+            {/* {capstone && isEnrolled && (
 
               <Card className="rounded-2xl border border-blue-200 bg-blue-50 shadow-sm">
                 <CardHeader>
@@ -192,7 +192,7 @@ if (user) {
                   </Link>
                 </CardContent>
               </Card>
-            )}
+            )} */}
           </div>
 
           {/* RIGHT */}
