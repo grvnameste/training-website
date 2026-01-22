@@ -1,3 +1,4 @@
+//app/student/profile/page.tsx
 'use client'
 
 import React, { useEffect, useState, ChangeEvent, useRef } from 'react'
@@ -24,13 +25,13 @@ export interface UserProfile {
   projects?: Project[]
 }
 
-const safeParse = (s: string | null) => {
-  try {
-    return s ? JSON.parse(s) : null
-  } catch {
-    return null
-  }
-}
+// const safeParse = (s: string | null) => {
+//   try {
+//     return s ? JSON.parse(s) : null
+//   } catch {
+//     return null
+//   }
+// }
 
 const createId = () =>
   `${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`
@@ -65,22 +66,42 @@ export default function StudentProfilePage() {
   const avatarInputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
-    // 1️⃣ Load auth email from Supabase
-    supabase.auth.getUser().then(({ data }) => {
-      const authEmail = data.user?.email || ''
-
-      // 2️⃣ Load local profile data
-      const stored = safeParse(localStorage.getItem('lms_current_user')) || {}
-
-      const merged: UserProfile = {
-        ...fallback,
-        ...stored,
-        email: authEmail, // 🔒 always from auth
-      }
-
-      setUser(merged)
-    })
+    const loadProfile = async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (!authUser) return
+  
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', authUser.id)
+        .single()
+  
+        if (error) {
+          console.error('Profile load error:', error.message)
+        
+          // fallback (auth data se at least email dikhe)
+          setUser((prev) => ({
+            ...prev,
+            email: authUser.email ?? '',
+          }))
+          return
+        }
+        
+  
+      setUser({
+        firstName: data.first_name ?? '',
+        lastName: data.last_name ?? '',
+        email: authUser.email ?? '',
+        avatar: data.avatar ?? undefined,
+        about: data.about ?? '',
+        role: data.role,
+        projects: fallbackProjects,
+      })
+    }
+  
+    loadProfile()
   }, [])
+  
 
   const startEdit = () => {
     setFirstName(user.firstName)
@@ -89,24 +110,41 @@ export default function StudentProfilePage() {
     setEditing(true)
   }
 
-  const saveAllChanges = () => {
+  const saveAllChanges = async () => {
     if (!firstName.trim() || !lastName.trim()) {
       alert('First name and last name are required')
       return
     }
-
-    const updated: UserProfile = {
-      ...user,
+  
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    if (!authUser) return
+  
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        avatar: avatarPreview ?? user.avatar,
+        about: user.about,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', authUser.id)
+  
+    if (error) {
+      alert(error.message)
+      return
+    }
+  
+    setUser((prev) => ({
+      ...prev,
       firstName: firstName.trim(),
       lastName: lastName.trim(),
-      avatar: avatarPreview ?? user.avatar,
-      // ⚠️ email intentionally untouched
-    }
-
-    localStorage.setItem('lms_current_user', JSON.stringify(updated))
-    setUser(updated)
+      avatar: avatarPreview ?? prev.avatar,
+    }))
+  
     setEditing(false)
   }
+  
 
   const onFileImmediate = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]

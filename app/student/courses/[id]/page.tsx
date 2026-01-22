@@ -22,10 +22,12 @@ interface Lesson {
 
 interface Course {
   id: string
+  title: string
   price: number
   thumbnail_url: string | null
   lessons: Lesson[]
 }
+
 
 interface Capstone {
   id: string
@@ -42,12 +44,13 @@ export default function CourseDetailPage() {
   const [course, setCourse] = useState<Course | null>(null)
   const [capstone, setCapstone] = useState<Capstone | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isEnrolled, setIsEnrolled] = useState(false)
 
   useEffect(() => {
     const loadCourse = async () => {
       const { data: courseData } = await supabase
         .from('courses')
-        .select('id, price, thumbnail_url')
+        .select('id, title, price, thumbnail_url')
         .eq('id', courseId)
         .single()
 
@@ -81,6 +84,20 @@ export default function CourseDetailPage() {
         .eq('course_id', courseId)
         .maybeSingle()
 
+
+        const { data: { user } } = await supabase.auth.getUser()
+
+if (user) {
+  const { data: enrollment } = await supabase
+    .from('course_enrollments')
+    .select('id')
+    .eq('student_id', user.id)
+    .eq('course_id', courseId)
+    .maybeSingle()
+
+  setIsEnrolled(!!enrollment)
+}
+
       setCourse({ ...courseData, lessons })
       setCapstone(capstoneData || null)
       setLoading(false)
@@ -88,6 +105,29 @@ export default function CourseDetailPage() {
 
     loadCourse()
   }, [courseId])
+
+  
+  const handleEnroll = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || !course) return
+  
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('first_name, last_name')
+      .eq('id', user.id)
+      .single()
+  
+    await supabase.from('course_enrollments').insert({
+      student_id: user.id,
+      course_id: course.id,
+      student_first_name: profile?.first_name ?? '',
+      student_last_name: profile?.last_name ?? '',
+      course_title: course.title,
+    })
+  
+    setIsEnrolled(true)
+  }
+  
 
   if (loading) {
     return (
@@ -132,7 +172,8 @@ export default function CourseDetailPage() {
             </div>
 
             {/* CAPSTONE */}
-            {capstone && (
+            {capstone && isEnrolled && (
+
               <Card className="rounded-2xl border border-blue-200 bg-blue-50 shadow-sm">
                 <CardHeader>
                   <CardTitle className="text-blue-700">
@@ -167,19 +208,29 @@ export default function CourseDetailPage() {
               </CardHeader>
 
               <CardContent>
-                {firstLesson && (
-                  <Button
-                    className="w-full rounded-full bg-blue-600 hover:bg-blue-700 text-white"
-                    onClick={() =>
-                      router.push(
-                        `/student/courses/${courseId}/play/${firstLesson.id}`
-                      )
-                    }
-                  >
-                    Start Learning
-                  </Button>
-                )}
-              </CardContent>
+  {!isEnrolled ? (
+    <Button
+      className="w-full rounded-full bg-green-600 hover:bg-green-700 text-white"
+      onClick={handleEnroll}
+    >
+      Enroll Now
+    </Button>
+  ) : (
+    firstLesson && (
+      <Button
+        className="w-full rounded-full bg-blue-600 hover:bg-blue-700 text-white"
+        onClick={() =>
+          router.push(
+            `/student/courses/${courseId}/play/${firstLesson.id}`
+          )
+        }
+      >
+        Start Learning
+      </Button>
+    )
+  )}
+</CardContent>
+
             </Card>
           </div>
         </div>
