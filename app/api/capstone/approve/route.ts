@@ -1,3 +1,4 @@
+// app/api/capstone/approve/route.ts
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
@@ -23,12 +24,13 @@ export async function POST(req: Request) {
 
       if (reqErr) throw reqErr
 
-      // ✅ Move student to Stage 2
+      // ✅ Move student to Stage 2 + RESET review flag
       const { error: progErr } = await supabase
         .from('student_capstone_progress')
         .update({
           current_stage: 2,
           stage1_submitted: false,
+          submitted_for_review: false, // ⭐ IMPORTANT
         })
         .eq('student_id', student_id)
         .eq('capstone_id', capstone_id)
@@ -45,6 +47,7 @@ export async function POST(req: Request) {
         .update({
           current_stage: 3,
           stage2_submitted: false,
+          submitted_for_review: false, // ⭐ IMPORTANT
         })
         .eq('student_id', student_id)
         .eq('capstone_id', capstone_id)
@@ -65,12 +68,13 @@ export async function POST(req: Request) {
 
       if (filesErr) throw filesErr
 
-      // ✅ Mark capstone completed
+      // ✅ Mark capstone completed + RESET review flag
       const { error: progErr } = await supabase
         .from('student_capstone_progress')
         .update({
           stage3_submitted: false,
           completed: true,
+          submitted_for_review: false, // ⭐ IMPORTANT
         })
         .eq('student_id', student_id)
         .eq('capstone_id', capstone_id)
