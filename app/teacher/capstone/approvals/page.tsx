@@ -1,3 +1,4 @@
+//app/teacher/capstone/approvals/page.stx
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -10,6 +11,8 @@ interface ApprovalItem {
   student_id: string
   capstone_id: string
   title: string
+  student_name: string   // ⭐ ADD THIS
+
   current_stage: number
   requirement_url: string | null
   trello_board_url: string | null
@@ -28,6 +31,12 @@ export default function CapstoneApprovalsPage() {
   const load = async () => {
     try {
       setLoading(true)
+
+
+
+
+
+
 
       /* ================= AUTH ================= */
       const { data: { user } } = await supabase.auth.getUser()
@@ -64,12 +73,17 @@ export default function CapstoneApprovalsPage() {
           'id, student_id, capstone_id, stage2_submitted, stage3_submitted, trello_board_url'
         )
 
+
+    
       /* ============ STAGE 3 FILES ============ */
       const { data: stage3Files } = await supabase
         .from('stage3_submissions')
         .select('id, student_id, capstone_id, file_name, file_url, approved')
 
       const merged: ApprovalItem[] = []
+
+      
+
 
       /* ========= MERGE STAGE 1 ========= */
       for (const r of stage1 ?? []) {
@@ -79,6 +93,7 @@ export default function CapstoneApprovalsPage() {
         merged.push({
           progress_id: `stage1-${r.student_id}-${r.capstone_id}`,
           student_id: r.student_id,
+          student_name: '',
           capstone_id: r.capstone_id,
           title: cap.title,
           current_stage: 1,
@@ -86,6 +101,7 @@ export default function CapstoneApprovalsPage() {
           trello_board_url: null,
           stage3_files: [],
         })
+        
       }
 
       /* ========= MERGE STAGE 2 & 3 ========= */
@@ -97,6 +113,7 @@ export default function CapstoneApprovalsPage() {
           merged.push({
             progress_id: p.id,
             student_id: p.student_id,
+            student_name: '',
             capstone_id: p.capstone_id,
             title: cap.title,
             current_stage: 2,
@@ -104,9 +121,10 @@ export default function CapstoneApprovalsPage() {
             trello_board_url: p.trello_board_url,
             stage3_files: [],
           })
+          
         }
 
-        if (p.stage3_submitted) {
+       if (p.stage3_submitted) {
           const files =
             stage3Files?.filter(
               f =>
@@ -114,20 +132,51 @@ export default function CapstoneApprovalsPage() {
                 f.capstone_id === p.capstone_id
             ) ?? []
 
-          merged.push({
-            progress_id: p.id,
-            student_id: p.student_id,
-            capstone_id: p.capstone_id,
-            title: cap.title,
-            current_stage: 3,
-            requirement_url: null,
-            trello_board_url: null,
-            stage3_files: files,
-          })
+            merged.push({
+              progress_id: p.id,
+              student_id: p.student_id,
+              student_name: '',
+              capstone_id: p.capstone_id,
+              title: cap.title,
+              current_stage: 3,
+              requirement_url: null,
+              trello_board_url: null,
+              stage3_files: files,
+            })
+            
         }
       }
+/* ============ COLLECT STUDENT IDS ============ */
+const studentIds = new Set<string>()
+merged.forEach(item => {
+  studentIds.add(item.student_id)
+})
 
-      setItems(merged)
+/* ============ FETCH STUDENT NAMES ============ */
+let studentMap: Record<string, string> = {}
+
+if (studentIds.size > 0) {
+  const { data: profiles } = await supabase
+  .from('student_profiles')
+  .select('id, name')
+    .in('id', Array.from(studentIds))
+
+  studentMap =
+    profiles?.reduce<Record<string, string>>((acc, p) => {
+      acc[p.id] = p.name
+      return acc
+    }, {}) ?? {}
+}
+
+/* ============ FINAL ITEMS ============ */
+const finalItems: ApprovalItem[] = merged.map(item => ({
+  ...item,
+  student_name: studentMap[item.student_id] ?? 'Unknown Student',
+}))
+
+setItems(finalItems)
+
+      
     } catch (err) {
       console.error(err)
     } finally {
@@ -174,7 +223,9 @@ export default function CapstoneApprovalsPage() {
       {items.map(item => (
         <Card key={item.progress_id} className="p-4 space-y-3">
           <p className="font-medium">{item.title}</p>
-          <p className="text-sm">Student ID: {item.student_id}</p>
+          <p className="text-sm">
+  Student: <b>{item.student_name}</b>
+</p>
           <p className="text-sm">
             Current Stage: <b>{item.current_stage}</b>
           </p>
