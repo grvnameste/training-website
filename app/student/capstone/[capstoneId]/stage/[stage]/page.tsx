@@ -53,14 +53,12 @@ const [stage3Submitted, setStage3Submitted] = useState(false)
 
 
   /* ================= ACCESS GUARD ================= */
-  useEffect(() => {
+// ================= ACCESS GUARD =================
+useEffect(() => {
   const load = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    // ✅ STEP 1: STUDENT LABEL GENERATE (YAHI KARNA THA)
- 
-    // ✅ STEP 2: PROGRESS LOAD
     const { data: progress } = await supabase
       .from('student_capstone_progress')
       .select(`
@@ -70,51 +68,73 @@ const [stage3Submitted, setStage3Submitted] = useState(false)
         stage2_submitted,
         stage3_submitted
       `)
-            .eq('student_id', user.id)
+      .eq('student_id', user.id)
       .eq('capstone_id', capstoneId)
       .maybeSingle()
 
-      // 🔥 AUTO REDIRECT BASED ON DB STAGE
-if (progress?.current_stage && progress.current_stage !== stage) {
-  router.replace(
-    `/student/capstone/${capstoneId}/stage/${progress.current_stage}`
-  )
-  return
-}
+    // ✅ ONLY FUTURE STAGE BLOCK
+    if (progress?.current_stage && stage > progress.current_stage) {
+      router.replace(
+        `/student/capstone/${capstoneId}/stage/${progress.current_stage}`
+      )
+      return
+    }
+  // 🔒 PAST STAGES → FORCE FINAL STATE
+if (progress?.current_stage && stage < progress.current_stage) {
+  setAllowed(true)
 
-if (progress) {
-  if (progress.trello_board_url && progress.trello_board_id) {
-    setTrelloUrl(progress.trello_board_url)
-    setTrelloBoardId(progress.trello_board_id)
+  if (stage === 1) {
+    setSubmitted(true)
+    setApproved(true)
+  }
+
+  if (stage === 2) {
+    setStage2Submitted(true)
     setTrelloRequested(true)
   }
 
-  setStage2Submitted(!!progress.stage2_submitted)
-  setStage3Submitted(!!progress.stage3_submitted)
+  if (stage === 3) {
+    setStage3Submitted(true)
+  }
+
+  return
 }
 
-      
 
-    // Stage 1 logic (unchanged)
+
+    if (progress) {
+      if (progress.trello_board_url && progress.trello_board_id) {
+        setTrelloUrl(progress.trello_board_url)
+        setTrelloBoardId(progress.trello_board_id)
+        setTrelloRequested(true)
+      }
+
+      setStage2Submitted(!!progress.stage2_submitted)
+      setStage3Submitted(!!progress.stage3_submitted)
+    }
+
+    // Stage 1 data
     if (stage === 1) {
       const { data } = await supabase
         .from('requirement_documents')
-        .select('approved')
+        .select('approved, file_url')
         .eq('student_id', user.id)
         .eq('capstone_id', capstoneId)
         .maybeSingle()
 
-      if (data) {
-        setSubmitted(true)
-        setApproved(!!data.approved)
-      }
+        if (data?.file_url) {
+          setSubmitted(true)          // 🔒 permanently submitted
+          setApproved(!!data.approved)
+        }
+        
     }
-    setAllowed(true)
 
+    setAllowed(true)
   }
 
   load()
 }, [stage, capstoneId])
+
 
 
 
@@ -182,8 +202,11 @@ if (progress) {
 
     await supabase
     .from('student_capstone_progress')
-    .update({ stage1_submitted: true })
-    .eq('student_id', user!.id)
+    .update({
+      stage1_submitted: true,
+      current_stage: 2
+    })
+        .eq('student_id', user!.id)
     .eq('capstone_id', capstoneId)
   
 
@@ -255,8 +278,11 @@ if (progress) {
 
     await supabase
       .from('student_capstone_progress')
-      .update({ stage3_submitted: true })
-      .eq('student_id', user!.id)
+      .update({
+        stage3_submitted: true,
+        current_stage: 3
+      })
+            .eq('student_id', user!.id)
       .eq('capstone_id', capstoneId)
 
       setStage3Submitted(true)
@@ -280,15 +306,16 @@ if (progress) {
 
       {/* ================= STAGE 1 ================= */}
       {stage === 1 && (
-        <Card className="rounded-xl border bg-white shadow-sm">
-          <CardHeader>
+        <Card className="rounded-xl border bg-white shadow-sm hover:shadow-md transition">
+        <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileText className="w-5 h-5 text-blue-600" />
               Stage 1: Requirement Gathering
             </CardTitle>
             <CardDescription>
-              Upload your requirement document for teacher approval
-            </CardDescription>
+  Upload your requirement document for admin approval
+</CardDescription>
+
           </CardHeader>
 
           <CardContent className="space-y-5">
@@ -321,24 +348,44 @@ if (progress) {
                   </p>
                 )}
 
-                <Button
-                  onClick={handleUpload}
-                  disabled={loading}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                >
+<Button
+  onClick={handleUpload}
+  disabled={loading || submitted}
+  className="disabled:pointer-events-none disabled:opacity-50"
+>
+
                   Submit Requirement
                 </Button>
               </>
             ) : approved ? (
-              <p className="flex gap-2 text-green-600">
+              <div className="space-y-3">
+              <div className="flex items-center gap-2 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-green-700 text-sm">
                 <CheckCircle className="w-4 h-4" />
-                Approved by Teacher
+                Stage 1 approved by teacher
+              </div>
+            
+              <p className="text-sm text-slate-600">
+                You submitted the requirement document and it has been approved.
+                This stage is now locked for editing.
               </p>
+            
+              <Button
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                onClick={() =>
+                  router.push(`/student/capstone/${capstoneId}/stage/2`)
+                }
+              >
+                Go to Stage 2
+              </Button>
+            </div>
+            
+            
             ) : (
-              <p className="flex gap-2 text-yellow-600">
-                <Lock className="w-4 h-4" />
-                Pending Teacher Approval
-              </p>
+              <div className="flex items-center gap-2 rounded-md border border-yellow-200 bg-yellow-50 px-3 py-2 text-yellow-700 text-sm">
+              <Lock className="w-4 h-4" />
+              Pending Admin Approval
+            </div>
+            
             )}
           </CardContent>
         </Card>
@@ -346,8 +393,8 @@ if (progress) {
 
       {/* ================= STAGE 2 ================= */}
       {stage === 2 && (
-        <Card className="rounded-xl border bg-white shadow-sm">
-          <CardHeader>
+        <Card className="rounded-xl border bg-white shadow-sm hover:shadow-md transition">
+        <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <KanbanSquare className="w-5 h-5 text-blue-600" />
               Stage 2: Backlog Creation
@@ -359,68 +406,89 @@ if (progress) {
 
           <CardContent className="space-y-4">
 
-{/* Open Trello board */}
-{trelloUrl && (
-  <Button
-    variant="outline"
-    className="w-full"
-    onClick={() => window.open(trelloUrl, '_blank')}
-  >
-    Open Trello Board
-  </Button>
+{/* ================= BEFORE SUBMIT ================= */}
+{!stage2Submitted && (
+  <>
+    {trelloUrl && (
+      <Button
+        variant="outline"
+        className="w-full"
+        onClick={() => window.open(trelloUrl, '_blank')}
+      >
+        Open Trello Board
+      </Button>
+    )}
+
+    {!trelloRequested ? (
+      <Button
+        className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+        onClick={requestTrelloAccess}
+      >
+        Request Access
+      </Button>
+    ) : (
+      <div className="flex items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700 text-sm">
+        <CheckCircle className="w-4 h-4" />
+        Trello access granted by admin
+      </div>
+    )}
+
+    <p className="text-sm">
+      Tasks created: <b>{cardCount}/10</b>
+    </p>
+
+    {trelloRequested && cardCount >= 10 && (
+      <Button
+      disabled={stage2Submitted}
+      className="w-full bg-green-600 hover:bg-green-700 text-white disabled:pointer-events-none disabled:opacity-50"
+      onClick={async () => {
+    
+          const { data: { user } } = await supabase.auth.getUser()
+          await supabase
+            .from('student_capstone_progress')
+            .update({
+              stage2_submitted: true,
+              current_stage: 3
+            })
+            
+                        .eq('student_id', user!.id)
+            .eq('capstone_id', capstoneId)
+
+          setStage2Submitted(true)
+        }}
+      >
+        Submit Stage 2 for Review
+      </Button>
+    )}
+  </>
 )}
 
-
-{/* Request access */}
-{!trelloRequested ? (
-
-  <Button
-    className="w-full bg-orange-600 hover:bg-orange-700 text-white"
-    onClick={requestTrelloAccess}
-  >
-    Request Access
-  </Button>
-) : (
-  <p className="flex gap-2 text-yellow-600 text-sm">
-  <Lock className="w-4 h-4" />
-  Trello access granted
-</p>
-
-)}
-
-{/* Card count */}
-<p className="text-sm">
-  Tasks created: <b>{cardCount}/10</b>
-</p>
-
-{/* Stage 2 Submit */}
-{trelloRequested && cardCount >= 10 && !stage2Submitted && (
-  <Button
-    className="w-full bg-green-600 hover:bg-green-700 text-white"
-    onClick={async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-
-      await supabase
-        .from('student_capstone_progress')
-        .update({ stage2_submitted: true })
-        .eq('student_id', user!.id)
-        .eq('capstone_id', capstoneId)
-
-      setStage2Submitted(true)
-    }}
-  >
-    Submit Stage 2 for Review
-  </Button>
-)}
-
+{/* ================= AFTER SUBMIT ================= */}
 {stage2Submitted && (
-  <p className="flex gap-2 text-green-600 text-sm">
-    <CheckCircle className="w-4 h-4" />
-    Stage 2 submitted for review
-  </p>
+  <div className="space-y-3">
+    <div className="flex items-center gap-2 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-green-700 text-sm">
+      <CheckCircle className="w-4 h-4" />
+      Stage 2 already submitted
+    </div>
+
+    <p className="text-sm text-slate-600">
+      Backlog has been submitted for review.
+      You cannot submit this stage again.
+    </p>
+
+    <Button
+      className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+      onClick={() =>
+        router.push(`/student/capstone/${capstoneId}/stage/3`)
+      }
+    >
+      Go to Stage 3
+    </Button>
+  </div>
 )}
 
 </CardContent>
+
 
 
         </Card>
@@ -428,8 +496,8 @@ if (progress) {
 
       {/* ================= STAGE 3 ================= */}
       {stage === 3 && (
-        <Card className="rounded-xl border bg-white shadow-sm">
-          <CardHeader>
+        <Card className="rounded-xl border bg-white shadow-sm hover:shadow-md transition">
+        <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Code2 className="w-5 h-5 text-blue-600" />
               Stage 3: Development & Submission
@@ -480,19 +548,21 @@ if (progress) {
                   </p>
                 )}
 
-                <Button
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                  onClick={submitStage3}
-                  disabled={loading}
-                >
+<Button
+  className="w-full bg-blue-600 hover:bg-blue-700 text-white disabled:pointer-events-none disabled:opacity-50"
+  onClick={submitStage3}
+  disabled={loading || stage3Submitted}
+>
+
                   Submit for Approval
                 </Button>
               </>
             ) : (
-              <p className="flex gap-2 text-yellow-600 text-sm">
-                <Lock className="w-4 h-4" />
-                Waiting for teacher approval
-              </p>
+              <div className="flex items-center gap-2 rounded-md border border-yellow-200 bg-yellow-50 px-3 py-2 text-yellow-700 text-sm">
+              <Lock className="w-4 h-4" />
+              Pending Admin Approval
+            </div>
+            
             )}
           </CardContent>
         </Card>
