@@ -205,26 +205,32 @@ if (hasCapstone) {
     .eq('is_capstone', true)
     .maybeSingle()
 
-  if (!existing) {
-    const { error: capstoneError } = await supabase
-      .from('courses')
-      .insert({
-        teacher_id: auth.user.id,
-        title: `${title} – Capstone Project`,
-        subtitle: 'Capstone Project',
-        description: `Apply everything learned in ${title} through a real-world project.`,
-        price: 0,
-        thumbnail_url: thumbnailUrl,
-        is_capstone: true,
-        parent_course_id: course.id,
-      })
-
-    if (capstoneError) {
-      console.error(capstoneError)
-      alert('Capstone creation failed')
-      return
+    if (!existing) {
+      const { error: capstoneError } = await supabase
+        .from('courses')
+        .insert({
+          teacher_id: auth.user.id,
+          title: `${title} – Capstone Project`,
+          subtitle: 'Capstone Project',
+          description: `Apply everything learned in ${title} through a real-world project.`,
+          price: 0,
+          thumbnail_url: thumbnailUrl,
+          is_capstone: true,
+          parent_course_id: course.id,
+        })
+    
+      if (capstoneError) {
+        console.error('CAPSTONE ERROR FULL:', {
+          message: capstoneError.message,
+          details: capstoneError.details,
+          hint: capstoneError.hint,
+          code: capstoneError.code,
+        })
+        alert(capstoneError.message)
+        return
+      }
     }
-  }
+    
 }
 
 
