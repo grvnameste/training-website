@@ -25,11 +25,11 @@ interface Course {
   lessons: Lesson[]
 }
 
-interface Capstone {
-  id: string
-  title: string
-  description: string
-}
+// interface Capstone {
+//   id: string
+//   title: string
+//   description: string
+// }
 
 
 export default function CoursePlayerPage() {
@@ -42,21 +42,34 @@ export default function CoursePlayerPage() {
   const [course, setCourse] = useState<Course | null>(null)
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [capstone, setCapstone] = useState<Capstone | null>(null)
+  // const [capstone, setCapstone] = useState<Capstone | null>(null)
   const [isEnrolled, setIsEnrolled] = useState(false)
+  const [capstoneCourse, setCapstoneCourse] = useState<{
+    id: string
+    title: string
+  } | null>(null)
+  
   
   useEffect(() => {
     const loadCourse = async () => {
       const { data: courseData } = await supabase
-        .from('courses')
-        .select('id, title')
-        .eq('id', courseId)
-        .single()
+  .from('courses')
+  .select('id, title, is_capstone')
+  .eq('id', courseId)
+  .single()
 
-      if (!courseData) {
-        setLoading(false)
-        return
-      }
+if (!courseData) {
+  setLoading(false)
+  return
+}
+
+// 🔐 BLOCK capstone from video player
+if (courseData.is_capstone) {
+  router.replace('/student/courses')
+  return
+}
+
+
 
       const { data: sections } = await supabase
         .from('sections')
@@ -79,15 +92,30 @@ export default function CoursePlayerPage() {
 
       const index = lessons.findIndex(l => l.id === videoId)
 
-      // ================= CAPSTONE =================
-const { data: capstoneData } = await supabase
-.from('capstone_projects')
-.select('id, title, description')
-.eq('course_id', courseId)
-.maybeSingle()
 
-setCapstone(capstoneData || null)
 
+// ================= CAPSTONE FETCH =================
+let capstoneData = null
+
+if (!courseData.is_capstone) {
+  const { data } = await supabase
+    .from('courses')
+    .select('id, title')
+    .eq('parent_course_id', courseId)
+    .eq('is_capstone', true)
+    .maybeSingle()
+
+  capstoneData = data
+}
+
+setCapstoneCourse(capstoneData)
+
+
+
+
+
+   
+      
 // ================= ENROLLMENT CHECK =================
 const { data: { user } } = await supabase.auth.getUser()
 
@@ -256,48 +284,27 @@ setIsEnrolled(!!enrollment)
                     </div>
                   </Link>
                 ))}
-  
-                {/* CAPSTONE */}
-               {/* ================= CAPSTONE ================= */}
-{capstone && isEnrolled && (
-  <div className="mt-5 pt-5 border-t">
-    <div className="rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-4 hover:shadow-md transition">
 
-      {/* Header */}
-      <div className="flex items-start gap-3">
-        <div className="h-10 w-10 rounded-xl bg-blue-600 flex items-center justify-center text-white text-lg">
-          🚀
-        </div>
 
-        <div>
-          <p className="text-xs font-semibold text-blue-600 uppercase">
-            Capstone Project
-          </p>
-          <h4 className="text-sm font-semibold text-neutral-900">
-            {capstone.title}
-          </h4>
-        </div>
-      </div>
-
-      {/* Description */}
-      <p className="mt-3 text-xs text-neutral-600 leading-relaxed">
-        Work on a real-world project where you apply everything you’ve learned
-        in this course. This capstone helps you build practical experience
-        and a portfolio-ready project.
-      </p>
-
-      {/* CTA */}
-      <Link href={`/student/courses/${courseId}/capstone`}>
-        <div className="mt-4 flex items-center justify-between rounded-xl bg-blue-600 px-4 py-3 text-white hover:bg-blue-700 transition cursor-pointer">
-          <span className="text-sm font-medium">
-            Start Capstone Project
-          </span>
-          <span className="text-lg">→</span>
-        </div>
-      </Link>
-    </div>
+  {/* ================= CAPSTONE ================= */}
+  {capstoneCourse && (
+  <div className="mt-3 border-t pt-3">
+    <Button
+      variant="outline"
+      className="w-full justify-start gap-2"
+      onClick={() =>
+        router.push(
+          `/student/capstone/${capstoneCourse.id}/stage/1`
+        )
+      }
+    >
+      🎯 Capstone Project
+    </Button>
   </div>
 )}
+
+
+
 
               </div>
             </div>

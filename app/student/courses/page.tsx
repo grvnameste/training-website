@@ -1,3 +1,4 @@
+//app/student/courses/page.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -21,10 +22,11 @@ export default function CoursesListPage() {
   useEffect(() => {
     const loadCourses = async () => {
       const { data } = await supabase
-        .from('courses')
-        .select('id, title, price, description, thumbnail_url')
-        .order('created_at', { ascending: false })
-
+      .from('courses')
+      .select('id, title, price, description, thumbnail_url')
+      .eq('is_capstone', false)
+      .order('created_at', { ascending: false })
+      
       setCourses(data || [])
       setLoading(false)
     }
