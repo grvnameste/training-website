@@ -48,10 +48,27 @@ export default function CoursePlayerPage() {
     id: string
     title: string
   } | null>(null)
+
+  const [capstoneStage, setCapstoneStage] = useState(1)
+
   
   
   useEffect(() => {
     const loadCourse = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      // ================= ENROLLMENT CHECK =================
+if (user) {
+  const { data: enrollment } = await supabase
+    .from('course_enrollments')
+    .select('id')
+    .eq('student_id', user.id)
+    .eq('course_id', courseId)
+    .maybeSingle()
+
+  setIsEnrolled(!!enrollment)
+}
+
+
       const { data: courseData } = await supabase
   .from('courses')
   .select('id, title, is_capstone')
@@ -109,6 +126,17 @@ if (!courseData.is_capstone) {
 }
 
 setCapstoneCourse(capstoneData)
+// ================= CAPSTONE PROGRESS =================
+if (capstoneData && user) {
+  const { data: progress } = await supabase
+    .from('student_capstone_progress')
+    .select('current_stage')
+    .eq('student_id', user.id)
+    .eq('capstone_id', capstoneData.id)
+    .maybeSingle()
+
+  setCapstoneStage(progress?.current_stage ?? 1)
+}
 
 
 
@@ -116,19 +144,7 @@ setCapstoneCourse(capstoneData)
 
    
       
-// ================= ENROLLMENT CHECK =================
-const { data: { user } } = await supabase.auth.getUser()
 
-if (user) {
-const { data: enrollment } = await supabase
-  .from('course_enrollments')
-  .select('id')
-  .eq('student_id', user.id)
-  .eq('course_id', courseId)
-  .maybeSingle()
-
-setIsEnrolled(!!enrollment)
-}
 
     
       setCourse({
@@ -143,6 +159,7 @@ setIsEnrolled(!!enrollment)
 
     loadCourse()
   }, [courseId, videoId])
+  const isLocked = (stage: number) => stage > capstoneStage
 
   if (loading || !course) {
     return (
@@ -287,19 +304,77 @@ setIsEnrolled(!!enrollment)
 
 
   {/* ================= CAPSTONE ================= */}
-  {capstoneCourse && (
-  <div className="mt-3 border-t pt-3">
-    <Button
-      variant="outline"
-      className="w-full justify-start gap-2"
-      onClick={() =>
-        router.push(
-          `/student/capstone/${capstoneCourse.id}/stage/1`
-        )
-      }
-    >
-      🎯 Capstone Project
-    </Button>
+{capstoneCourse && (
+  <div className="mt-4 rounded-2xl border-2 border-blue-200 bg-blue-50/40 p-4 space-y-3">
+
+    {/* HEADER */}
+    <div className="flex items-center gap-3">
+      <div className="h-10 w-10 flex items-center justify-center rounded-full bg-blue-600 text-white text-lg">
+        🎯
+      </div>
+      <div>
+        <p className="text-sm uppercase tracking-wide text-blue-600 font-semibold">
+          Capstone Project
+        </p>
+        <p className="text-xs text-neutral-500">
+          Final hands-on implementation
+        </p>
+      </div>
+    </div>
+
+    {/* STAGES */}
+    <div className="space-y-2 pt-2">
+
+      {/* STAGE 1 */}
+      <div
+        onClick={() =>
+          router.push(`/student/capstone/${capstoneCourse.id}/stage/1`)
+        }
+        className="px-4 py-3 rounded-xl text-sm font-medium cursor-pointer
+                   bg-white hover:bg-blue-100 border border-blue-200
+                   flex justify-between items-center"
+      >
+        <span>Stage 1 – Requirement</span>
+        {capstoneStage > 1 && <span className="text-green-600">✔</span>}
+      </div>
+
+      {/* STAGE 2 */}
+      <div
+        onClick={() => {
+          if (!isLocked(2)) {
+            router.push(`/student/capstone/${capstoneCourse.id}/stage/2`)
+          }
+        }}
+        className={`px-4 py-3 rounded-xl text-sm font-medium
+          flex justify-between items-center border
+          ${isLocked(2)
+            ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200'
+            : 'bg-white hover:bg-blue-100 cursor-pointer border-blue-200'}
+        `}
+      >
+        <span>Stage 2 – Backlog</span>
+        {isLocked(2) ? <span>🔒</span> : <span className="text-green-600">✔</span>}
+      </div>
+
+      {/* STAGE 3 */}
+      <div
+        onClick={() => {
+          if (!isLocked(3)) {
+            router.push(`/student/capstone/${capstoneCourse.id}/stage/3`)
+          }
+        }}
+        className={`px-4 py-3 rounded-xl text-sm font-medium
+          flex justify-between items-center border
+          ${isLocked(3)
+            ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200'
+            : 'bg-white hover:bg-blue-100 cursor-pointer border-blue-200'}
+        `}
+      >
+        <span>Stage 3 – Development</span>
+        {isLocked(3) ? <span>🔒</span> : <span className="text-green-600">✔</span>}
+      </div>
+
+    </div>
   </div>
 )}
 
