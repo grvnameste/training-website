@@ -1,4 +1,4 @@
-// app/api/capstone/approve/route.ts
+//app/api/capstone/approve/route.ts
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
@@ -24,14 +24,18 @@ export async function POST(req: Request) {
 
       if (reqErr) throw reqErr
 
-      // ✅ Move student to Stage 2 + RESET review flag
+      // ✅ Move student to Stage 2
       const { error: progErr } = await supabase
         .from('student_capstone_progress')
         .update({
           current_stage: 2,
-          stage1_submitted: false,
-          submitted_for_review: false, // ⭐ IMPORTANT
+          stage1_submitted: true,
+          stage1_approved: true,
+          stage2_submitted: false,
+          stage2_approved: false,
         })
+        
+        
         .eq('student_id', student_id)
         .eq('capstone_id', capstone_id)
 
@@ -46,9 +50,13 @@ export async function POST(req: Request) {
         .from('student_capstone_progress')
         .update({
           current_stage: 3,
-          stage2_submitted: false,
-          submitted_for_review: false, // ⭐ IMPORTANT
+          stage2_submitted: true,
+          stage2_approved: true,
+          stage3_submitted: false,
+          stage3_approved: false,
         })
+        
+        
         .eq('student_id', student_id)
         .eq('capstone_id', capstone_id)
 
@@ -59,30 +67,28 @@ export async function POST(req: Request) {
 
     /* ================= STAGE 3 APPROVAL ================= */
     if (current_stage === 3) {
-      // ✅ Approve all Stage 3 files
-      const { error: filesErr } = await supabase
+      await supabase
         .from('stage3_submissions')
         .update({ approved: true })
         .eq('student_id', student_id)
         .eq('capstone_id', capstone_id)
-
-      if (filesErr) throw filesErr
-
-      // ✅ Mark capstone completed + RESET review flag
-      const { error: progErr } = await supabase
+    
+      const { error } = await supabase
         .from('student_capstone_progress')
         .update({
-          stage3_submitted: false,
+          current_stage: 3,
+          stage3_submitted: true,
+          stage3_approved: true,
           completed: true,
-          submitted_for_review: false, // ⭐ IMPORTANT
         })
         .eq('student_id', student_id)
         .eq('capstone_id', capstone_id)
-
-      if (progErr) throw progErr
-
+    
+      if (error) throw error
+    
       return NextResponse.json({ success: true })
     }
+    
 
     return NextResponse.json(
       { error: 'Invalid stage' },
@@ -96,3 +102,4 @@ export async function POST(req: Request) {
     )
   }
 }
+
