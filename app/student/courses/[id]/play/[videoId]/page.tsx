@@ -6,7 +6,6 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import supabase from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { ArrowLeft, ChevronRight } from 'lucide-react'
 import Video from 'next-video'
 import getStarted from '@/videos/get-started.mp4.json'
@@ -19,11 +18,18 @@ interface Lesson {
   video_url: string | null
 }
 
-interface Course {
+interface Section {
   id: string
   title: string
   lessons: Lesson[]
 }
+
+interface Course {
+  id: string
+  title: string
+  sections: Section[]
+}
+
 
 // interface Capstone {
 //   id: string
@@ -40,7 +46,6 @@ export default function CoursePlayerPage() {
   const videoId = params.videoId as string
 
   const [course, setCourse] = useState<Course | null>(null)
-  const [currentVideoIndex, setCurrentVideoIndex] = useState(0)
   const [loading, setLoading] = useState(true)
   // const [capstone, setCapstone] = useState<Capstone | null>(null)
   const [isEnrolled, setIsEnrolled] = useState(false)
@@ -90,24 +95,35 @@ if (courseData.is_capstone) {
 
       const { data: sections } = await supabase
         .from('sections')
-        .select('id')
+        .select('id, title')   // 👈 yaha title ADD
         .eq('course_id', courseId)
 
       const sectionIds = sections?.map(s => s.id) || []
 
-      let lessons: Lesson[] = []
+      let sectionsWithLessons: Section[] = []
 
-      if (sectionIds.length > 0) {
-        const { data: lessonData } = await supabase
-          .from('lessons')
-          .select('id, title, description, video_url')
-          .in('section_id', sectionIds)
-          .order('order_index', { ascending: true })
+if (sectionIds.length > 0) {
+  const { data: lessonData } = await supabase
+    .from('lessons')
+    .select('id, title, description, video_url, section_id')
+    .in('section_id', sectionIds)
+    .order('order_index', { ascending: true })
 
-        lessons = lessonData || []
-      }
+  const lessonsBySection: Record<string, Lesson[]> = {}
 
-      const index = lessons.findIndex(l => l.id === videoId)
+  lessonData?.forEach(lesson => {
+    if (!lessonsBySection[lesson.section_id]) {
+      lessonsBySection[lesson.section_id] = []
+    }
+    lessonsBySection[lesson.section_id].push(lesson)
+  })
+
+  sectionsWithLessons = (sections ?? []).map(section => ({
+    id: section.id,
+    title: section.title,
+    lessons: lessonsBySection[section.id] || [],
+  }))
+}
 
 
 
@@ -147,13 +163,13 @@ if (capstoneData && user) {
 
 
     
-      setCourse({
-        id: courseData.id,
-        title: courseData.title,
-        lessons,
-      })
+setCourse({
+  id: courseData.id,
+  title: courseData.title,
+  sections: sectionsWithLessons,
+})
 
-      setCurrentVideoIndex(index >= 0 ? index : 0)
+
       setLoading(false)
     }
 
@@ -167,10 +183,41 @@ if (capstoneData && user) {
         <div className="h-10 w-10 rounded-full border-2 border-blue-200 border-t-blue-600 animate-spin" />
       </div>
     )
+    
   }
 
-  const currentLesson = course.lessons[currentVideoIndex]
-  const nextLesson = course.lessons[currentVideoIndex + 1]
+
+  if (!isEnrolled) {
+    return (
+      <div className="flex justify-center py-32 text-neutral-500">
+        You are not enrolled in this course
+      </div>
+    )
+  }
+  
+  // ================= FLATTEN LESSONS =================
+const flatLessons = course.sections.flatMap(
+  section => section.lessons
+)
+
+const currentVideoIndex = flatLessons.findIndex(
+  l => l.id === videoId
+)
+
+const currentLesson = flatLessons[currentVideoIndex]
+const nextLesson = flatLessons[currentVideoIndex + 1]
+
+if (!currentLesson) {
+  return (
+    <div className="flex justify-center py-32 text-neutral-500">
+      Lesson not found
+    </div>
+  )
+}
+
+  
+
+
 
   return (
     <div className="min-h-screen bg-neutral-50 text-neutral-900">
@@ -204,7 +251,7 @@ if (capstoneData && user) {
                 {currentLesson?.title}
               </h1>
               <p className="text-sm text-neutral-500">
-                Lesson {currentVideoIndex + 1} of {course.lessons.length}
+              Lesson {currentVideoIndex + 1} of {flatLessons.length}
               </p>
             </div>
   
@@ -244,9 +291,8 @@ if (capstoneData && user) {
                   className="h-full bg-blue-600 transition-all"
                   style={{
                     width: `${
-                      ((currentVideoIndex + 1) /
-                        course.lessons.length) *
-                      100
+                      ((currentVideoIndex + 1) / flatLessons.length) * 100
+
                     }%`,
                   }}
                 />
@@ -256,11 +302,11 @@ if (capstoneData && user) {
                 <Button
                   className="w-full rounded-full bg-blue-600 hover:bg-blue-700"
                   onClick={() => {
-                    setCurrentVideoIndex(currentVideoIndex + 1)
                     router.push(
                       `/student/courses/${courseId}/play/${nextLesson.id}`
                     )
                   }}
+                  
                 >
                   Next lesson
                   <ChevronRight className="w-4 h-4 ml-2" />
@@ -279,28 +325,45 @@ if (capstoneData && user) {
                   Course content
                 </h3>
                 <p className="text-xs text-neutral-500">
-                  {course.lessons.length} lessons
+                {flatLessons.length} lessons
                 </p>
               </div>
   
               {/* LESSONS */}
               <div className="max-h-[420px] overflow-y-auto p-3 space-y-1">
-                {course.lessons.map((lesson, index) => (
-                  <Link
-                    key={lesson.id}
-                    href={`/student/courses/${courseId}/play/${lesson.id}`}
-                  >
-                    <div
-                      className={`px-4 py-3 rounded-lg text-sm transition cursor-pointer ${
-                        index === currentVideoIndex
-                          ? 'bg-blue-600 text-white font-medium'
-                          : 'hover:bg-neutral-100 text-neutral-700'
-                      }`}
-                    >
-                      {index + 1}. {lesson.title}
-                    </div>
-                  </Link>
-                ))}
+              {course.sections.map((section, sIndex) => (
+  <div key={section.id} className="space-y-1">
+
+    <div className="px-4 pt-3 text-xs font-semibold text-neutral-500 uppercase">
+      {sIndex + 1}. {section.title}
+    </div>
+
+    {section.lessons.map((lesson, lIndex) => {
+      const globalIndex =
+        course.sections
+          .slice(0, sIndex)
+          .reduce((acc, s) => acc + s.lessons.length, 0) + lIndex
+
+      return (
+        <Link
+          key={lesson.id}
+          href={`/student/courses/${courseId}/play/${lesson.id}`}
+        >
+          <div
+            className={`ml-3 px-4 py-2 rounded-lg text-sm transition cursor-pointer ${
+              lesson.id === currentLesson?.id
+                ? 'bg-blue-600 text-white font-medium'
+                : 'hover:bg-neutral-100 text-neutral-700'
+            }`}
+          >
+            {globalIndex + 1}. {lesson.title}
+          </div>
+        </Link>
+      )
+    })}
+  </div>
+))}
+
 
 
   {/* ================= CAPSTONE ================= */}
