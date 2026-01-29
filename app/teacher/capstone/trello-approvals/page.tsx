@@ -12,7 +12,11 @@ type TrelloRequest = {
   capstone_id: string
   status: string
   created_at: string
+
+  student_name?: string
+  capstone_title?: string
 }
+
 
 export default function TrelloApprovalsPage() {
   const [requests, setRequests] = useState<TrelloRequest[]>([])
@@ -22,26 +26,68 @@ export default function TrelloApprovalsPage() {
   const loadRequests = async () => {
     try {
       setLoading(true)
-
+  
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
-
-      const { data, error } = await supabase
+  
+      /* ========== FETCH REQUESTS ========== */
+      const { data: requestsData, error } = await supabase
         .from('trello_access_requests')
-        .select('*')
+        .select('id, student_id, capstone_id, status, created_at')
         .eq('status', 'pending')
         .order('created_at', { ascending: true })
-
-      if (error) {
+  
+      if (error || !requestsData) {
         console.error(error)
         return
       }
-
-      setRequests(data || [])
+  
+      /* ========== COLLECT IDS ========== */
+      const studentIds = Array.from(
+        new Set(requestsData.map(r => r.student_id))
+      )
+  
+      const capstoneIds = Array.from(
+        new Set(requestsData.map(r => r.capstone_id))
+      )
+  
+      /* ========== FETCH STUDENT NAMES ========== */
+      const { data: students } = await supabase
+        .from('student_profiles')
+        .select('id, name')
+        .in('id', studentIds)
+  
+      const studentMap =
+        students?.reduce<Record<string, string>>((acc, s) => {
+          acc[s.id] = s.name
+          return acc
+        }, {}) ?? {}
+  
+      /* ========== FETCH CAPSTONE TITLES ========== */
+      const { data: capstones } = await supabase
+        .from('courses')
+        .select('id, title')
+        .in('id', capstoneIds)
+  
+      const capstoneMap =
+        capstones?.reduce<Record<string, string>>((acc, c) => {
+          acc[c.id] = c.title
+          return acc
+        }, {}) ?? {}
+  
+      /* ========== MERGE FINAL DATA ========== */
+      const finalRequests: TrelloRequest[] = requestsData.map(r => ({
+        ...r,
+        student_name: studentMap[r.student_id] ?? 'Unknown Student',
+        capstone_title: capstoneMap[r.capstone_id] ?? 'Unknown Capstone',
+      }))
+  
+      setRequests(finalRequests)
     } finally {
       setLoading(false)
     }
   }
+  
 
   useEffect(() => {
     loadRequests()
@@ -106,12 +152,13 @@ export default function TrelloApprovalsPage() {
           className="p-4 flex justify-between items-center"
         >
           <div className="text-sm space-y-1">
-            <p>
-              <b>Student ID:</b> {req.student_id}
-            </p>
-            <p>
-              <b>Capstone ID:</b> {req.capstone_id}
-            </p>
+          <p>
+  <b>Student:</b> {req.student_name}
+</p>
+<p>
+  <b>Capstone:</b> {req.capstone_title}
+</p>
+
             <p className="text-xs text-muted-foreground">
               Requested on:{' '}
               {new Date(req.created_at).toLocaleString()}

@@ -46,7 +46,9 @@ export default function CourseDetailPage() {
   // const [capstone, setCapstone] = useState<Capstone | null>(null)
   const [loading, setLoading] = useState(true)
   const [isEnrolled, setIsEnrolled] = useState(false)
+  const [lastLessonId, setLastLessonId] = useState<string | null>(null)
 
+  
   const [capstoneCourse, setCapstoneCourse] = useState<{
     id: string
     title: string
@@ -112,18 +114,30 @@ setCapstoneCourse(capstone || null)
 
         const { data: { user } } = await supabase.auth.getUser()
 
-if (user) {
-  const { data: enrollment } = await supabase
-  .from('course_enrollments')
-  .select('id')
+        if (user) {
+          const { data: enrollment } = await supabase
+            .from('course_enrollments')
+            .select('id')
+            .eq('student_id', user.id)
+            .eq('course_id', courseId)
+            .maybeSingle()
+        
+          setIsEnrolled(!!enrollment)
+        
+          // ✅ fetch last watched lesson
+          if (enrollment) {
+            const { data: progress } = await supabase
+  .from('student_lesson_progress')
+  .select('lesson_id')
   .eq('student_id', user.id)
   .eq('course_id', courseId)
   .maybeSingle()
 
-setIsEnrolled(!!enrollment)
+setLastLessonId(progress?.lesson_id ?? null)
 
-
-}
+          }
+        }
+        
 
       setCourse({ ...courseData, lessons })
       // setCapstone(capstoneData || null)
@@ -280,21 +294,31 @@ setIsEnrolled(!!enrollment)
     >
       Enroll Now
     </Button>
-  ) : (
-    firstLesson && (
-      <Button
-        className="w-full rounded-full bg-blue-600 hover:bg-blue-700 text-white"
-        onClick={() =>
-          router.push(
-            `/student/courses/${courseId}/play/${firstLesson.id}`
-          )
-        }
-      >
-        Start Learning
-      </Button>
-    )
-  )}
+  ) : lastLessonId ? (
+    <Button
+      className="w-full rounded-full bg-blue-600 hover:bg-blue-700 text-white"
+      onClick={() =>
+        router.push(
+          `/student/courses/${courseId}/play/${lastLessonId}`
+        )
+      }
+    >
+      Continue Course
+    </Button>
+  ) : firstLesson ? (
+    <Button
+      className="w-full rounded-full bg-blue-600 hover:bg-blue-700 text-white"
+      onClick={() =>
+        router.push(
+          `/student/courses/${courseId}/play/${firstLesson.id}`
+        )
+      }
+    >
+      Start Learning
+    </Button>
+  ) : null}
 </CardContent>
+
 
             </Card>
           </div>
