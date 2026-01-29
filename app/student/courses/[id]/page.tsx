@@ -117,12 +117,11 @@ if (user) {
   .from('course_enrollments')
   .select('id')
   .eq('student_id', user.id)
-  .in('course_id', [
-    courseId,                // parent course
-    capstone?.id || ''        // capstone course
-  ])
+  .eq('course_id', courseId)
+  .maybeSingle()
 
-setIsEnrolled((enrollment?.length ?? 0) > 0)
+setIsEnrolled(!!enrollment)
+
 
 }
 
@@ -201,7 +200,7 @@ setIsEnrolled((enrollment?.length ?? 0) > 0)
           <div className="lg:col-span-2 space-y-8">
             {/* THUMBNAIL */}
 
-            {capstoneCourse && isEnrolled && (
+            {/* {capstoneCourse && (
   <Card className="rounded-2xl border border-blue-200 bg-blue-50 shadow-sm">
     <CardHeader>
       <CardTitle className="text-blue-700">
@@ -213,15 +212,15 @@ setIsEnrolled((enrollment?.length ?? 0) > 0)
     </CardHeader>
 
     <CardContent>
-    <Link href={`/student/capstone/${capstoneCourse.id}/stage/1`}>
-  <Button className="w-full rounded-full bg-blue-600 text-white">
-    Start Capstone Project
-  </Button>
-</Link>
-
+      <Link href={`/student/capstone/${capstoneCourse.id}/stage/1`}>
+        <Button className="w-full rounded-full bg-blue-600 text-white">
+          Start Capstone Project
+        </Button>
+      </Link>
     </CardContent>
   </Card>
-)}
+)} */}
+
 
             <div className="relative overflow-hidden rounded-2xl border bg-white shadow-sm">
               {course.thumbnail_url ? (
