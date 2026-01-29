@@ -46,94 +46,139 @@ export default function CapstoneStagePage() {
   const [cardCount, setCardCount] = useState(0)
   // const [submittedForReview, setSubmittedForReview] = useState(false)
   // ✅ STAGE-2 SPECIFIC STATES
-const [trelloRequested, setTrelloRequested] = useState(false)
-const [stage2Submitted, setStage2Submitted] = useState(false)
-const [stage3Submitted, setStage3Submitted] = useState(false)
+  const [trelloRequested, setTrelloRequested] = useState(false)
+  const [stage2Submitted, setStage2Submitted] = useState(false)
+  const [stage3Submitted, setStage3Submitted] = useState(false)
 
 
 
   /* ================= ACCESS GUARD ================= */
-// ================= ACCESS GUARD =================
-useEffect(() => {
-  const load = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+  // ================= ACCESS GUARD =================
 
-    const { data: progress } = await supabase
-      .from('student_capstone_progress')
-      .select(`
+
+  useEffect(() => {
+    const load = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        setAllowed(false)
+        return
+      }
+
+      const { data: progress } = await supabase
+        .from('student_capstone_progress')
+        .select(`
         current_stage,
+          stage1_submitted,
+         stage1_approved,
+
         trello_board_url,
         trello_board_id,
         stage2_submitted,
         stage3_submitted
       `)
-      .eq('student_id', user.id)
-      .eq('capstone_id', capstoneId)
-      .maybeSingle()
-
-    // ✅ ONLY FUTURE STAGE BLOCK
-    if (progress?.current_stage && stage > progress.current_stage) {
-      router.replace(
-        `/student/capstone/${capstoneId}/stage/${progress.current_stage}`
-      )
-      return
-    }
-  // 🔒 PAST STAGES → FORCE FINAL STATE
-if (progress?.current_stage && stage < progress.current_stage) {
-  setAllowed(true)
-
-  if (stage === 1) {
-    setSubmitted(true)
-    setApproved(true)
-  }
-
-  if (stage === 2) {
-    setStage2Submitted(true)
-    setTrelloRequested(true)
-  }
-
-  if (stage === 3) {
-    setStage3Submitted(true)
-  }
-
-  return
-}
-
-
-
-    if (progress) {
-      if (progress.trello_board_url && progress.trello_board_id) {
-        setTrelloUrl(progress.trello_board_url)
-        setTrelloBoardId(progress.trello_board_id)
-        setTrelloRequested(true)
-      }
-
-      setStage2Submitted(!!progress.stage2_submitted)
-      setStage3Submitted(!!progress.stage3_submitted)
-    }
-
-    // Stage 1 data
-    if (stage === 1) {
-      const { data } = await supabase
-        .from('requirement_documents')
-        .select('approved, file_url')
         .eq('student_id', user.id)
         .eq('capstone_id', capstoneId)
         .maybeSingle()
 
-        if (data?.file_url) {
-          setSubmitted(true)          // 🔒 permanently submitted
-          setApproved(!!data.approved)
+      if (!progress) {
+        // ✅ auto-initialize progress
+        await supabase
+          .from('student_capstone_progress')
+          .insert({
+            student_id: user.id,
+            capstone_id: capstoneId,
+            current_stage: 1,
+            stage1_submitted: false,
+            stage1_approved: false,
+            stage2_submitted: false,
+            stage2_approved: false,
+            stage3_submitted: false,
+            stage3_approved: false,
+          })
+
+        // 🔁 reload page after init
+        window.location.reload()
+        return
+      }
+
+
+
+
+
+
+      // ✅ ONLY FUTURE STAGE BLOCK
+      if (progress?.current_stage && stage > progress.current_stage) {
+        router.replace(
+          `/student/capstone/${capstoneId}/stage/${progress.current_stage}`
+        )
+        return
+      }
+
+      // 🔒 Stage-3 HARD LOCK until teacher approval
+      if (
+        stage === 3 &&
+        progress.current_stage < 3
+      ) {
+        router.replace(
+          `/student/capstone/${capstoneId}/stage/2`
+        )
+        return
+      }
+
+      // ✅ AUTO UNLOCK STAGE 3 AFTER TEACHER APPROVES STAGE 2
+if (
+  stage === 2 &&
+  progress.current_stage === 3
+) {
+  router.replace(
+    `/student/capstone/${capstoneId}/stage/3`
+  )
+  return
+}
+
+      // 🔒 PAST STAGES → FORCE FINAL STATE
+
+
+
+
+      if (progress) {
+        if (progress.trello_board_url && progress.trello_board_id) {
+          setTrelloUrl(progress.trello_board_url)
+          setTrelloBoardId(progress.trello_board_id)
+          setTrelloRequested(true)
+        } else {
+          setTrelloRequested(false) // 👈 ADD THIS LINE
         }
-        
+
+        setStage2Submitted(!!progress.stage2_submitted)
+        setStage3Submitted(!!progress.stage3_submitted)
+      }
+
+      // ✅ STAGE STATE FROM SINGLE SOURCE (student_capstone_progress)
+
+      // ================= STAGE 1 SOURCE OF TRUTH =================
+      if (stage === 1) {
+        setSubmitted(!!progress.stage1_submitted)
+        setApproved(!!progress.stage1_approved)
+      }
+
+
+
+
+      if (stage === 2) {
+        setStage2Submitted(!!progress.stage2_submitted)
+      }
+
+      if (stage === 3) {
+        setStage3Submitted(!!progress.stage3_submitted)
+      }
+
+
+      setAllowed(true)
     }
 
-    setAllowed(true)
-  }
-
-  load()
-}, [stage, capstoneId])
+    load()
+  }, [stage, capstoneId, router])
 
 
 
@@ -144,19 +189,19 @@ if (progress?.current_stage && stage < progress.current_stage) {
   // useEffect(() => {
   //   if (stage !== 2) return
   //   if (trelloBoardId) return
-  
+
   //   const boardId =
   //     process.env.NEXT_PUBLIC_TRELLO_BOARD_ID || 'V5iqYo6a'
-  
+
   //   setTrelloBoardId(boardId)
   //   setTrelloUrl(`https://trello.com/b/${boardId}/capstoneproject`)
   // }, [stage, trelloBoardId])
-  
+
 
   /* ================= TRELLO COUNT ================= */
   useEffect(() => {
     if (!trelloBoardId || stage !== 2) return
-  
+
     const fetchCount = async () => {
       const res = await fetch(
         `/api/trello/board-cards-count?boardId=${trelloBoardId}`
@@ -164,12 +209,12 @@ if (progress?.current_stage && stage < progress.current_stage) {
       const data = await res.json()
       setCardCount(data.count || 0)
     }
-  
+
     fetchCount()
     const interval = setInterval(fetchCount, 5000)
     return () => clearInterval(interval)
   }, [trelloBoardId, stage])
-  
+
 
 
   /* ================= ACTIONS ================= */
@@ -178,42 +223,84 @@ if (progress?.current_stage && stage < progress.current_stage) {
     setLoading(true)
 
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-        const ext = file.name.split('.').pop()
-    const path = `${capstoneId}/${user!.id}/requirement.${ext}`
+    if (!user) {
+      setLoading(false)
+      alert('User not authenticated')
+      return
+    }
 
-    await supabase.storage
+    const ext = file.name.split('.').pop()
+    const path = `${capstoneId}/${user.id}/requirement.${ext}`
+
+    // 1️⃣ Upload file to storage
+    const { error: uploadError } = await supabase.storage
       .from('capstone-requirements')
       .upload(path, file, { upsert: true })
+
+    if (uploadError) {
+      console.error('STORAGE UPLOAD ERROR:', uploadError)
+      alert(uploadError.message)
+      setLoading(false)
+      return
+    }
+
 
     const { data: url } = supabase.storage
       .from('capstone-requirements')
       .getPublicUrl(path)
 
-    await supabase.from('requirement_documents').upsert(
-      {
-        student_id: user!.id,
-        capstone_id: capstoneId,
-        file_url: url.publicUrl,
-        approved: false,
-      },
-      { onConflict: 'student_id,capstone_id' }
-    )
-
-    await supabase
-    .from('student_capstone_progress')
-    .update({
-      stage1_submitted: true,
-      current_stage: 2
+    console.log('UPLOAD PAYLOAD:', {
+      student_id: user.id,
+      capstone_id: capstoneId,
+      file_url: url.publicUrl,
     })
-        .eq('student_id', user!.id)
-    .eq('capstone_id', capstoneId)
-  
 
+    // 2️⃣ Save requirement document row
+    // 2️⃣ Save requirement document row
+    const { data, error: insertErr } = await supabase
+      .from('requirement_documents')
+      .upsert(
+        {
+          student_id: user.id,
+          capstone_id: capstoneId,
+          file_url: url.publicUrl,
+          approved: false,
+        },
+        { onConflict: 'student_id,capstone_id' }
+      )
+
+    console.log('UPSERT DATA:', data)
+    console.log('UPSERT ERROR:', insertErr)
+
+    if (insertErr) {
+      alert(insertErr.message)
+      setLoading(false)
+      return
+    }
+
+
+
+
+    // ✅ 3️⃣ ⬅️⬅️⬅️ YAHI PE YE CODE AATA HAI ⬅️⬅️⬅️
+    await supabase
+      .from('student_capstone_progress')
+      .upsert(
+        {
+          student_id: user.id,
+          capstone_id: capstoneId,
+          stage1_submitted: true,
+          current_stage: 1,
+        },
+        { onConflict: 'student_id,capstone_id' }
+      )
+
+
+    // 4️⃣ Update local UI state
     setSubmitted(true)
     setApproved(false)
     setLoading(false)
   }
+
 
   // const submitStage2 = async () => {
   //   const { data: { user } } = await supabase.auth.getUser()
@@ -230,8 +317,11 @@ if (progress?.current_stage && stage < progress.current_stage) {
 
   const requestTrelloAccess = async () => {
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-  
+    if (!user) {
+      alert('Login required')
+      return
+    }
+
     // ✅ DUPLICATE REQUEST BLOCK
     const { data: existing } = await supabase
       .from('trello_access_requests')
@@ -240,12 +330,12 @@ if (progress?.current_stage && stage < progress.current_stage) {
       .eq('capstone_id', capstoneId)
       .eq('status', 'pending')
       .maybeSingle()
-  
+
     if (existing) {
       alert('Access request already sent')
       return
     }
-  
+
     const { error } = await supabase
       .from('trello_access_requests')
       .insert({
@@ -253,16 +343,16 @@ if (progress?.current_stage && stage < progress.current_stage) {
         capstone_id: capstoneId,
         status: 'pending',
       })
-  
+
     if (error) {
       console.error(error)
       alert('Failed to send request')
       return
     }
-  
+
     // setSubmittedForReview(true)
   }
-  
+
 
 
   const submitStage3 = async () => {
@@ -270,23 +360,27 @@ if (progress?.current_stage && stage < progress.current_stage) {
     setLoading(true)
 
     const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      setLoading(false)
+      alert('User not authenticated')
+      return
+    }
 
     for (const file of files) {
-      const path = `${capstoneId}/${user!.id}/stage3/${Date.now()}-${file.name}`
-      await supabase.storage.from('capstone-submissions').upload(path, file)
+      const path = `${capstoneId}/${user.id}/stage3/${Date.now()}-${file.name}`
+      await supabase.storage
+        .from('capstone-submissions')
+        .upload(path, file)
     }
 
     await supabase
       .from('student_capstone_progress')
-      .update({
-        stage3_submitted: true,
-        current_stage: 3
-      })
-            .eq('student_id', user!.id)
+      .update({ stage3_submitted: true })
+      .eq('student_id', user.id)
       .eq('capstone_id', capstoneId)
 
-      setStage3Submitted(true)
-      setLoading(false)
+    setStage3Submitted(true)
+    setLoading(false)
   }
 
   if (!allowed) {
@@ -307,14 +401,14 @@ if (progress?.current_stage && stage < progress.current_stage) {
       {/* ================= STAGE 1 ================= */}
       {stage === 1 && (
         <Card className="rounded-xl border bg-white shadow-sm hover:shadow-md transition">
-        <CardHeader>
+          <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileText className="w-5 h-5 text-blue-600" />
               Stage 1: Requirement Gathering
             </CardTitle>
             <CardDescription>
-  Upload your requirement document for admin approval
-</CardDescription>
+              Upload your requirement document for admin approval
+            </CardDescription>
 
           </CardHeader>
 
@@ -348,44 +442,44 @@ if (progress?.current_stage && stage < progress.current_stage) {
                   </p>
                 )}
 
-<Button
-  onClick={handleUpload}
-  disabled={loading || submitted}
-  className="disabled:pointer-events-none disabled:opacity-50"
->
+                <Button
+                  onClick={handleUpload}
+                  disabled={loading || submitted}
+                  className="disabled:pointer-events-none disabled:opacity-50"
+                >
 
                   Submit Requirement
                 </Button>
               </>
             ) : approved ? (
               <div className="space-y-3">
-              <div className="flex items-center gap-2 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-green-700 text-sm">
-                <CheckCircle className="w-4 h-4" />
-                Stage 1 approved by teacher
+                <div className="flex items-center gap-2 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-green-700 text-sm">
+                  <CheckCircle className="w-4 h-4" />
+                  Stage 1 approved by teacher
+                </div>
+
+                <p className="text-sm text-slate-600">
+                  You submitted the requirement document and it has been approved.
+                  This stage is now locked for editing.
+                </p>
+
+                <Button
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                  onClick={() =>
+                    router.push(`/student/capstone/${capstoneId}/stage/2`)
+                  }
+                >
+                  Go to Stage 2
+                </Button>
               </div>
-            
-              <p className="text-sm text-slate-600">
-                You submitted the requirement document and it has been approved.
-                This stage is now locked for editing.
-              </p>
-            
-              <Button
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                onClick={() =>
-                  router.push(`/student/capstone/${capstoneId}/stage/2`)
-                }
-              >
-                Go to Stage 2
-              </Button>
-            </div>
-            
-            
+
+
             ) : (
               <div className="flex items-center gap-2 rounded-md border border-yellow-200 bg-yellow-50 px-3 py-2 text-yellow-700 text-sm">
-              <Lock className="w-4 h-4" />
-              Pending Admin Approval
-            </div>
-            
+                <Lock className="w-4 h-4" />
+                Pending Admin Approval
+              </div>
+
             )}
           </CardContent>
         </Card>
@@ -394,7 +488,7 @@ if (progress?.current_stage && stage < progress.current_stage) {
       {/* ================= STAGE 2 ================= */}
       {stage === 2 && (
         <Card className="rounded-xl border bg-white shadow-sm hover:shadow-md transition">
-        <CardHeader>
+          <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <KanbanSquare className="w-5 h-5 text-blue-600" />
               Stage 2: Backlog Creation
@@ -406,88 +500,86 @@ if (progress?.current_stage && stage < progress.current_stage) {
 
           <CardContent className="space-y-4">
 
-{/* ================= BEFORE SUBMIT ================= */}
-{!stage2Submitted && (
-  <>
-    {trelloUrl && (
-      <Button
-        variant="outline"
-        className="w-full"
-        onClick={() => window.open(trelloUrl, '_blank')}
-      >
-        Open Trello Board
-      </Button>
-    )}
+            {/* ================= BEFORE SUBMIT ================= */}
+            {!stage2Submitted && (
+              <>
+                {trelloUrl && (
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => window.open(trelloUrl, '_blank')}
+                  >
+                    Open Trello Board
+                  </Button>
+                )}
 
-    {!trelloRequested ? (
-      <Button
-        className="w-full bg-orange-600 hover:bg-orange-700 text-white"
-        onClick={requestTrelloAccess}
-      >
-        Request Access
-      </Button>
-    ) : (
-      <div className="flex items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700 text-sm">
-        <CheckCircle className="w-4 h-4" />
-        Trello access granted by admin
-      </div>
-    )}
+                {!trelloRequested ? (
+                  <Button
+                    className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+                    onClick={requestTrelloAccess}
+                  >
+                    Request Access
+                  </Button>
+                ) : (
+                  <div className="flex items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700 text-sm">
+                    <CheckCircle className="w-4 h-4" />
+                    Trello access granted by admin
+                  </div>
+                )}
 
-    <p className="text-sm">
-      Tasks created: <b>{cardCount}/10</b>
-    </p>
+                <p className="text-sm">
+                  Tasks created: <b>{cardCount}/10</b>
+                </p>
 
-    {trelloRequested && cardCount >= 10 && (
-      <Button
-      disabled={stage2Submitted}
-      className="w-full bg-green-600 hover:bg-green-700 text-white disabled:pointer-events-none disabled:opacity-50"
-      onClick={async () => {
-    
-          const { data: { user } } = await supabase.auth.getUser()
-          await supabase
-            .from('student_capstone_progress')
-            .update({
-              stage2_submitted: true,
-              current_stage: 3
-            })
-            
+                {trelloRequested && cardCount >= 10 && (
+                  <Button
+                    disabled={stage2Submitted}
+                    className="w-full bg-green-600 hover:bg-green-700 text-white disabled:pointer-events-none disabled:opacity-50"
+                    onClick={async () => {
+
+                      const { data: { user } } = await supabase.auth.getUser()
+                      await supabase
+                        .from('student_capstone_progress')
+                        .update({
+                          stage2_submitted: true
+                        })
+
+
                         .eq('student_id', user!.id)
-            .eq('capstone_id', capstoneId)
+                        .eq('capstone_id', capstoneId)
 
-          setStage2Submitted(true)
-        }}
-      >
-        Submit Stage 2 for Review
-      </Button>
-    )}
-  </>
-)}
+                      setStage2Submitted(true)
+                    }}
+                  >
+                    Submit Stage 2 for Review
+                  </Button>
+                )}
+              </>
+            )}
 
-{/* ================= AFTER SUBMIT ================= */}
-{stage2Submitted && (
-  <div className="space-y-3">
-    <div className="flex items-center gap-2 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-green-700 text-sm">
-      <CheckCircle className="w-4 h-4" />
-      Stage 2 already submitted
-    </div>
+            {/* ================= AFTER SUBMIT ================= */}
+            {stage2Submitted && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-green-700 text-sm">
+                  <CheckCircle className="w-4 h-4" />
+                  Stage 2 already submitted
+                </div>
 
-    <p className="text-sm text-slate-600">
-      Backlog has been submitted for review.
-      You cannot submit this stage again.
-    </p>
+                <p className="text-sm text-slate-600">
+                  Backlog has been submitted for review.
+                  You cannot submit this stage again.
+                </p>
 
-    <Button
-      className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-      onClick={() =>
-        router.push(`/student/capstone/${capstoneId}/stage/3`)
-      }
-    >
-      Go to Stage 3
-    </Button>
-  </div>
-)}
+                <div className="flex items-center gap-2 rounded-md border border-yellow-200 bg-yellow-50 px-3 py-2 text-yellow-700 text-sm">
+                  <Lock className="w-4 h-4" />
+                  Waiting for teacher approval to unlock Stage 3
+                </div>
 
-</CardContent>
+
+              </div>
+            )}
+
+          </CardContent>
 
 
 
@@ -497,7 +589,7 @@ if (progress?.current_stage && stage < progress.current_stage) {
       {/* ================= STAGE 3 ================= */}
       {stage === 3 && (
         <Card className="rounded-xl border bg-white shadow-sm hover:shadow-md transition">
-        <CardHeader>
+          <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Code2 className="w-5 h-5 text-blue-600" />
               Stage 3: Development & Submission
@@ -548,21 +640,21 @@ if (progress?.current_stage && stage < progress.current_stage) {
                   </p>
                 )}
 
-<Button
-  className="w-full bg-blue-600 hover:bg-blue-700 text-white disabled:pointer-events-none disabled:opacity-50"
-  onClick={submitStage3}
-  disabled={loading || stage3Submitted}
->
+                <Button
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white disabled:pointer-events-none disabled:opacity-50"
+                  onClick={submitStage3}
+                  disabled={loading || stage3Submitted}
+                >
 
                   Submit for Approval
                 </Button>
               </>
             ) : (
               <div className="flex items-center gap-2 rounded-md border border-yellow-200 bg-yellow-50 px-3 py-2 text-yellow-700 text-sm">
-              <Lock className="w-4 h-4" />
-              Pending Admin Approval
-            </div>
-            
+                <Lock className="w-4 h-4" />
+                Pending Admin Approval
+              </div>
+
             )}
           </CardContent>
         </Card>

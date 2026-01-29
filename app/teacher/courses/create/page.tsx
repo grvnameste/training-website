@@ -61,6 +61,10 @@ export default function CreateCoursePage() {
   const [lessonDesc, setLessonDesc] = useState('')
   const [lessonVideo, setLessonVideo] = useState<File | null>(null)
 
+
+  const [hasCapstone, setHasCapstone] = useState(false)
+
+
   /* =======================
      UPLOAD HELPERS
   ======================= */
@@ -175,19 +179,60 @@ export default function CreateCoursePage() {
 
       /* Course */
       const { data: course, error } = await supabase
+  .from('courses')
+  .insert({
+    teacher_id: auth.user.id,
+    title,
+    subtitle,
+    description,
+    price: Number(price || 0),
+    thumbnail_url: thumbnailUrl,
+    is_capstone: false,
+    parent_course_id: null,
+  })
+  .select()
+  .single()
+
+      if (error || !course) throw error
+
+    // ================= CREATE CAPSTONE COURSE =================
+// ================= CREATE CAPSTONE COURSE =================
+if (hasCapstone) {
+  const { data: existing } = await supabase
+    .from('courses')
+    .select('id')
+    .eq('parent_course_id', course.id)
+    .eq('is_capstone', true)
+    .maybeSingle()
+
+    if (!existing) {
+      const { error: capstoneError } = await supabase
         .from('courses')
         .insert({
           teacher_id: auth.user.id,
-          title,
-          subtitle,
-          description,
-          price: Number(price || 0),
+          title: `${title} – Capstone Project`,
+          subtitle: 'Capstone Project',
+          description: `Apply everything learned in ${title} through a real-world project.`,
+          price: 0,
           thumbnail_url: thumbnailUrl,
+          is_capstone: true,
+          parent_course_id: course.id,
         })
-        .select()
-        .single()
+    
+      if (capstoneError) {
+        console.error('CAPSTONE ERROR FULL:', {
+          message: capstoneError.message,
+          details: capstoneError.details,
+          hint: capstoneError.hint,
+          code: capstoneError.code,
+        })
+        alert(capstoneError.message)
+        return
+      }
+    }
+    
+}
 
-      if (error || !course) throw error
 
       /* Sections + Lessons */
       for (let i = 0; i < sections.length; i++) {
@@ -263,6 +308,19 @@ export default function CreateCoursePage() {
               <textarea className="border p-2 md:col-span-2" placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} />
               <Input type="number" placeholder="Price" value={price} onChange={e => setPrice(e.target.value)} />
               <Input type="file" accept="image/*" onChange={e => setThumbnailFile(e.target.files?.[0] || null)} />
+              <div className="flex items-center gap-3 md:col-span-2">
+  <input
+    type="checkbox"
+    id="hasCapstone"
+    checked={hasCapstone}
+    onChange={e => setHasCapstone(e.target.checked)}
+    className="h-4 w-4"
+  />
+  <label htmlFor="hasCapstone" className="text-sm font-medium">
+    This course has a Capstone Project
+  </label>
+</div>
+
             </CardContent>
           </Card>
 

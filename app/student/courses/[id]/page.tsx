@@ -1,3 +1,4 @@
+//app/student/courses/[id]/page.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -29,11 +30,11 @@ interface Course {
 }
 
 
-interface Capstone {
-  id: string
-  title: string
-  description: string
-}
+// interface Capstone {
+//   id: string
+//   title: string
+//   description: string
+// }
 
 /* ================= PAGE ================= */
 export default function CourseDetailPage() {
@@ -42,15 +43,23 @@ export default function CourseDetailPage() {
   const courseId = params.id as string
 
   const [course, setCourse] = useState<Course | null>(null)
-  const [capstone, setCapstone] = useState<Capstone | null>(null)
+  // const [capstone, setCapstone] = useState<Capstone | null>(null)
   const [loading, setLoading] = useState(true)
   const [isEnrolled, setIsEnrolled] = useState(false)
+
+  const [capstoneCourse, setCapstoneCourse] = useState<{
+    id: string
+    title: string
+  } | null>(null)
+  
+
+
 
   useEffect(() => {
     const loadCourse = async () => {
       const { data: courseData } = await supabase
         .from('courses')
-        .select('id, title, price, thumbnail_url')
+        .select('id, title, price, thumbnail_url, is_capstone, parent_course_id')
         .eq('id', courseId)
         .single()
 
@@ -58,6 +67,22 @@ export default function CourseDetailPage() {
         setLoading(false)
         return
       }
+
+// 🚫 Block direct access to capstone course detail
+if (courseData.is_capstone && courseData.parent_course_id) {
+  router.replace(`/student/courses/${courseData.parent_course_id}`)
+  return
+}
+
+      const { data: capstone } = await supabase
+  .from('courses')
+  .select('id, title')
+  .eq('parent_course_id', courseId)
+  .eq('is_capstone', true)
+  .maybeSingle()
+
+setCapstoneCourse(capstone || null)
+
 
       const { data: sections } = await supabase
         .from('sections')
@@ -78,28 +103,30 @@ export default function CourseDetailPage() {
         lessons = lessonData || []
       }
 
-      const { data: capstoneData } = await supabase
-        .from('capstone_projects')
-        .select('id, title, description')
-        .eq('course_id', courseId)
-        .maybeSingle()
+      // const { data: capstoneData } = await supabase
+      //   .from('capstone_projects')
+      //   .select('id, title, description')
+      //   .eq('course_id', courseId)
+      //   .maybeSingle()
 
 
         const { data: { user } } = await supabase.auth.getUser()
 
 if (user) {
   const { data: enrollment } = await supabase
-    .from('course_enrollments')
-    .select('id')
-    .eq('student_id', user.id)
-    .eq('course_id', courseId)
-    .maybeSingle()
+  .from('course_enrollments')
+  .select('id')
+  .eq('student_id', user.id)
+  .eq('course_id', courseId)
+  .maybeSingle()
 
-  setIsEnrolled(!!enrollment)
+setIsEnrolled(!!enrollment)
+
+
 }
 
       setCourse({ ...courseData, lessons })
-      setCapstone(capstoneData || null)
+      // setCapstone(capstoneData || null)
       setLoading(false)
     }
 
@@ -117,18 +144,33 @@ if (user) {
       .eq('id', user.id)
       .single()
   
-    await supabase.from('course_enrollments').insert({
-      student_id: user.id,
-      course_id: course.id,
-      student_first_name: profile?.first_name ?? '',
-      student_last_name: profile?.last_name ?? '',
-      course_title: course.title,
-    })
+    await supabase.from('course_enrollments').upsert(
+      {
+        student_id: user.id,
+        course_id: course.id,
+        student_first_name: profile?.first_name ?? '',
+        student_last_name: profile?.last_name ?? '',
+        course_title: course.title,
+      },
+      { onConflict: 'student_id,course_id' }
+    )
   
+    if (capstoneCourse) {
+      await supabase.from('course_enrollments').upsert(
+        {
+          student_id: user.id,
+          course_id: capstoneCourse.id,
+        },
+        { onConflict: 'student_id,course_id' }
+      )
+    }
+  
+    // ✅ UI update ONLY here
     setIsEnrolled(true)
+    router.refresh()
   }
   
-
+  
   if (loading) {
     return (
       <div className="flex justify-center py-32">
@@ -157,6 +199,29 @@ if (user) {
           {/* LEFT */}
           <div className="lg:col-span-2 space-y-8">
             {/* THUMBNAIL */}
+
+            {/* {capstoneCourse && (
+  <Card className="rounded-2xl border border-blue-200 bg-blue-50 shadow-sm">
+    <CardHeader>
+      <CardTitle className="text-blue-700">
+        Capstone Project
+      </CardTitle>
+      <CardDescription>
+        Apply everything you learned in this course
+      </CardDescription>
+    </CardHeader>
+
+    <CardContent>
+      <Link href={`/student/capstone/${capstoneCourse.id}/stage/1`}>
+        <Button className="w-full rounded-full bg-blue-600 text-white">
+          Start Capstone Project
+        </Button>
+      </Link>
+    </CardContent>
+  </Card>
+)} */}
+
+
             <div className="relative overflow-hidden rounded-2xl border bg-white shadow-sm">
               {course.thumbnail_url ? (
                 <img
