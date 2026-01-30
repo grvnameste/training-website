@@ -13,18 +13,50 @@ interface Course {
   id: string
   title: string
   price: number
-  thumbnail: string
+  thumbnail_url: string | null
   description: string
-  enrollments: number
 }
+
 
 export default function StudentDashboard() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [priceFilter, setPriceFilter] = useState('all')
+  const [enrolledCourses, setEnrolledCourses] = useState<Course[]>([])
+
   const [questionnaireCompleted, setQuestionnaireCompleted] =
     useState(false)
+
+    const loadEnrolledCourses = async (userId: string) => {
+      const { data, error } = await supabase
+        .from('course_enrollments')
+        .select(`
+          course_id,
+          courses (
+            id,
+            title,
+            price,
+            thumbnail_url,
+            description
+          )
+        `)
+        .eq('student_id', userId)
+    
+      if (error) {
+        console.error('Enroll fetch error', error)
+        return
+      }
+    
+      const courses = data
+        ?.map((row: any) => row.courses)
+        .filter(Boolean)
+    
+      setEnrolledCourses(courses || [])
+    }
+    
+
+
 
   useEffect(() => {
     const init = async () => {
@@ -52,8 +84,14 @@ export default function StudentDashboard() {
         .limit(1)
         .single()
 
-      setQuestionnaireCompleted(!!data)
-      setLoading(false)
+        setQuestionnaireCompleted(!!data)
+
+        if (data) {
+          await loadEnrolledCourses(session.user.id)
+        }
+        
+        setLoading(false)
+        
     }
 
     init()
@@ -127,6 +165,56 @@ export default function StudentDashboard() {
             </div>
           </CardContent>
         </Card>
+
+
+        {/* ================= ENROLLED COURSES ================= */}
+{questionnaireCompleted && (
+  <div className="space-y-6">
+    <h2 className="text-2xl font-semibold">
+      Your Enrolled Courses
+    </h2>
+
+    {enrolledCourses.length === 0 ? (
+      <p className="text-slate-500">
+        You have not enrolled in any courses yet.
+      </p>
+    ) : (
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {enrolledCourses.map(course => (
+          <Card key={course.id} className="overflow-hidden">
+            {course.thumbnail_url ? (
+              <img
+                src={course.thumbnail_url}
+                alt={course.title}
+                className="h-40 w-full object-cover"
+              />
+            ) : (
+              <div className="h-40 bg-slate-100 flex items-center justify-center text-slate-400">
+                No image
+              </div>
+            )}
+
+            <CardContent className="space-y-4 pt-4">
+              <h3 className="font-semibold text-lg">
+                {course.title}
+              </h3>
+
+              <Button
+                className="w-full rounded-full bg-blue-600 hover:bg-blue-700 text-white"
+                onClick={() =>
+                  router.push(`/student/courses/${course.id}`)
+                }
+              >
+                Go to Course
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    )}
+  </div>
+)}
+
 
         {/* ================= LOCKED STATE ================= */}
         {!questionnaireCompleted && (

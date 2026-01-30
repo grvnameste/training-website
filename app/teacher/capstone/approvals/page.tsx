@@ -263,65 +263,86 @@ setItems(finalItems)
     <div className="max-w-5xl mx-auto py-10 space-y-6">
       <h1 className="text-2xl font-semibold">Capstone Approvals</h1>
 
+      <div className="overflow-x-auto rounded-lg border">
+  <table className="w-full border-collapse text-sm">
+    <thead className="bg-slate-100 text-left">
+      <tr>
+        <th className="px-4 py-3 border">Capstone</th>
+        <th className="px-4 py-3 border">Student</th>
+        <th className="px-4 py-3 border">Stage</th>
+        <th className="px-4 py-3 border">Details</th>
+        <th className="px-4 py-3 border">Action</th>
+      </tr>
+    </thead>
+
+    <tbody>
       {items.map(item => (
-        <Card key={item.progress_id} className="p-4 space-y-3">
-          <p className="font-medium">{item.title}</p>
-          <p className="text-sm">
-  Student: <b>{item.student_name}</b>
-</p>
-          <p className="text-sm">
-            Current Stage: <b>{item.current_stage}</b>
-          </p>
+        <tr key={item.progress_id} className="hover:bg-slate-50">
+          {/* Capstone */}
+          <td className="px-4 py-3 border font-medium">
+            {item.title}
+          </td>
 
-          {item.current_stage === 1 && (
-            <>
+          {/* Student */}
+          <td className="px-4 py-3 border">
+            {item.student_name}
+          </td>
+
+          {/* Stage */}
+          <td className="px-4 py-3 border">
+            Stage {item.current_stage}
+          </td>
+
+          {/* Details */}
+          <td className="px-4 py-3 border">
+            {item.current_stage === 1 && item.requirement_url && (
               <a
-                href={item.requirement_url!}
+                href={item.requirement_url}
                 target="_blank"
-                className="text-blue-600 underline text-sm"
+                className="text-blue-600 underline"
               >
-                View Requirement Document
+                View Requirement
               </a>
-              <Button onClick={() => approve(item)}>
-                Approve Stage 1
-              </Button>
-            </>
-          )}
+            )}
 
-          {item.current_stage === 2 && (
-            <>
+            {item.current_stage === 2 && item.trello_board_url && (
               <a
-                href={item.trello_board_url!}
+                href={item.trello_board_url}
                 target="_blank"
-                className="text-blue-600 underline text-sm"
+                className="text-blue-600 underline"
               >
-                View Trello Board
+                View Trello
               </a>
-              <Button onClick={() => approve(item)}>
-                Approve Stage 2
-              </Button>
-            </>
-          )}
+            )}
 
-          {item.current_stage === 3 && (
-            <>
-              {item.stage3_files?.map(f => (
+            {item.current_stage === 3 &&
+              item.stage3_files?.map(f => (
                 <a
                   key={f.id}
                   href={f.file_url}
                   target="_blank"
-                  className="block text-blue-600 underline text-sm"
+                  className="block text-blue-600 underline"
                 >
-                  ⬇️ {f.file_name}
+                  {f.file_name}
                 </a>
               ))}
-              <Button onClick={() => approve(item)}>
-                Approve Stage 3
-              </Button>
-            </>
-          )}
-        </Card>
+          </td>
+
+          {/* Action */}
+          <td className="px-4 py-3 border">
+            <Button
+              size="sm"
+              onClick={() => approve(item)}
+            >
+              Approve
+            </Button>
+          </td>
+        </tr>
       ))}
+    </tbody>
+  </table>
+</div>
+
     </div>
   )
 }
