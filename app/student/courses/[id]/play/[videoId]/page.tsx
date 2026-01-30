@@ -175,6 +175,7 @@ setCourse({
 
     loadCourse()
   }, [courseId, videoId])
+  const isLocked = (stage: number) => stage > capstoneStage
 
   // ✅ SAVE LAST WATCHED LESSON (CONTINUE FEATURE)
 useEffect(() => {

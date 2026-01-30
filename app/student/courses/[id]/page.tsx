@@ -57,6 +57,14 @@ export default function CourseDetailPage() {
 
 
 
+  const [capstoneCourse, setCapstoneCourse] = useState<{
+    id: string
+    title: string
+  } | null>(null)
+  
+
+
+
   useEffect(() => {
     const loadCourse = async () => {
       const { data: courseData } = await supabase
