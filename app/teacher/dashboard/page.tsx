@@ -1,10 +1,17 @@
-//app/teacher/dashboard/page.tsx
+//app/teacher/dashoard/page.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import supabase from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
+import {
+  Users,
+  Layers,
+  CheckCircle,
+  TrendingUp,
+} from 'lucide-react'
+
 import {
   Card,
   CardContent,
@@ -13,7 +20,6 @@ import {
   Plus,
   BookOpen,
   Pencil,
-  ClipboardCheck,
 } from 'lucide-react'
 
 type Course = {
@@ -25,15 +31,18 @@ type Course = {
 }
 
 export default function TeacherDashboard() {
+  const [totalStudents, setTotalStudents] = useState(0)
+  const [totalEnrollments, setTotalEnrollments] = useState(0)
   const [courses, setCourses] = useState<Course[]>([])
   const [loading, setLoading] = useState(true)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   useEffect(() => {
-    const loadCourses = async () => {
+    const loadDashboardData = async () => {
       setLoading(true)
       setErrorMsg(null)
 
+      // ===== AUTH =====
       const { data: userData, error: userError } =
         await supabase.auth.getUser()
 
@@ -43,30 +52,65 @@ export default function TeacherDashboard() {
         return
       }
 
-      const { data, error } = await supabase
-        .from('courses')
-        .select('*')
-        .eq('teacher_id', userData.user.id)
-        .order('created_at', { ascending: false })
+     
+     
 
-      if (error) {
-        setErrorMsg(error.message)
-        setCourses([])
-      } else {
-        setCourses(data || [])
-      }
+      // ===== COURSES (TEACHER) =====
+      // ===== COURSES (TEACHER) =====
+const { data: coursesData, error } = await supabase
+.from('courses')
+.select('*')
+.eq('teacher_id', userData.user.id)
+.order('created_at', { ascending: false })
+
+if (error) {
+setErrorMsg(error.message)
+setCourses([])
+setTotalEnrollments(0)
+setLoading(false)
+return
+}
+
+// set courses
+const safeCourses = coursesData ?? []
+setCourses(safeCourses)
+
+// ===== DASHBOARD STATS (API - SERVICE ROLE) =====
+try {
+  const res = await fetch(
+    `/api/teacher/dashboard?teacherId=${userData.user.id}`
+  )
+  
+
+  if (!res.ok) {
+    console.error('Stats API failed')
+    setTotalStudents(0)
+    setTotalEnrollments(0)
+  } else {
+    const stats = await res.json()
+    setTotalStudents(stats.totalStudents)
+    setTotalEnrollments(stats.totalEnrollments)
+  }
+} catch (err) {
+  console.error(err)
+  setTotalStudents(0)
+  setTotalEnrollments(0)
+}
+
+
+
 
       setLoading(false)
     }
 
-    loadCourses()
+    loadDashboardData()
   }, [])
 
   /* Loading */
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p>Loading your courses…</p>
+        <p>Loading your dashboard…</p>
       </div>
     )
   }
@@ -86,48 +130,78 @@ export default function TeacherDashboard() {
 
   return (
     <div className="min-h-screen py-12">
-      <div className="max-w-7xl mx-auto space-y-10 px-4">
+      <div className="max-w-7xl mx-auto space-y-12 px-4">
 
         {/* ===== HEADER ===== */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-4xl font-bold">
-              Instructor Dashboard
-            </h1>
-            <p className="text-muted-foreground">
-              Manage courses & capstone approvals
-            </p>
-          </div>
-          </div>
+        <div className="max-w-3xl mx-auto space-y-3 text-center">
+          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">
+            Instructor Dashboard
+          </h1>
+          <p className="text-sm md:text-base text-muted-foreground">
+            Manage courses and capstone approvals
+          </p>
+          <div className="pt-6 border-b" />
+        </div>
 
-          <div className="flex gap-3">
-  {/* Capstone Stage Approvals */}
-  <Link href="/teacher/capstone/approvals">
-    <Button variant="outline">
-      <ClipboardCheck className="w-4 h-4 mr-2" />
-      Capstone Approvals
-    </Button>
-  </Link>
+        {/* ===== STATS GRID ===== */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          
+          {/* Total Courses */}
+          <Card>
+            <CardContent className="flex items-center justify-between py-6">
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  Total Courses
+                </p>
+                <h3 className="text-2xl font-semibold">
+                  {courses.length}
+                </h3>
+              </div>
+              <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
+                <Layers className="w-6 h-6 text-blue-600" />
+              </div>
+            </CardContent>
+          </Card>
 
-  {/* Trello Access Approvals */}
-  <Link href="/teacher/capstone/trello-approvals">
-    <Button variant="outline">
-      <ClipboardCheck className="w-4 h-4 mr-2" />
-      Trello Access
-    </Button>
-  </Link>
+          {/* Students */}
+          <Card>
+            <CardContent className="flex items-center justify-between py-6">
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  Total Students
+                </p>
+                <h3 className="text-2xl font-semibold">
+                  {totalStudents}
+                </h3>
+              </div>
+              <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center">
+                <Users className="w-6 h-6 text-purple-600" />
+              </div>
+            </CardContent>
+          </Card>
 
-  {/* Create Course */}
-  <Link href="/teacher/courses/create">
-    <Button>
-      <Plus className="w-4 h-4 mr-2" />
-      Create Course
-    </Button>
-  </Link>
-</div>
+          {/* Course Enrollments */}
+          <Card>
+            <CardContent className="flex items-center justify-between py-6">
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  Course Enrollments
+                </p>
+                <h3 className="text-2xl font-semibold">
+                  {totalEnrollments}
+                </h3>
+              </div>
+              <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
+                <TrendingUp className="w-6 h-6 text-green-600" />
+              </div>
+            </CardContent>
+          </Card>
 
+          {/* Pending Approvals (unchanged) */}
+         
+        </div>
 
-        {/* ===== EMPTY STATE ===== */}
+        {/* ===== COURSES ===== */}
         {courses.length === 0 ? (
           <Card>
             <CardContent className="py-20 text-center space-y-4">
@@ -144,11 +218,10 @@ export default function TeacherDashboard() {
             </CardContent>
           </Card>
         ) : (
-          /* ===== COURSE GRID ===== */
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {courses.map(course => (
               <Card key={course.id} className="hover:shadow-md transition">
-                <div className="h-40 bg-muted flex items-center justify-center overflow-hidden">
+                <div className="h-40 bg-muted overflow-hidden">
                   {course.thumbnail_url ? (
                     <img
                       src={course.thumbnail_url}
@@ -156,7 +229,9 @@ export default function TeacherDashboard() {
                       className="object-cover w-full h-full"
                     />
                   ) : (
-                    'Course Thumbnail'
+                    <div className="h-full flex items-center justify-center text-muted-foreground">
+                      Course Thumbnail
+                    </div>
                   )}
                 </div>
 
