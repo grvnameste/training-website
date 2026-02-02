@@ -178,26 +178,7 @@ setCourse({
   const isLocked = (stage: number) => stage > capstoneStage
 
   // ✅ SAVE LAST WATCHED LESSON (CONTINUE FEATURE)
-useEffect(() => {
-  const saveProgress = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    if (!videoId) return
 
-    await supabase.from('student_lesson_progress').upsert(
-      {
-        student_id: user.id,
-        course_id: courseId,
-        lesson_id: videoId,
-      },
-      { onConflict: 'student_id,course_id' }
-    )
-  }
-
-  saveProgress()
-}, [videoId, courseId])
-
-  const isLocked = (stage: number) => stage > capstoneStage
 
   if (loading || !course) {
     return (
