@@ -455,7 +455,7 @@ if (
               <div className="space-y-3">
                 <div className="flex items-center gap-2 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-green-700 text-sm">
                   <CheckCircle className="w-4 h-4" />
-                  Stage 1 approved by teacher
+                  Stage 1 approved by admin
                 </div>
 
                 <p className="text-sm text-slate-600">
@@ -572,7 +572,7 @@ if (
 
                 <div className="flex items-center gap-2 rounded-md border border-yellow-200 bg-yellow-50 px-3 py-2 text-yellow-700 text-sm">
                   <Lock className="w-4 h-4" />
-                  Waiting for teacher approval to unlock Stage 3
+                  Waiting for admin approval to unlock Stage 3
                 </div>
 
 

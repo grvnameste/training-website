@@ -49,10 +49,12 @@ export default function CourseDetailPage() {
   const [lastLessonId, setLastLessonId] = useState<string | null>(null)
 
   
-  const [capstoneCourse, setCapstoneCourse] = useState<{
-    id: string
-    title: string
-  } | null>(null)
+ // ✅ NEW (rename)
+const [childCapstoneCourse, setChildCapstoneCourse] = useState<{
+  id: string
+  title: string
+} | null>(null)
+
   
 
 
@@ -91,7 +93,7 @@ if (courseData.is_capstone && courseData.parent_course_id) {
   .eq('is_capstone', true)
   .maybeSingle()
 
-setCapstoneCourse(capstone || null)
+  setChildCapstoneCourse(capstone || null)
 
 
       const { data: sections } = await supabase
@@ -177,15 +179,16 @@ setLastLessonId(progress?.lesson_id ?? null)
       { onConflict: 'student_id,course_id' }
     )
   
-    if (capstoneCourse) {
+    if (childCapstoneCourse) {
       await supabase.from('course_enrollments').upsert(
         {
           student_id: user.id,
-          course_id: capstoneCourse.id,
+          course_id: childCapstoneCourse.id,
         },
         { onConflict: 'student_id,course_id' }
       )
     }
+    
   
     // ✅ UI update ONLY here
     setIsEnrolled(true)
