@@ -49,6 +49,7 @@ export default function CourseDetailPage() {
   const [lastLessonId, setLastLessonId] = useState<string | null>(null)
 
   
+<<<<<<< Updated upstream
  // ✅ NEW (rename)
 const [childCapstoneCourse, setChildCapstoneCourse] = useState<{
   id: string
@@ -56,10 +57,13 @@ const [childCapstoneCourse, setChildCapstoneCourse] = useState<{
 } | null>(null)
 
   
+=======
+>>>>>>> Stashed changes
 
 
 
-  const [capstoneCourse, setCapstoneCourse] = useState<{
+
+  const [linkedCapstone, setLinkedCapstone] = useState<{
     id: string
     title: string
   } | null>(null)
@@ -93,7 +97,11 @@ if (courseData.is_capstone && courseData.parent_course_id) {
   .eq('is_capstone', true)
   .maybeSingle()
 
+<<<<<<< Updated upstream
   setChildCapstoneCourse(capstone || null)
+=======
+  setLinkedCapstone(capstone || null)
+>>>>>>> Stashed changes
 
 
       const { data: sections } = await supabase
@@ -179,11 +187,19 @@ setLastLessonId(progress?.lesson_id ?? null)
       { onConflict: 'student_id,course_id' }
     )
   
+<<<<<<< Updated upstream
     if (childCapstoneCourse) {
       await supabase.from('course_enrollments').upsert(
         {
           student_id: user.id,
           course_id: childCapstoneCourse.id,
+=======
+    if (linkedCapstone) {
+      await supabase.from('course_enrollments').upsert(
+        {
+          student_id: user.id,
+          course_id: linkedCapstone.id,
+>>>>>>> Stashed changes
         },
         { onConflict: 'student_id,course_id' }
       )

@@ -1,5 +1,5 @@
+//app/page.tsx
 'use client'
-
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import {
@@ -80,14 +80,17 @@ export default function LandingPage() {
                 </Button>
               </Link>
 
-              <Button
-                size="lg"
-                variant="outline"
-                className="px-8"
-              >
-                <Play className="mr-2 h-5 w-5" />
-                See How It Works
-              </Button>
+              <Link href="/courses">
+  <Button
+    size="lg"
+    variant="outline"
+    className="px-8"
+  >
+    Explore Courses
+    <ArrowRight className="ml-2 h-5 w-5" />
+  </Button>
+</Link>
+
             </div>
           </div>
         </section>
