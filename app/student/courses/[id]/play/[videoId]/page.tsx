@@ -176,6 +176,12 @@ setCourse({
     loadCourse()
   }, [courseId, videoId])
 
+    // 🔐 capstone stage lock logic
+    const isLocked = (stage: number) => {
+      return capstoneStage < stage
+    }
+  
+
   // ✅ SAVE LAST WATCHED LESSON (CONTINUE FEATURE)
 
 

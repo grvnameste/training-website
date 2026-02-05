@@ -1,4 +1,3 @@
-//app/student/courses/[id]/page.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -29,13 +28,6 @@ interface Course {
   lessons: Lesson[]
 }
 
-
-// interface Capstone {
-//   id: string
-//   title: string
-//   description: string
-// }
-
 /* ================= PAGE ================= */
 export default function CourseDetailPage() {
   const params = useParams()
@@ -43,33 +35,15 @@ export default function CourseDetailPage() {
   const courseId = params.id as string
 
   const [course, setCourse] = useState<Course | null>(null)
-  // const [capstone, setCapstone] = useState<Capstone | null>(null)
   const [loading, setLoading] = useState(true)
   const [isEnrolled, setIsEnrolled] = useState(false)
   const [lastLessonId, setLastLessonId] = useState<string | null>(null)
 
-  
-<<<<<<< Updated upstream
- // ✅ NEW (rename)
-const [childCapstoneCourse, setChildCapstoneCourse] = useState<{
-  id: string
-  title: string
-} | null>(null)
-
-  
-=======
->>>>>>> Stashed changes
-
-
-
-
+  // ✅ linked capstone (single source of truth)
   const [linkedCapstone, setLinkedCapstone] = useState<{
     id: string
     title: string
   } | null>(null)
-  
-
-
 
   useEffect(() => {
     const loadCourse = async () => {
@@ -84,26 +58,23 @@ const [childCapstoneCourse, setChildCapstoneCourse] = useState<{
         return
       }
 
-// 🚫 Block direct access to capstone course detail
-if (courseData.is_capstone && courseData.parent_course_id) {
-  router.replace(`/student/courses/${courseData.parent_course_id}`)
-  return
-}
+      // 🚫 block direct capstone access
+      if (courseData.is_capstone && courseData.parent_course_id) {
+        router.replace(`/student/courses/${courseData.parent_course_id}`)
+        return
+      }
 
+      // 🔗 fetch linked capstone
       const { data: capstone } = await supabase
-  .from('courses')
-  .select('id, title')
-  .eq('parent_course_id', courseId)
-  .eq('is_capstone', true)
-  .maybeSingle()
+        .from('courses')
+        .select('id, title')
+        .eq('parent_course_id', courseId)
+        .eq('is_capstone', true)
+        .maybeSingle()
 
-<<<<<<< Updated upstream
-  setChildCapstoneCourse(capstone || null)
-=======
-  setLinkedCapstone(capstone || null)
->>>>>>> Stashed changes
+      setLinkedCapstone(capstone || null)
 
-
+      // 📚 lessons
       const { data: sections } = await supabase
         .from('sections')
         .select('id')
@@ -123,59 +94,50 @@ if (courseData.is_capstone && courseData.parent_course_id) {
         lessons = lessonData || []
       }
 
-      // const { data: capstoneData } = await supabase
-      //   .from('capstone_projects')
-      //   .select('id, title, description')
-      //   .eq('course_id', courseId)
-      //   .maybeSingle()
+      // 👤 enrollment + progress
+      const { data: { user } } = await supabase.auth.getUser()
 
+      if (user) {
+        const { data: enrollment } = await supabase
+          .from('course_enrollments')
+          .select('id')
+          .eq('student_id', user.id)
+          .eq('course_id', courseId)
+          .maybeSingle()
 
-        const { data: { user } } = await supabase.auth.getUser()
+        setIsEnrolled(!!enrollment)
 
-        if (user) {
-          const { data: enrollment } = await supabase
-            .from('course_enrollments')
-            .select('id')
+        if (enrollment) {
+          const { data: progress } = await supabase
+            .from('student_lesson_progress')
+            .select('lesson_id')
             .eq('student_id', user.id)
             .eq('course_id', courseId)
             .maybeSingle()
-        
-          setIsEnrolled(!!enrollment)
-        
-          // ✅ fetch last watched lesson
-          if (enrollment) {
-            const { data: progress } = await supabase
-  .from('student_lesson_progress')
-  .select('lesson_id')
-  .eq('student_id', user.id)
-  .eq('course_id', courseId)
-  .maybeSingle()
 
-setLastLessonId(progress?.lesson_id ?? null)
-
-          }
+          setLastLessonId(progress?.lesson_id ?? null)
         }
-        
+      }
 
       setCourse({ ...courseData, lessons })
-      // setCapstone(capstoneData || null)
       setLoading(false)
     }
 
     loadCourse()
-  }, [courseId])
+  }, [courseId, router])
 
-  
+  /* ================= ENROLL ================= */
   const handleEnroll = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || !course) return
-  
+
     const { data: profile } = await supabase
       .from('profiles')
       .select('first_name, last_name')
       .eq('id', user.id)
       .single()
-  
+
+    // enroll main course
     await supabase.from('course_enrollments').upsert(
       {
         student_id: user.id,
@@ -186,32 +148,23 @@ setLastLessonId(progress?.lesson_id ?? null)
       },
       { onConflict: 'student_id,course_id' }
     )
-  
-<<<<<<< Updated upstream
-    if (childCapstoneCourse) {
-      await supabase.from('course_enrollments').upsert(
-        {
-          student_id: user.id,
-          course_id: childCapstoneCourse.id,
-=======
+
+    // auto-enroll linked capstone
     if (linkedCapstone) {
       await supabase.from('course_enrollments').upsert(
         {
           student_id: user.id,
           course_id: linkedCapstone.id,
->>>>>>> Stashed changes
         },
         { onConflict: 'student_id,course_id' }
       )
     }
-    
-  
-    // ✅ UI update ONLY here
+
     setIsEnrolled(true)
     router.refresh()
   }
-  
-  
+
+  /* ================= UI ================= */
   if (loading) {
     return (
       <div className="flex justify-center py-32">
@@ -228,7 +181,6 @@ setLastLessonId(progress?.lesson_id ?? null)
     <div className="min-h-screen px-8 py-12 bg-slate-50 text-slate-900">
       <div className="max-w-7xl mx-auto space-y-10">
 
-        {/* BACK */}
         <Link href="/student/courses">
           <Button variant="ghost" className="px-0 text-slate-600 hover:text-slate-900">
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -239,30 +191,6 @@ setLastLessonId(progress?.lesson_id ?? null)
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
           {/* LEFT */}
           <div className="lg:col-span-2 space-y-8">
-            {/* THUMBNAIL */}
-
-            {/* {capstoneCourse && (
-  <Card className="rounded-2xl border border-blue-200 bg-blue-50 shadow-sm">
-    <CardHeader>
-      <CardTitle className="text-blue-700">
-        Capstone Project
-      </CardTitle>
-      <CardDescription>
-        Apply everything you learned in this course
-      </CardDescription>
-    </CardHeader>
-
-    <CardContent>
-      <Link href={`/student/capstone/${capstoneCourse.id}/stage/1`}>
-        <Button className="w-full rounded-full bg-blue-600 text-white">
-          Start Capstone Project
-        </Button>
-      </Link>
-    </CardContent>
-  </Card>
-)} */}
-
-
             <div className="relative overflow-hidden rounded-2xl border bg-white shadow-sm">
               {course.thumbnail_url ? (
                 <img
@@ -276,29 +204,6 @@ setLastLessonId(progress?.lesson_id ?? null)
                 </div>
               )}
             </div>
-
-            {/* CAPSTONE */}
-            {/* {capstone && isEnrolled && (
-
-              <Card className="rounded-2xl border border-blue-200 bg-blue-50 shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-blue-700">
-                    Capstone Project
-                  </CardTitle>
-                  <CardDescription className="text-slate-700">
-                    Build a real-world project following the complete SDLC
-                  </CardDescription>
-                </CardHeader>
-
-                <CardContent>
-                  <Link href={`/student/courses/${courseId}/capstone`}>
-                    <Button className="w-full rounded-full bg-blue-600 hover:bg-blue-700 text-white">
-                      Start Capstone Project
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            )} */}
           </div>
 
           {/* RIGHT */}
@@ -314,39 +219,33 @@ setLastLessonId(progress?.lesson_id ?? null)
               </CardHeader>
 
               <CardContent>
-  {!isEnrolled ? (
-    <Button
-      className="w-full rounded-full bg-green-600 hover:bg-green-700 text-white"
-      onClick={handleEnroll}
-    >
-      Enroll Now
-    </Button>
-  ) : lastLessonId ? (
-    <Button
-      className="w-full rounded-full bg-blue-600 hover:bg-blue-700 text-white"
-      onClick={() =>
-        router.push(
-          `/student/courses/${courseId}/play/${lastLessonId}`
-        )
-      }
-    >
-      Continue Course
-    </Button>
-  ) : firstLesson ? (
-    <Button
-      className="w-full rounded-full bg-blue-600 hover:bg-blue-700 text-white"
-      onClick={() =>
-        router.push(
-          `/student/courses/${courseId}/play/${firstLesson.id}`
-        )
-      }
-    >
-      Start Learning
-    </Button>
-  ) : null}
-</CardContent>
-
-
+                {!isEnrolled ? (
+                  <Button
+                    className="w-full rounded-full bg-green-600 hover:bg-green-700 text-white"
+                    onClick={handleEnroll}
+                  >
+                    Enroll Now
+                  </Button>
+                ) : lastLessonId ? (
+                  <Button
+                    className="w-full rounded-full bg-blue-600 hover:bg-blue-700 text-white"
+                    onClick={() =>
+                      router.push(`/student/courses/${courseId}/play/${lastLessonId}`)
+                    }
+                  >
+                    Continue Course
+                  </Button>
+                ) : firstLesson ? (
+                  <Button
+                    className="w-full rounded-full bg-blue-600 hover:bg-blue-700 text-white"
+                    onClick={() =>
+                      router.push(`/student/courses/${courseId}/play/${firstLesson.id}`)
+                    }
+                  >
+                    Start Learning
+                  </Button>
+                ) : null}
+              </CardContent>
             </Card>
           </div>
         </div>

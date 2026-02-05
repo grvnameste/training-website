@@ -16,14 +16,14 @@ import { Button } from '@/components/ui/button'
 import { BookOpen } from 'lucide-react'
 
 type Course = {
-  id: string
-  title: string
-  subtitle: string
-  description: string
-  price: number
-  thumbnail_url: string
-  is_capstone: boolean
-}
+    id: string
+    title: string
+    subtitle: string
+    description: string
+    price: number
+    thumbnail_url: string
+  }
+  
 
 export default function Courses() {
   const [courses, setCourses] = useState<Course[]>([])
@@ -35,18 +35,18 @@ export default function Courses() {
 
   const fetchCourses = async () => {
     const { data, error } = await supabase
-      .from('courses')
-      .select(
-        `
-        id,
-        title,
-        subtitle,
-        description,
-        price,
-        thumbnail_url,
-        is_capstone
-        `
-      )
+    .from('courses')
+    .select(`
+      id,
+      title,
+      subtitle,
+      description,
+      price,
+      thumbnail_url
+    `)
+    .eq('is_capstone', false)
+    .is('parent_course_id', null)
+    
       .order('created_at', { ascending: false })
 
     if (!error && data) {
@@ -102,11 +102,7 @@ export default function Courses() {
                 className="object-cover"
               />
   
-              {course.is_capstone && (
-                <Badge className="absolute top-3 left-3">
-                  Capstone
-                </Badge>
-              )}
+          
             </div>
   
             <CardHeader>

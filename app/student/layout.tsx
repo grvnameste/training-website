@@ -1,6 +1,6 @@
 'use client'
-
 import React, { useEffect, useState, useRef } from 'react'
+import Image from 'next/image'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -99,15 +99,19 @@ export default function StudentLayout({
       {/* ================= HEADER ================= */}
       <header className="sticky top-0 z-50 h-[72px] bg-white border-b">
         <nav className="flex h-full items-center justify-between px-6">
-          <Link
-            href="/student/dashboard"
-            className="flex items-center gap-2 font-semibold"
-          >
-            <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center">
-              <BookOpen className="w-5 h-5 text-white" />
-            </div>
-            ReadNRevise
-          </Link>
+        <Link
+  href="/student/dashboard"
+  className="flex items-center"
+>
+  <Image
+    src="/assets/Readnrevise_logo.png"
+    alt="ReadNRevise Logo"
+    width={160}
+    height={40}
+    priority
+  />
+</Link>
+
 
           {/* USER DROPDOWN */}
           <div className="relative" ref={dropdownRef}>

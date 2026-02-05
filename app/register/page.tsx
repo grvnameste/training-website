@@ -1,6 +1,6 @@
 'use client'
-
 import { useState } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import supabase from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -87,9 +87,15 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
       <Card className="w-full max-w-md rounded-xl border bg-white shadow-lg">
         <CardHeader className="text-center space-y-3">
-          <div className="mx-auto w-14 h-14 rounded-xl bg-blue-600 flex items-center justify-center">
-            <BookOpen className="text-white w-7 h-7" />
-          </div>
+        <div className="mx-auto flex items-center justify-center">
+  <Image
+    src="/assets/Readnrevise_logo.png"
+    alt="ReadNRevise Logo"
+    width={180}
+    height={45}
+    priority
+  />
+</div>
 
           <CardTitle className="text-2xl font-semibold">
             Create Account
