@@ -57,7 +57,13 @@ export default function CoursePlayerPage() {
   const [capstoneStage, setCapstoneStage] = useState(1)
 
   
-  
+  const [stage3Submitted, setStage3Submitted] = useState(false)
+const [capstoneCompleted, setCapstoneCompleted] = useState(false)
+const [certificateIssued, setCertificateIssued] = useState(false)
+
+const [certificateRequested, setCertificateRequested] = useState(false)
+
+
   useEffect(() => {
     const loadCourse = async () => {
       const { data: { user } } = await supabase.auth.getUser()
@@ -145,13 +151,27 @@ setCapstoneCourse(capstoneData)
 // ================= CAPSTONE PROGRESS =================
 if (capstoneData && user) {
   const { data: progress } = await supabase
-    .from('student_capstone_progress')
-    .select('current_stage')
+  .from('student_capstone_progress')
+  .select(`
+    current_stage,
+    stage3_submitted,
+    completed,
+    certificate_issued,
+    certificate_requested
+  `)
     .eq('student_id', user.id)
-    .eq('capstone_id', capstoneData.id)
-    .maybeSingle()
+  .eq('capstone_id', capstoneData.id)
+  .maybeSingle()
 
-  setCapstoneStage(progress?.current_stage ?? 1)
+setCapstoneStage(progress?.current_stage ?? 1)
+setStage3Submitted(!!progress?.stage3_submitted)
+setCapstoneCompleted(!!progress?.completed)
+setCertificateIssued(!!progress?.certificate_issued)
+setCertificateRequested(!!progress?.certificate_requested)
+
+
+
+
 }
 
 
@@ -451,7 +471,81 @@ if (!currentLesson) {
   </div>
 )}
 
+{/* ================= CERTIFICATE ================= */}
+{capstoneCourse && (
+  <div className="mt-4 rounded-2xl border-2 border-green-200 bg-green-50 p-4 space-y-3">
 
+    <h3 className="text-sm font-semibold text-green-700">
+      Course Certificate
+    </h3>
+
+   
+
+
+
+{stage3Submitted &&
+ !certificateRequested &&
+ !certificateIssued && (
+  <Button
+    className="w-full bg-purple-600 text-white"
+    onClick={async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+
+      await supabase
+        .from('student_capstone_progress')
+        .update({ certificate_requested: true })
+        .eq('student_id', user!.id)
+        .eq('capstone_id', capstoneCourse.id)
+
+      setCertificateRequested(true)
+    }}
+  >
+    Request Certificate
+  </Button>
+)}
+
+
+
+
+
+{certificateIssued && (
+  <Button
+    variant="outline"
+    className="w-full"
+    onClick={async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+
+      const res = await fetch(
+        `/api/certificate/download?courseId=${capstoneCourse.id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${session?.access_token}`,
+          },
+        }
+      )
+
+      if (!res.ok) {
+        alert('Failed to download certificate')
+        return
+      }
+
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'certificate.pdf'
+      a.click()
+
+      window.URL.revokeObjectURL(url)
+    }}
+  >
+    Download Certificate
+  </Button>
+)}
+
+  </div>
+)}
 
 
               </div>

@@ -67,6 +67,11 @@ export default function LoginPage() {
 
     const role = session.user.user_metadata?.role
     router.replace(role === 'teacher' ? '/teacher/dashboard' : '/student/dashboard')
+
+    setTimeout(() => {
+      window.location.reload()
+    }, 100)
+    
   }
 
   const loginWithProvider = async (provider: OAuthProvider) => {

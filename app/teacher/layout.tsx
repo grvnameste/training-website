@@ -9,15 +9,13 @@ import {
   Layers,
   CheckCircle,
   TrendingUp,
-} from 'lucide-react'
-
-import {
   BookOpen,
   LogOut,
   ClipboardCheck,
   Plus,
   LayoutDashboard,
 } from 'lucide-react'
+
 import supabase from '@/lib/supabase/client'
 
 export default function TeacherLayout({
@@ -152,6 +150,22 @@ export default function TeacherLayout({
                 Trello Access
               </Button>
             </Link>
+
+            {/* Certificate Approvals */}
+<Link href="/teacher/certificates">
+  <Button
+    variant={
+      pathname.startsWith('/teacher/certificates')
+        ? 'secondary'
+        : 'ghost'
+    }
+    className="w-full justify-start gap-2"
+  >
+    <CheckCircle className="w-4 h-4" />
+    Certificate Approvals
+  </Button>
+</Link>
+
           </nav>
         </aside>
 
