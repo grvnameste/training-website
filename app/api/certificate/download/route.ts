@@ -54,16 +54,40 @@ export async function GET(req: Request) {
     return new NextResponse('Certificate not issued', { status: 403 })
   }
 
+
+
+  /* ===============================
+   FETCH STUDENT NAME
+================================ */
+const { data: profile } = await admin
+.from('student_profiles')
+.select('name')
+.eq('id', user.id)
+.single()
+
+const studentName = profile?.name ?? user.email!
+
+/* ===============================
+ FETCH COURSE NAME
+================================ */
+const { data: course } = await admin
+.from('courses')
+.select('title')
+.eq('id', courseId)
+.single()
+
+const courseName = course?.title ?? 'Capstone Project'
+
   /* ===============================
      3️⃣ GENERATE PDF
   =============================== */
   const pdfBuffer = await generateCertificatePDF({
-    studentName: user.email!,
-    courseName: 'Capstone Course',
+    studentName,
+    courseName,
     issueDate: new Date().toDateString(),
     certificateId: `${user.id}-${courseId}`,
   })
-
+  
   return new NextResponse(new Uint8Array(pdfBuffer), {
     headers: {
       'Content-Type': 'application/pdf',
