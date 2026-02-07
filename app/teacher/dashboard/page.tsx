@@ -57,12 +57,14 @@ export default function TeacherDashboard() {
 
       // ===== COURSES (TEACHER) =====
       // ===== COURSES (TEACHER) =====
-const { data: coursesData, error } = await supabase
-.from('courses')
-.select('*')
-.eq('teacher_id', userData.user.id)
-.order('created_at', { ascending: false })
-
+      const { data: coursesData, error } = await supabase
+      .from('courses')
+      .select('*')
+      .eq('teacher_id', userData.user.id)
+      .eq('is_capstone', false)
+      .is('parent_course_id', null)
+      .order('created_at', { ascending: false })
+    
 if (error) {
 setErrorMsg(error.message)
 setCourses([])

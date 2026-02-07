@@ -1,6 +1,7 @@
+//app/page.tsx
 'use client'
-
 import Link from 'next/link'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -25,14 +26,16 @@ export default function LandingPage() {
       {/* ================= HEADER ================= */}
       <header className="sticky top-0 z-50 bg-white border-b">
         <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600">
-              <BookOpen className="h-5 w-5 text-white" />
-            </div>
-            <span className="text-lg font-semibold">
-              ReadNRevise
-            </span>
-          </div>
+        <div className="flex items-center">
+  <Image
+    src="/assets/Readnrevise_logo.png"
+    alt="ReadNRevise Logo"
+    width={160}
+    height={40}
+    priority
+  />
+</div>
+
 
           <div className="flex items-center gap-3">
             <Link href="/login">
@@ -80,14 +83,17 @@ export default function LandingPage() {
                 </Button>
               </Link>
 
-              <Button
-                size="lg"
-                variant="outline"
-                className="px-8"
-              >
-                <Play className="mr-2 h-5 w-5" />
-                See How It Works
-              </Button>
+              <Link href="/courses">
+  <Button
+    size="lg"
+    variant="outline"
+    className="px-8"
+  >
+    Explore Courses
+    <ArrowRight className="ml-2 h-5 w-5" />
+  </Button>
+</Link>
+
             </div>
           </div>
         </section>
@@ -135,7 +141,7 @@ export default function LandingPage() {
 
       {/* ================= FOOTER ================= */}
       <footer className="border-t py-8 text-center text-sm text-slate-500">
-        © 2025 ReadNRevise. All rights reserved.
+        © 2026 ReadNRevise. All rights reserved.
       </footer>
     </div>
   )

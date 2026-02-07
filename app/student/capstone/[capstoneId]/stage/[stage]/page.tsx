@@ -50,6 +50,9 @@ export default function CapstoneStagePage() {
   const [stage2Submitted, setStage2Submitted] = useState(false)
   const [stage3Submitted, setStage3Submitted] = useState(false)
 
+  const [certificateRequested, setCertificateRequested] = useState(false)
+const [certificateIssued, setCertificateIssued] = useState(false)
+
 
 
   /* ================= ACCESS GUARD ================= */
@@ -67,15 +70,17 @@ export default function CapstoneStagePage() {
       const { data: progress } = await supabase
         .from('student_capstone_progress')
         .select(`
-        current_stage,
+          current_stage,
           stage1_submitted,
-         stage1_approved,
-
-        trello_board_url,
-        trello_board_id,
-        stage2_submitted,
-        stage3_submitted
-      `)
+          stage1_approved,
+          trello_board_url,
+          trello_board_id,
+          stage2_submitted,
+          stage3_submitted,
+          certificate_requested,
+          certificate_issued
+        `)
+        
         .eq('student_id', user.id)
         .eq('capstone_id', capstoneId)
         .maybeSingle()
@@ -142,18 +147,21 @@ if (
 
 
       if (progress) {
+        setCertificateRequested(!!progress.certificate_requested)
+        setCertificateIssued(!!progress.certificate_issued)
+      
         if (progress.trello_board_url && progress.trello_board_id) {
           setTrelloUrl(progress.trello_board_url)
           setTrelloBoardId(progress.trello_board_id)
           setTrelloRequested(true)
         } else {
-          setTrelloRequested(false) // 👈 ADD THIS LINE
+          setTrelloRequested(false)
         }
-
+      
         setStage2Submitted(!!progress.stage2_submitted)
         setStage3Submitted(!!progress.stage3_submitted)
       }
-
+      
       // ✅ STAGE STATE FROM SINGLE SOURCE (student_capstone_progress)
 
       // ================= STAGE 1 SOURCE OF TRUTH =================
@@ -358,30 +366,41 @@ if (
   const submitStage3 = async () => {
     if (files.length === 0) return alert('Select files')
     setLoading(true)
-
+  
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       setLoading(false)
       alert('User not authenticated')
       return
     }
-
+  
+    // 1️⃣ Upload files
     for (const file of files) {
       const path = `${capstoneId}/${user.id}/stage3/${Date.now()}-${file.name}`
       await supabase.storage
         .from('capstone-submissions')
         .upload(path, file)
     }
-
+  
+    // 2️⃣ ⭐ THIS IS THE IMPORTANT PART ⭐
     await supabase
-      .from('student_capstone_progress')
-      .update({ stage3_submitted: true })
-      .eq('student_id', user.id)
-      .eq('capstone_id', capstoneId)
-
+    .from('student_capstone_progress')
+    .update({
+      stage3_submitted: true,
+      current_stage: 3,
+      certificate_requested: false,
+      certificate_issued: false
+    })
+    .eq('student_id', user.id)
+    .eq('capstone_id', capstoneId)
+  
+  
+  
+  
     setStage3Submitted(true)
     setLoading(false)
   }
+  
 
   if (!allowed) {
     return (
@@ -413,75 +432,72 @@ if (
           </CardHeader>
 
           <CardContent className="space-y-5">
-            {!submitted ? (
-              <>
-                <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-300 rounded-lg p-8 cursor-pointer hover:border-blue-500 transition">
-                  <Upload className="w-8 h-8 text-blue-600 mb-2" />
-                  <p className="text-sm">
-                    <span className="text-blue-600 font-medium">
-                      Click to upload
-                    </span>{' '}
-                    or drag & drop
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    PDF / DOC / DOCX allowed
-                  </p>
-                  <input
-                    type="file"
-                    accept=".pdf,.doc,.docx"
-                    className="hidden"
-                    onChange={e =>
-                      setFile(e.target.files?.[0] || null)
-                    }
-                  />
-                </label>
+  {!submitted ? (
+    <>
+      <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-300 rounded-lg p-8 cursor-pointer hover:border-blue-500 transition">
+        <Upload className="w-8 h-8 text-blue-600 mb-2" />
+        <p className="text-sm">
+          <span className="text-blue-600 font-medium">
+            Click to upload
+          </span>{' '}
+          or drag & drop
+        </p>
+        <p className="text-xs text-slate-500">
+          PDF / DOC / DOCX allowed
+        </p>
+        <input
+          type="file"
+          accept=".pdf,.doc,.docx"
+          className="hidden"
+          onChange={e =>
+            setFile(e.target.files?.[0] || null)
+          }
+        />
+      </label>
 
-                {file && (
-                  <p className="text-sm text-blue-600">
-                    Selected: {file.name}
-                  </p>
-                )}
+      {file && (
+        <p className="text-sm text-blue-600">
+          Selected: {file.name}
+        </p>
+      )}
 
-                <Button
-                  onClick={handleUpload}
-                  disabled={loading || submitted}
-                  className="disabled:pointer-events-none disabled:opacity-50"
-                >
+      <Button
+        onClick={handleUpload}
+        disabled={loading || submitted}
+        className="disabled:pointer-events-none disabled:opacity-50"
+      >
+        Submit Requirement
+      </Button>
+    </>
+  ) : approved ? (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-green-700 text-sm">
+        <CheckCircle className="w-4 h-4" />
+        Stage 1 approved by admin
+      </div>
 
-                  Submit Requirement
-                </Button>
-              </>
-            ) : approved ? (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-green-700 text-sm">
-                  <CheckCircle className="w-4 h-4" />
-                  Stage 1 approved by teacher
-                </div>
+      <p className="text-sm text-slate-600">
+        You submitted the requirement document and it has been approved.
+        This stage is now locked for editing.
+      </p>
 
-                <p className="text-sm text-slate-600">
-                  You submitted the requirement document and it has been approved.
-                  This stage is now locked for editing.
-                </p>
+      <Button
+        className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+        onClick={() =>
+          router.push(`/student/capstone/${capstoneId}/stage/2`)
+        }
+      >
+        Go to Stage 2
+      </Button>
+    </div>
+  ) : (
+    <div className="flex items-center gap-2 rounded-md border border-yellow-200 bg-yellow-50 px-3 py-2 text-yellow-700 text-sm">
+      <Lock className="w-4 h-4" />
+      Pending Admin Approval
+    </div>
+  )}
+</CardContent>
 
-                <Button
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                  onClick={() =>
-                    router.push(`/student/capstone/${capstoneId}/stage/2`)
-                  }
-                >
-                  Go to Stage 2
-                </Button>
-              </div>
-
-
-            ) : (
-              <div className="flex items-center gap-2 rounded-md border border-yellow-200 bg-yellow-50 px-3 py-2 text-yellow-700 text-sm">
-                <Lock className="w-4 h-4" />
-                Pending Admin Approval
-              </div>
-
-            )}
-          </CardContent>
         </Card>
       )}
 
@@ -539,14 +555,14 @@ if (
 
                       const { data: { user } } = await supabase.auth.getUser()
                       await supabase
-                        .from('student_capstone_progress')
-                        .update({
-                          stage2_submitted: true
-                        })
-
-
-                        .eq('student_id', user!.id)
-                        .eq('capstone_id', capstoneId)
+                      .from('student_capstone_progress')
+                      .update({
+                        stage2_submitted: true,
+                        current_stage: 3, // ✅ unlock stage 3
+                      })
+                      .eq('student_id', user!.id)
+                      .eq('capstone_id', capstoneId)
+                    
 
                       setStage2Submitted(true)
                     }}
@@ -572,7 +588,7 @@ if (
 
                 <div className="flex items-center gap-2 rounded-md border border-yellow-200 bg-yellow-50 px-3 py-2 text-yellow-700 text-sm">
                   <Lock className="w-4 h-4" />
-                  Waiting for teacher approval to unlock Stage 3
+                  Waiting for admin approval to unlock Stage 3
                 </div>
 
 
@@ -649,13 +665,49 @@ if (
                   Submit for Approval
                 </Button>
               </>
-            ) : (
-              <div className="flex items-center gap-2 rounded-md border border-yellow-200 bg-yellow-50 px-3 py-2 text-yellow-700 text-sm">
-                <Lock className="w-4 h-4" />
-                Pending Admin Approval
-              </div>
+          ) : (
+            <div className="space-y-3">
+          
+              {!certificateRequested && (
+                <Button
+                  className="w-full bg-purple-600 text-white"
+                  onClick={async () => {
+                    const { data: { user } } = await supabase.auth.getUser()
+          
+                    await supabase
+                      .from('student_capstone_progress')
+                      .update({ certificate_requested: true })
+                      .eq('student_id', user!.id)
+                      .eq('capstone_id', capstoneId)
+          
+                    setCertificateRequested(true)
+                  }}
+                >
+                  Request Certificate
+                </Button>
+              )}
+          
+          {certificateRequested && !certificateIssued && (
+  <div className="flex items-center gap-2 rounded-md border border-yellow-200 bg-yellow-50 px-3 py-2 text-yellow-700 text-sm">
+    <Lock className="w-4 h-4" />
+    Waiting for teacher approval
+  </div>
+)}
 
-            )}
+          
+              {certificateIssued && (
+                <Button
+                  className="w-full bg-green-600 text-white"
+                  onClick={() =>
+                    window.open(`/api/certificate/download?courseId=${capstoneId}`)
+                  }
+                >
+                  Download Certificate
+                </Button>
+              )}
+            </div>
+          )
+          }
           </CardContent>
         </Card>
       )}

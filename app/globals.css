@@ -37,6 +37,7 @@
 @theme inline {
   --font-sans: 'Geist', 'Geist Fallback';
   --font-mono: 'Geist Mono', 'Geist Mono Fallback';
+  --font-serif: 'Georgia', 'Times New Roman', serif;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -53,6 +54,7 @@
   --color-ring: var(--ring);
 }
 
+
 /* ================= BASE ================= */
 
 @layer base {
@@ -62,5 +64,41 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
+  }
+}
+
+/* ================= PRINT (RESUME ONLY) ================= */
+@media print {
+  /* Hide everything by default */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Show only resume */
+  #resume-print,
+  #resume-print * {
+    visibility: visible;
+  }
+
+  /* Position resume cleanly */
+  #resume-print {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 0;
+  }
+
+  /* Remove shadows */
+  .shadow,
+  .shadow-sm,
+  .shadow-md,
+  .shadow-lg {
+    box-shadow: none !important;
+  }
+
+  /* Hide UI elements */
+  .no-print {
+    display: none !important;
   }
 }

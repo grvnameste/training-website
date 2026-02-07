@@ -302,9 +302,20 @@ export default function ResumePage() {
       case 'custom':
         return <p className="leading-relaxed">{s.data.text}</p>
 
-      case 'skills':
-        return <p>{s.data.list}</p>
-
+        case 'skills':
+          return (
+            <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-gray-800">
+              {s.data.list
+                .split(',')
+                .map((skill: string, i: number) => (
+                  <span key={i} className="whitespace-nowrap">
+                    {skill.trim()}
+                  </span>
+                ))}
+            </div>
+          )
+        
+        
       case 'experience':
         return (
           <>
@@ -349,8 +360,15 @@ export default function ResumePage() {
                   </span>
                 </div>
                 {p.link && (
-                  <div className="text-sm underline mb-1">{p.link}</div>
-                )}
+  <a
+    href={p.link}
+    className="text-sm text-blue-700 underline"
+    target="_blank"
+  >
+    {p.link}
+  </a>
+)}
+
                 <p>{p.description}</p>
               </div>
             ))}
@@ -367,9 +385,9 @@ export default function ResumePage() {
         </Button>
       </div>
 
-      <div id="resume-print">
-        <Card className="p-8">
-          <section className="mb-8 text-center">
+      <div id="resume-print" className="font-serif">
+      <Card className="p-10 rounded-none shadow-none bg-white">
+      <section className="mb-8 text-center">
             {editingHeader ? (
               <>
                 <Input value={name} onChange={e => setName(e.target.value)} />
@@ -383,8 +401,12 @@ export default function ResumePage() {
               </>
             ) : (
               <>
-                <h1 className="text-xl font-bold tracking-wide">{name}</h1>
-                <p className="text-sm">{contact}</p>
+<h1 className="text-2xl font-bold tracking-wide uppercase">
+  {name}
+</h1>
+<p className="mt-1 text-sm text-gray-700">
+  {contact}
+</p>
                 <button
                   onClick={() => setEditingHeader(true)}
                   className="no-print mt-1"
@@ -396,10 +418,10 @@ export default function ResumePage() {
           </section>
 
           {sections.map((s, i) => (
-            <section key={s.id} className="mb-8">
+            <section key={s.id} className="mb-6">
               <div className="flex justify-between items-center">
-                <h2 className="font-bold text-sm tracking-wide uppercase">
-                  {s.title}
+              <h2 className="text-sm font-bold tracking-widest uppercase text-gray-800">
+              {s.title}
                 </h2>
                 <div className="flex gap-1 no-print">
                   <button onClick={() => setEditingSectionId(s.id)}>
@@ -421,7 +443,7 @@ export default function ResumePage() {
                 </div>
               </div>
 
-              <hr className="mt-1 mb-4 border-t border-gray-400" />
+              <hr className="mt-1 mb-4 border-t border-gray-300" />
 
               {editingSectionId === s.id ? (
                 <>
