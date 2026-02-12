@@ -63,7 +63,8 @@ const Field = ({
   children: React.ReactNode
 }) => (
   <div className="space-y-1">
-    <label className="text-sm font-medium text-muted-foreground">
+    <label className="text-sm font-semibold text-foreground flex items-center gap-2">
+      <span className="h-2 w-2 rounded-full bg-primary" />
       {label}
     </label>
     {children}
@@ -339,25 +340,39 @@ setCapstoneStudents(students)
   if (loading) return <p>Loading...</p>
 
   return (
-    <div className="max-w-5xl mx-auto space-y-10">
-      {/* ===== TOP ACTIONS ===== */}
-      <div className="flex items-center gap-3">
-        <Link href="/teacher/dashboard">
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Dashboard
-          </Button>
-        </Link>
+    <div className="max-w-6xl mx-auto px-4 py-8 space-y-10">
+  
+      {/* ===== PAGE HEADER ===== */}
+<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 className="text-2xl font-bold tracking-tight">
+      Edit Course
+    </h1>
+    <p className="text-sm text-muted-foreground">
+      Manage course details, curriculum & capstone students
+    </p>
+  </div>
 
-        <Link href={`/teacher/courses/${id}/capstone`}>
-          <Button variant="outline" size="sm">
-            Manage Capstone Project
-          </Button>
-        </Link>
-      </div>
+  <div className="flex gap-2">
+    <Link href="/teacher/dashboard">
+      <Button variant="ghost" size="sm">
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Dashboard
+      </Button>
+    </Link>
+
+    {/* <Link href={`/teacher/courses/${id}/capstone`}>
+      <Button variant="outline" size="sm">
+        Manage Capstone
+      </Button>
+    </Link> */}
+  </div>
+</div>
+
 
       {/* ================= COURSE INFO ================= */}
-      <Card>
+      <Card className="border-muted shadow-sm">
+
         <CardHeader>
           <CardTitle>Edit Course Information</CardTitle>
           <CardDescription>
@@ -377,13 +392,17 @@ setCapstoneStudents(students)
             />
           </Field>
 
-          <Field label="Course Description">
-            <textarea
-              className="md:col-span-2 w-full rounded-md border p-3 text-sm"
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-            />
-          </Field>
+          <div className="md:col-span-2">
+  <Field label="Course Description">
+    <textarea
+      rows={4}
+      className="w-full rounded-md border border-muted bg-background p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+      value={description}
+      onChange={e => setDescription(e.target.value)}
+    />
+  </Field>
+</div>
+
 
           <Field label="Price (₹)">
             <Input
@@ -394,14 +413,18 @@ setCapstoneStudents(students)
             />
           </Field>
 
-          <div className="md:col-span-2">
-            <Button onClick={saveCourse}>Save Course Details</Button>
-          </div>
+          <div className="md:col-span-2 flex justify-end">
+  <Button className="px-6" onClick={saveCourse}>
+    Save Course Details
+  </Button>
+</div>
+
         </CardContent>
       </Card>
 
       {/* ================= CURRICULUM ================= */}
-      <Card>
+      <Card className="border-muted shadow-sm">
+
         <CardHeader>
           <CardTitle>Course Curriculum</CardTitle>
           <CardDescription>
@@ -426,16 +449,19 @@ setCapstoneStudents(students)
             const open = openSectionId === section.id
 
             return (
-              <div key={section.id} className="rounded-xl border">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setOpenSectionId(open ? null : section.id)
-                  }
-                  className="flex w-full justify-between px-5 py-4 hover:bg-muted/40"
-                >
+<div key={section.id} className="rounded-lg border bg-background">
+<button
+  type="button"
+  onClick={() =>
+    setOpenSectionId(open ? null : section.id)
+  }
+  className="flex w-full items-center justify-between px-5 py-4 text-left hover:bg-muted/50 transition"
+>
+
                   <div>
-                    <h3 className="font-semibold">{section.title}</h3>
+                  <h3 className="text-sm font-medium">
+  {section.title}
+</h3>
                     <p className="text-xs text-muted-foreground">
                       {section.lessons.length} lessons
                     </p>
@@ -460,7 +486,8 @@ setCapstoneStudents(students)
       </Card>
 
       {/* ================= CAPSTONE STUDENTS ================= */}
-<Card>
+      <Card className="border-muted shadow-sm">
+
   <CardHeader>
     <CardTitle>Capstone Project Students</CardTitle>
     <CardDescription>
@@ -476,9 +503,9 @@ setCapstoneStudents(students)
         No students enrolled in capstone yet.
       </p>
     ) : (
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm border rounded-lg">
-          <thead className="bg-muted">
+<div className="rounded-lg border overflow-x-auto">
+<table className="w-full text-sm">
+<thead className="bg-muted/50">
             <tr>
               <th className="p-3 text-left">Student</th>
               <th className="p-3 text-left">Stage 1</th>
@@ -490,11 +517,15 @@ setCapstoneStudents(students)
 
           <tbody>
             {capstoneStudents.map((row) => (
-              <tr key={row.student_id} className="border-t">
+              <tr
+  key={row.student_id}
+  className="border-t hover:bg-muted/30 transition"
+>
                 <td className="p-3">
-                  <div className="font-medium">
-                  {row.profiles?.[0]?.name}
-                  </div>
+                <div className="font-medium text-sm">
+  {row.profiles?.[0]?.name || '—'}
+</div>
+
                   <div className="text-xs text-muted-foreground">
                   {row.profiles?.[0]?.users?.email}
                   </div>
