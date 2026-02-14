@@ -1,7 +1,7 @@
 //app/login/page.tsx
 'use client'
 export const dynamic = 'force-dynamic'
-import { useState } from 'react'
+import { useState, useEffect  } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -26,6 +26,26 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession()
+      const session = data.session
+  
+      if (session) {
+        const role = session.user.user_metadata?.role
+        router.replace(
+          role === 'teacher'
+            ? '/teacher/dashboard'
+            : '/student/dashboard'
+        )
+        router.refresh()
+      }
+    }
+  
+    checkSession()
+  }, [router])
+  
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -66,11 +86,17 @@ export default function LoginPage() {
     })
 
     const role = session.user.user_metadata?.role
-    router.replace(role === 'teacher' ? '/teacher/dashboard' : '/student/dashboard')
 
-    setTimeout(() => {
-      window.location.reload()
-    }, 100)
+    router.replace(
+      role === 'teacher'
+        ? '/teacher/dashboard'
+        : '/student/dashboard'
+    )
+    
+    router.refresh()
+    
+
+ 
     
   }
 

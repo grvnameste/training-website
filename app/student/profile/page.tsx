@@ -1,11 +1,10 @@
 //app/student/profile/page.tsx
 'use client'
-
 import React, { useEffect, useState, ChangeEvent, useRef } from 'react'
 import supabase from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Edit3, Save, Camera, Trash2 } from 'lucide-react'
+import { Github, Linkedin, Edit3, Save, Camera, Trash2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 
 export interface Project {
@@ -63,6 +62,9 @@ export default function StudentProfilePage() {
   const [lastName, setLastName] = useState('')
   const [avatarPreview, setAvatarPreview] = useState<string | undefined>()
 
+  const [providers, setProviders] = useState<string[]>([])
+
+
   const avatarInputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
@@ -70,6 +72,11 @@ export default function StudentProfilePage() {
       const { data: { user: authUser } } = await supabase.auth.getUser()
       if (!authUser) return
   
+
+      setProviders(
+        authUser.identities?.map(i => i.provider) ?? []
+      )
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -103,6 +110,22 @@ export default function StudentProfilePage() {
   }, [])
   
 
+  const connectProvider = async (provider: 'github' | 'linkedin') => {
+    const supabaseProvider =
+      provider === 'linkedin' ? 'linkedin_oidc' : provider
+  
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: supabaseProvider as any,
+      options: {
+        redirectTo: `${location.origin}/student/profile`,
+      },
+    })
+  
+    if (error) {
+      alert(error.message)
+    }
+  }
+  
   const startEdit = () => {
     setFirstName(user.firstName)
     setLastName(user.lastName)
@@ -119,6 +142,9 @@ export default function StudentProfilePage() {
     const { data: { user: authUser } } = await supabase.auth.getUser()
     if (!authUser) return
   
+   
+
+    
     const { error } = await supabase
       .from('profiles')
       .update({
@@ -275,6 +301,71 @@ export default function StudentProfilePage() {
             )}
           </CardContent>
         </Card>
+
+
+
+{/* CONNECTED ACCOUNTS */}
+<Card>
+  <CardHeader>
+    <CardTitle>Connected accounts</CardTitle>
+    <p className="text-sm text-muted-foreground">
+      Link your professional profiles for better visibility
+    </p>
+  </CardHeader>
+
+  <CardContent className="space-y-4">
+
+    {/* GITHUB */}
+    <div className="flex items-center justify-between rounded-xl border p-4">
+      <div className="flex items-center gap-4">
+        <div className="h-10 w-10 rounded-full bg-neutral-900 text-white flex items-center justify-center">
+          <Github className="w-5 h-5" />
+        </div>
+
+        <div>
+          <p className="text-sm font-medium">GitHub</p>
+          <p className="text-xs text-muted-foreground">
+            Used to showcase your projects & code
+          </p>
+        </div>
+      </div>
+
+      <Button
+        variant={providers.includes('github') ? 'outline' : 'default'}
+        disabled={providers.includes('github')}
+        onClick={() => connectProvider('github')}
+      >
+        {providers.includes('github') ? 'Connected' : 'Connect'}
+      </Button>
+    </div>
+
+    {/* LINKEDIN */}
+    <div className="flex items-center justify-between rounded-xl border p-4">
+      <div className="flex items-center gap-4">
+        <div className="h-10 w-10 rounded-full bg-[#0A66C2] text-white flex items-center justify-center">
+          <Linkedin className="w-5 h-5" />
+        </div>
+
+        <div>
+          <p className="text-sm font-medium">LinkedIn</p>
+          <p className="text-xs text-muted-foreground">
+            Used for certificates & professional profile
+          </p>
+        </div>
+      </div>
+
+      <Button
+        variant={providers.includes('linkedin_oidc') ? 'outline' : 'default'}
+        disabled={providers.includes('linkedin_oidc')}
+        onClick={() => connectProvider('linkedin')}
+      >
+        {providers.includes('linkedin_oidc') ? 'Connected' : 'Connect'}
+      </Button>
+    </div>
+
+  </CardContent>
+</Card>
+
 
         {/* PROJECTS */}
         <Card>
