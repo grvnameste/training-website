@@ -429,6 +429,33 @@ if (
               Upload your requirement document for admin approval
             </CardDescription>
 
+   {/* ✅ NEW PDF DOWNLOAD BUTTON */}
+   <Button
+  variant="outline"
+  className="w-full mt-4 flex items-center justify-between 
+             border-blue-200 bg-blue-50 
+             hover:bg-blue-100 hover:border-blue-400 
+             transition-all duration-200"
+  onClick={() =>
+    window.open('/assets/stage1-guide.pdf', '_blank')
+  }
+>
+  <div className="flex items-center gap-2">
+    <FileText className="w-5 h-5 text-blue-600" />
+    <span className="font-medium text-blue-700">
+      Read Stage 1 Guidelines (PDF)
+    </span>
+  </div>
+
+  <span className="text-xs text-blue-500">
+    Must Read
+  </span>
+</Button>
+
+<p className="text-xs text-slate-500 mt-2">
+  Please read the instructions carefully before submitting your requirement document.
+</p>
+
           </CardHeader>
 
           <CardContent className="space-y-5">

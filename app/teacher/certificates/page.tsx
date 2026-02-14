@@ -7,13 +7,17 @@ import { Button } from '@/components/ui/button'
 import { CheckCircle } from 'lucide-react'
 
 type PendingCertRow = {
-    student_id: string
-    capstone_id: string
-    stage3_submitted: boolean
-    certificate_requested: boolean
-    completed: boolean
-    certificate_issued: boolean
-  }
+  student_id: string
+  capstone_id: string
+  stage3_submitted: boolean
+  certificate_requested: boolean
+  completed: boolean
+  certificate_issued: boolean
+
+  student_name?: string
+  capstone_title?: string
+}
+
   
 export default function TeacherCertificateApprovals() {
     const [pending, setPending] = useState<PendingCertRow[]>([])
@@ -46,9 +50,53 @@ export default function TeacherCertificateApprovals() {
   
     
 
-    if (!error && data) {
-        setPending(data)
+  if (!error && data) {
+    /* ============ COLLECT IDS ============ */
+    const studentIds = Array.from(new Set(data.map(d => d.student_id)))
+    const capstoneIds = Array.from(new Set(data.map(d => d.capstone_id)))
+  
+    /* ============ FETCH STUDENTS ============ */
+    let studentMap: Record<string, string> = {}
+    if (studentIds.length > 0) {
+      const { data: students } = await supabase
+        .from('student_profiles')
+        .select('id, name')
+        .in('id', studentIds)
+  
+      studentMap =
+        students?.reduce<Record<string, string>>((acc, s) => {
+          acc[s.id] = s.name
+          return acc
+        }, {}) ?? {}
     }
+  
+    /* ============ FETCH CAPSTONE TITLES ============ */
+    let capstoneMap: Record<string, string> = {}
+    if (capstoneIds.length > 0) {
+      const { data: capstones } = await supabase
+        .from('courses')
+        .select('id, title')
+        .in('id', capstoneIds)
+  
+      capstoneMap =
+        capstones?.reduce<Record<string, string>>((acc, c) => {
+          acc[c.id] = c.title
+          return acc
+        }, {}) ?? {}
+    }
+  
+    /* ============ FINAL MERGE ============ */
+    const finalData: PendingCertRow[] = data.map(row => ({
+      ...row,
+      student_name: studentMap[row.student_id] ?? 'Unknown Student',
+      capstone_title: capstoneMap[row.capstone_id] ?? 'Unknown Capstone',
+    }))
+  
+    setPending(finalData)
+  }
+  
+
+
 
     setLoading(false)
   }
@@ -90,14 +138,16 @@ export default function TeacherCertificateApprovals() {
       {pending.map(p => (
         <Card key={`${p.student_id}-${p.capstone_id}`}>
           <CardHeader>
-          <CardTitle>Capstone ID: {p.capstone_id}</CardTitle>
-          </CardHeader>
+          <CardTitle>
+  {p.capstone_title}
+</CardTitle>          </CardHeader>
 
           <CardContent className="flex items-center justify-between">
             <div>
             
-<p className="text-sm text-gray-600">
-  Student ID: {p.student_id}
+
+            <p className="text-sm text-gray-600">
+  Student: <span className="font-medium">{p.student_name}</span>
 </p>
             </div>
 
@@ -126,9 +176,10 @@ export default function TeacherCertificateApprovals() {
       body: JSON.stringify({
         studentId: p.student_id,
         courseId: p.capstone_id,
-        studentName: p.student_id,
-        courseName: p.capstone_id,
+        studentName: p.student_name,
+        courseName: p.capstone_title,
       }),
+      
     })
     
     setIssuing(false)

@@ -205,28 +205,6 @@ setCourse({
   // ✅ SAVE LAST WATCHED LESSON (CONTINUE FEATURE)
 
 
-  // ✅ SAVE LAST WATCHED LESSON (CONTINUE FEATURE)
-useEffect(() => {
-  const saveProgress = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    if (!videoId) return
-
-    await supabase.from('student_lesson_progress').upsert(
-      {
-        student_id: user.id,
-        course_id: courseId,
-        lesson_id: videoId,
-      },
-      { onConflict: 'student_id,course_id' }
-    )
-  }
-
-  saveProgress()
-}, [videoId, courseId])
-
-  const isLocked = (stage: number) => stage > capstoneStage
-
   if (loading || !course) {
     return (
       <div className="flex justify-center py-32">
@@ -419,155 +397,165 @@ if (!currentLesson) {
 
 
   {/* ================= CAPSTONE ================= */}
-{capstoneCourse && (
-  <div className="mt-4 rounded-2xl border-2 border-blue-200 bg-blue-50/40 p-4 space-y-3">
+  {capstoneCourse && (
+  <div className="mt-4 rounded-2xl border border-blue-200 bg-white p-5 space-y-4 shadow-sm">
 
     {/* HEADER */}
-    <div className="flex items-center gap-3">
-      <div className="h-10 w-10 flex items-center justify-center rounded-full bg-blue-600 text-white text-lg">
+    <div className="flex items-center gap-4">
+      <div className="h-11 w-11 flex items-center justify-center rounded-full bg-blue-600 text-white text-xl">
         🎯
       </div>
       <div>
-        <p className="text-sm uppercase tracking-wide text-blue-600 font-semibold">
+        <p className="text-sm font-semibold text-blue-700">
           Capstone Project
         </p>
         <p className="text-xs text-neutral-500">
-          Final hands-on implementation
+          Apply everything you’ve learned in a real project
         </p>
       </div>
     </div>
 
     {/* STAGES */}
-    <div className="space-y-2 pt-2">
+    <div className="space-y-2">
 
       {/* STAGE 1 */}
-      <div
+      <StageItem
+        title="Stage 1 – Requirements"
+        unlocked
+        completed={capstoneStage > 1}
         onClick={() =>
           router.push(`/student/capstone/${capstoneCourse.id}/stage/1`)
         }
-        className="px-4 py-3 rounded-xl text-sm font-medium cursor-pointer
-                   bg-white hover:bg-blue-100 border border-blue-200
-                   flex justify-between items-center"
-      >
-        <span>Stage 1 – Requirement</span>
-        {capstoneStage > 1 && <span className="text-green-600">✔</span>}
-      </div>
+      />
 
       {/* STAGE 2 */}
-      <div
-        onClick={() => {
-          if (!isLocked(2)) {
-            router.push(`/student/capstone/${capstoneCourse.id}/stage/2`)
-          }
-        }}
-        className={`px-4 py-3 rounded-xl text-sm font-medium
-          flex justify-between items-center border
-          ${isLocked(2)
-            ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200'
-            : 'bg-white hover:bg-blue-100 cursor-pointer border-blue-200'}
-        `}
-      >
-        <span>Stage 2 – Backlog</span>
-        {isLocked(2) ? <span>🔒</span> : <span className="text-green-600">✔</span>}
-      </div>
+      <StageItem
+        title="Stage 2 – Backlog Planning"
+        unlocked={!isLocked(2)}
+        completed={capstoneStage > 2}
+        onClick={() =>
+          !isLocked(2) &&
+          router.push(`/student/capstone/${capstoneCourse.id}/stage/2`)
+        }
+      />
 
       {/* STAGE 3 */}
-      <div
-        onClick={() => {
-          if (!isLocked(3)) {
-            router.push(`/student/capstone/${capstoneCourse.id}/stage/3`)
-          }
-        }}
-        className={`px-4 py-3 rounded-xl text-sm font-medium
-          flex justify-between items-center border
-          ${isLocked(3)
-            ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200'
-            : 'bg-white hover:bg-blue-100 cursor-pointer border-blue-200'}
-        `}
-      >
-        <span>Stage 3 – Development</span>
-        {isLocked(3) ? <span>🔒</span> : <span className="text-green-600">✔</span>}
-      </div>
+      <StageItem
+        title="Stage 3 – Development & Submission"
+        unlocked={!isLocked(3)}
+        completed={stage3Submitted}
+        onClick={() =>
+          !isLocked(3) &&
+          router.push(`/student/capstone/${capstoneCourse.id}/stage/3`)
+        }
+      />
 
     </div>
   </div>
 )}
 
+
 {/* ================= CERTIFICATE ================= */}
 {capstoneCourse && (
-  <div className="mt-4 rounded-2xl border-2 border-green-200 bg-green-50 p-4 space-y-3">
+  <div className="mt-4 rounded-2xl border border-green-200 bg-white p-5 space-y-4 shadow-sm">
 
-    <h3 className="text-sm font-semibold text-green-700">
-      Course Certificate
-    </h3>
+    <div className="flex items-center gap-3">
+      <div className="h-10 w-10 flex items-center justify-center rounded-full bg-green-600 text-white">
+        🎓
+      </div>
+      <div>
+        <p className="text-sm font-semibold text-green-700">
+          Course Certificate
+        </p>
+        <p className="text-xs text-neutral-500">
+          Earn a verified certificate after completing the capstone
+        </p>
+      </div>
+    </div>
 
-   
+    {/* LOCKED STATE */}
+    {!stage3Submitted && (
+      <div className="rounded-xl bg-green-50 border border-green-200 p-4 text-sm text-green-800">
+        🔒 <span className="font-medium">
+          Complete the capstone project to unlock your certificate.
+        </span>
+        <p className="text-xs text-green-700 mt-1">
+          Finish all capstone stages and submit your final solution.
+        </p>
+      </div>
+    )}
 
+    {/* REQUEST CERTIFICATE */}
+    {stage3Submitted &&
+      !certificateRequested &&
+      !certificateIssued && (
+        <Button
+          className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+          onClick={async () => {
+            const { data: { user } } = await supabase.auth.getUser()
 
+            await supabase
+              .from('student_capstone_progress')
+              .update({ certificate_requested: true })
+              .eq('student_id', user!.id)
+              .eq('capstone_id', capstoneCourse.id)
 
-{stage3Submitted &&
- !certificateRequested &&
- !certificateIssued && (
-  <Button
-    className="w-full bg-purple-600 text-white"
-    onClick={async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+            setCertificateRequested(true)
+          }}
+        >
+          Request Certificate
+        </Button>
+      )}
 
-      await supabase
-        .from('student_capstone_progress')
-        .update({ certificate_requested: true })
-        .eq('student_id', user!.id)
-        .eq('capstone_id', capstoneCourse.id)
+    {/* PENDING */}
+    {certificateRequested && !certificateIssued && (
+      <div className="rounded-xl bg-yellow-50 border border-yellow-200 p-4 text-sm text-yellow-800">
+        ⏳ Certificate request submitted.  
+        <p className="text-xs mt-1">
+          Your certificate will be issued after review by the instructor.
+        </p>
+      </div>
+    )}
 
-      setCertificateRequested(true)
-    }}
-  >
-    Request Certificate
-  </Button>
-)}
+    {/* DOWNLOAD */}
+    {certificateIssued && (
+      <Button
+        variant="outline"
+        className="w-full border-green-300 text-green-700"
+        onClick={async () => {
+          const { data: { session } } = await supabase.auth.getSession()
 
+          const res = await fetch(
+            `/api/certificate/download?courseId=${capstoneCourse.id}`,
+            {
+              headers: {
+                Authorization: `Bearer ${session?.access_token}`,
+              },
+            }
+          )
 
+          if (!res.ok) {
+            alert('Failed to download certificate')
+            return
+          }
 
+          const blob = await res.blob()
+          const url = window.URL.createObjectURL(blob)
 
+          const a = document.createElement('a')
+          a.href = url
+          a.download = 'certificate.pdf'
+          a.click()
 
-{certificateIssued && (
-  <Button
-    variant="outline"
-    className="w-full"
-    onClick={async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-
-      const res = await fetch(
-        `/api/certificate/download?courseId=${capstoneCourse.id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${session?.access_token}`,
-          },
-        }
-      )
-
-      if (!res.ok) {
-        alert('Failed to download certificate')
-        return
-      }
-
-      const blob = await res.blob()
-      const url = window.URL.createObjectURL(blob)
-
-      const a = document.createElement('a')
-      a.href = url
-      a.download = 'certificate.pdf'
-      a.click()
-
-      window.URL.revokeObjectURL(url)
-    }}
-  >
-    Download Certificate
-  </Button>
-)}
-
+          window.URL.revokeObjectURL(url)
+        }}
+      >
+        Download Certificate
+      </Button>
+    )}
   </div>
 )}
+
 
 
               </div>
@@ -578,4 +566,38 @@ if (!currentLesson) {
     </div>
   )
   
+}
+
+
+function StageItem({
+  title,
+  unlocked,
+  completed,
+  onClick,
+}: {
+  title: string
+  unlocked: boolean
+  completed: boolean
+  onClick: () => void
+}) {
+  return (
+    <div
+      onClick={unlocked ? onClick : undefined}
+      className={`px-4 py-3 rounded-xl text-sm font-medium border
+        flex justify-between items-center transition
+        ${unlocked
+          ? 'bg-white hover:bg-blue-50 cursor-pointer border-blue-200'
+          : 'bg-gray-50 text-gray-400 cursor-not-allowed border-gray-200'}
+      `}
+    >
+      <span>{title}</span>
+      {completed ? (
+        <span className="text-green-600">✔</span>
+      ) : unlocked ? (
+        <span className="text-blue-500">→</span>
+      ) : (
+        <span>🔒</span>
+      )}
+    </div>
+  )
 }

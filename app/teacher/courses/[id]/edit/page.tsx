@@ -25,6 +25,27 @@ type Lesson = {
   duration: string
 }
 
+type CapstoneStudent = {
+  student_id: string
+  stage1_submitted: boolean
+  stage2_submitted: boolean
+  stage3_submitted: boolean
+  certificate_issued: boolean
+  certificate_requested: boolean
+  trello_board_url: string | null
+  profiles: {
+    name: string
+    users: {
+      email: string
+    } | null
+  }[]
+  
+  requirement_documents?: {
+    file_url: string
+  }[]
+}
+
+
 type Section = {
   id: string
   title: string
@@ -42,7 +63,8 @@ const Field = ({
   children: React.ReactNode
 }) => (
   <div className="space-y-1">
-    <label className="text-sm font-medium text-muted-foreground">
+    <label className="text-sm font-semibold text-foreground flex items-center gap-2">
+      <span className="h-2 w-2 rounded-full bg-primary" />
       {label}
     </label>
     {children}
@@ -71,6 +93,10 @@ export default function EditCoursePage() {
   /* New Lesson */
   const [lessonTitle, setLessonTitle] = useState('')
   const [lessonDesc, setLessonDesc] = useState('')
+
+  const [capstoneStudents, setCapstoneStudents] = useState<CapstoneStudent[]>([])
+const [capstoneLoading, setCapstoneLoading] = useState(true)
+
 
   /* =======================
      LOAD COURSE
@@ -147,6 +173,87 @@ export default function EditCoursePage() {
     if (error) alert(error.message)
     else alert('✅ Course details updated')
   }
+
+  /* =======================
+   LOAD CAPSTONE STUDENTS
+======================= */
+useEffect(() => {
+  const loadCapstoneStudents = async () => {
+
+    // Step 1: get capstone record for this course
+    const { data: capstoneData, error: capstoneError } = await supabase
+    .from('courses')
+    .select('id')
+    .eq('is_capstone', true)
+    .eq('parent_course_id', id)
+    .single()
+  
+      console.log("Course ID:", id)
+console.log("Capstone Data:", capstoneData)
+console.log("Capstone Error:", capstoneError)
+
+
+    if (capstoneError || !capstoneData) {
+      setCapstoneLoading(false)
+      return
+    }
+
+    // Step 2: get student progress
+const { data: progressData, error } = await supabase
+.from('student_capstone_progress')
+.select('*')
+.eq('capstone_id', capstoneData.id)
+
+if (error || !progressData) {
+setCapstoneLoading(false)
+return
+}
+
+// Get all student IDs
+const studentIds = progressData.map(s => s.student_id)
+
+// Fetch profiles separately
+const { data: profileData } = await supabase
+.from('student_profiles')
+.select('id, name')
+.in('id', studentIds)
+
+
+// Merge manually
+const students = progressData.map(student => {
+const profile = profileData?.find(p => p.id === student.student_id)
+
+return {
+  ...student,
+  profiles: profile
+    ? [{
+        name: profile.name,
+        users: null
+      }]
+    : []
+}
+})
+
+// Fetch requirement documents
+for (const student of students) {
+const { data: docs } = await supabase
+  .from('requirement_documents')
+  .select('file_url')
+  .eq('student_id', student.student_id)
+  .eq('capstone_id', capstoneData.id)
+
+student.requirement_documents = docs || []
+}
+
+setCapstoneStudents(students)
+
+
+    setCapstoneLoading(false)
+  }
+
+  loadCapstoneStudents()
+}, [id])
+
 
   /* =======================
      SECTION ACTIONS
@@ -233,25 +340,39 @@ export default function EditCoursePage() {
   if (loading) return <p>Loading...</p>
 
   return (
-    <div className="max-w-5xl mx-auto space-y-10">
-      {/* ===== TOP ACTIONS ===== */}
-      <div className="flex items-center gap-3">
-        <Link href="/teacher/dashboard">
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Dashboard
-          </Button>
-        </Link>
+    <div className="max-w-6xl mx-auto px-4 py-8 space-y-10">
+  
+      {/* ===== PAGE HEADER ===== */}
+<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 className="text-2xl font-bold tracking-tight">
+      Edit Course
+    </h1>
+    <p className="text-sm text-muted-foreground">
+      Manage course details, curriculum & capstone students
+    </p>
+  </div>
 
-        <Link href={`/teacher/courses/${id}/capstone`}>
-          <Button variant="outline" size="sm">
-            Manage Capstone Project
-          </Button>
-        </Link>
-      </div>
+  <div className="flex gap-2">
+    <Link href="/teacher/dashboard">
+      <Button variant="ghost" size="sm">
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Dashboard
+      </Button>
+    </Link>
+
+    {/* <Link href={`/teacher/courses/${id}/capstone`}>
+      <Button variant="outline" size="sm">
+        Manage Capstone
+      </Button>
+    </Link> */}
+  </div>
+</div>
+
 
       {/* ================= COURSE INFO ================= */}
-      <Card>
+      <Card className="border-muted shadow-sm">
+
         <CardHeader>
           <CardTitle>Edit Course Information</CardTitle>
           <CardDescription>
@@ -271,13 +392,17 @@ export default function EditCoursePage() {
             />
           </Field>
 
-          <Field label="Course Description">
-            <textarea
-              className="md:col-span-2 w-full rounded-md border p-3 text-sm"
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-            />
-          </Field>
+          <div className="md:col-span-2">
+  <Field label="Course Description">
+    <textarea
+      rows={4}
+      className="w-full rounded-md border border-muted bg-background p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+      value={description}
+      onChange={e => setDescription(e.target.value)}
+    />
+  </Field>
+</div>
+
 
           <Field label="Price (₹)">
             <Input
@@ -288,14 +413,18 @@ export default function EditCoursePage() {
             />
           </Field>
 
-          <div className="md:col-span-2">
-            <Button onClick={saveCourse}>Save Course Details</Button>
-          </div>
+          <div className="md:col-span-2 flex justify-end">
+  <Button className="px-6" onClick={saveCourse}>
+    Save Course Details
+  </Button>
+</div>
+
         </CardContent>
       </Card>
 
       {/* ================= CURRICULUM ================= */}
-      <Card>
+      <Card className="border-muted shadow-sm">
+
         <CardHeader>
           <CardTitle>Course Curriculum</CardTitle>
           <CardDescription>
@@ -320,16 +449,19 @@ export default function EditCoursePage() {
             const open = openSectionId === section.id
 
             return (
-              <div key={section.id} className="rounded-xl border">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setOpenSectionId(open ? null : section.id)
-                  }
-                  className="flex w-full justify-between px-5 py-4 hover:bg-muted/40"
-                >
+<div key={section.id} className="rounded-lg border bg-background">
+<button
+  type="button"
+  onClick={() =>
+    setOpenSectionId(open ? null : section.id)
+  }
+  className="flex w-full items-center justify-between px-5 py-4 text-left hover:bg-muted/50 transition"
+>
+
                   <div>
-                    <h3 className="font-semibold">{section.title}</h3>
+                  <h3 className="text-sm font-medium">
+  {section.title}
+</h3>
                     <p className="text-xs text-muted-foreground">
                       {section.lessons.length} lessons
                     </p>
@@ -352,6 +484,101 @@ export default function EditCoursePage() {
           })}
         </CardContent>
       </Card>
+
+      {/* ================= CAPSTONE STUDENTS ================= */}
+      <Card className="border-muted shadow-sm">
+
+  <CardHeader>
+    <CardTitle>Capstone Project Students</CardTitle>
+    <CardDescription>
+      Stage wise submission overview
+    </CardDescription>
+  </CardHeader>
+
+  <CardContent>
+    {capstoneLoading ? (
+      <p>Loading students...</p>
+    ) : capstoneStudents.length === 0 ? (
+      <p className="text-muted-foreground">
+        No students enrolled in capstone yet.
+      </p>
+    ) : (
+<div className="rounded-lg border overflow-x-auto">
+<table className="w-full text-sm">
+<thead className="bg-muted/50">
+            <tr>
+              <th className="p-3 text-left">Student</th>
+              <th className="p-3 text-left">Stage 1</th>
+              <th className="p-3 text-left">Stage 2</th>
+              <th className="p-3 text-left">Stage 3</th>
+              <th className="p-3 text-left">Certificate</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {capstoneStudents.map((row) => (
+              <tr
+  key={row.student_id}
+  className="border-t hover:bg-muted/30 transition"
+>
+                <td className="p-3">
+                <div className="font-medium text-sm">
+  {row.profiles?.[0]?.name || '—'}
+</div>
+
+                  <div className="text-xs text-muted-foreground">
+                  {row.profiles?.[0]?.users?.email}
+                  </div>
+                </td>
+
+                <td className="p-3">
+                  {row.requirement_documents?.[0]?.file_url ? (
+                    <a
+                      href={row.requirement_documents[0].file_url}
+                      target="_blank"
+                      className="text-blue-600 underline"
+                    >
+                      View Doc
+                    </a>
+                  ) : (
+                    'Not Submitted'
+                  )}
+                </td>
+
+                <td className="p-3">
+                  {row.stage2_submitted ? (
+                    <a
+                      href={row.trello_board_url || '#'}
+                      target="_blank"
+                      className="text-blue-600 underline"
+                    >
+                      Open Trello
+                    </a>
+                  ) : (
+                    'Not Submitted'
+                  )}
+                </td>
+
+                <td className="p-3">
+                  {row.stage3_submitted ? 'Submitted' : 'Not Submitted'}
+                </td>
+
+                <td className="p-3">
+                  {row.certificate_issued
+                    ? 'Issued'
+                    : row.certificate_requested
+                    ? 'Requested'
+                    : '—'}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </CardContent>
+</Card>
+
     </div>
   )
 }
