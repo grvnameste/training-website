@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react'
 import supabase from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { Video } from 'lucide-react'
+import { CapstoneMeetingModal } from '@/components/teacher/CapstoneMeetingModal'
 
 interface ApprovalItem {
   progress_id: string
@@ -32,6 +34,13 @@ interface ApprovalItem {
 export default function CapstoneApprovalsPage() {
   const [items, setItems] = useState<ApprovalItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [isMeetingModalOpen, setIsMeetingModalOpen] = useState(false)
+  const [selectedItem, setSelectedItem] = useState<ApprovalItem | null>(null)
+
+  const openMeetingModal = (item: ApprovalItem) => {
+    setSelectedItem(item)
+    setIsMeetingModalOpen(true)
+  }
 
   const load = async () => {
     try {
@@ -202,11 +211,11 @@ if (studentIds.size > 0) {
   const { data: profiles } = await supabase
   .from('student_profiles')
   .select('id, name')
-    .in('id', Array.from(studentIds))
+  .in('id', Array.from(studentIds))
 
   studentMap =
     profiles?.reduce<Record<string, string>>((acc, p) => {
-      acc[p.id] = p.name
+      acc[p.id] = p.name || 'Student'
       return acc
     }, {}) ?? {}
 }
@@ -285,7 +294,8 @@ setItems(finalItems)
 
           {/* Student */}
           <td className="px-4 py-3 border">
-            {item.student_name}
+            <div className="font-medium text-slate-900">{item.student_name}</div>
+            <div className="text-[10px] text-slate-400 font-mono mt-0.5">{item.student_id}</div>
           </td>
 
           {/* Stage */}
@@ -329,20 +339,40 @@ setItems(finalItems)
           </td>
 
           {/* Action */}
-          <td className="px-4 py-3 border">
+          <td className="px-4 py-3 border space-x-2">
             <Button
               size="sm"
               onClick={() => approve(item)}
+              className="bg-green-600 hover:bg-green-700"
             >
               Approve
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => openMeetingModal(item)}
+              className="border-blue-600 text-blue-600 hover:bg-blue-50"
+            >
+              <Video className="w-4 h-4 mr-2" />
+              Meeting
             </Button>
           </td>
         </tr>
       ))}
     </tbody>
   </table>
-</div>
+      </div>
 
+      {selectedItem && (
+        <CapstoneMeetingModal
+          isOpen={isMeetingModalOpen}
+          onClose={() => setIsMeetingModalOpen(false)}
+          studentId={selectedItem.student_id}
+          capstoneId={selectedItem.capstone_id}
+          studentName={selectedItem.student_name}
+          capstoneTitle={selectedItem.title}
+        />
+      )}
     </div>
   )
 }
