@@ -20,8 +20,11 @@ import {
   Loader2 
 } from 'lucide-react'
 
+import { usePresence } from '@/hooks/usePresence'
+
 interface Message {
   id: string
+  room_id: string
   sender_id: string
   content: string | null
   media_url: string | null
@@ -53,78 +56,128 @@ export function ChatModal({
   const [loading, setLoading] = useState(true)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [filePreview, setFilePreview] = useState<string | null>(null)
+  const [studentName, setStudentName] = useState('Student')
   const scrollRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // 🛰️ Track Presence
+  const { isUserOnline } = usePresence(isOpen ? studentId : null, studentName, courseId)
+
   // 🚪 Initialize Chat Room
   useEffect(() => {
-    if (!isOpen) return
+    if (!isOpen || !studentId || studentId === '') return
 
     const initChat = async () => {
-      setLoading(true)
-      // 1. Get or Create Room
-      let { data: room, error } = await supabase
-        .from('chat_rooms')
-        .select('id')
-        .eq('student_id', studentId)
-        .eq('course_id', courseId)
-        .maybeSingle()
-
-      if (!room) {
-        const { data: newRoom, error: createError } = await supabase
-          .from('chat_rooms')
-          .insert({
-            student_id: studentId,
-            teacher_id: teacherId,
-            course_id: courseId
-          })
-          .select('id')
-          .single()
+      try {
+        setLoading(true)
+        console.log('Initializing chat for student:', studentId, 'course:', courseId)
         
-        if (createError) {
-          console.error('Error creating room:', createError.message || createError)
-          setLoading(false)
-          return
+        // Get student name for presence
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name, name')
+          .eq('id', studentId)
+          .maybeSingle()
+        
+        if (profile) {
+          setStudentName(profile.full_name || profile.name || 'Student')
         }
-        room = newRoom
-      }
 
-      setRoomId(room.id)
+        // 1. Get or Create Room
+        let { data: room, error: roomError } = await supabase
+          .from('chat_rooms')
+          .select('id')
+          .eq('student_id', studentId)
+          .eq('course_id', courseId)
+          .maybeSingle()
 
-      // 2. Fetch Initial Messages
-      const { data: initialMessages } = await supabase
-        .from('chat_messages')
-        .select('*')
-        .eq('room_id', room.id)
-        .order('created_at', { ascending: true })
+        if (roomError) {
+          console.error('Error fetching room:', roomError)
+          throw roomError
+        }
 
-      setMessages(initialMessages || [])
-      setLoading(false)
+        if (!room) {
+          console.log('Creating new chat room...')
+          const { data: newRoom, error: createError } = await supabase
+            .from('chat_rooms')
+            .insert({
+              student_id: studentId,
+              teacher_id: teacherId,
+              course_id: courseId
+            })
+            .select('id')
+            .single()
 
-      // 3. Subscribe to Realtime
-      const channel = supabase
-        .channel(`room:${room.id}`)
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'chat_messages',
-            filter: `room_id=eq.${room.id}`
-          },
-          (payload) => {
-            setMessages(prev => [...prev, payload.new as Message])
+          if (createError) {
+            console.error('Error creating room:', createError)
+            throw createError
           }
-        )
-        .subscribe()
+          room = newRoom
+        }
 
-      return () => {
-        supabase.removeChannel(channel)
+        console.log('Chat room ready:', room.id)
+        setRoomId(room.id)
+
+        // 2. Fetch Initial Messages
+        const { data: initialMessages, error: msgError } = await supabase
+          .from('chat_messages')
+          .select('*')
+          .eq('room_id', room.id)
+          .order('created_at', { ascending: true })
+
+        if (msgError) console.error('Error fetching messages:', msgError)
+        setMessages(initialMessages || [])
+      } catch (err: any) {
+        console.error('Failed to init chat:', err)
+      } finally {
+        setLoading(false)
+        scrollToBottom()
       }
     }
 
     initChat()
   }, [isOpen, studentId, courseId, teacherId])
+
+  // 🛰️ Realtime Subscription
+  useEffect(() => {
+    if (!isOpen || !roomId) return
+
+    console.log('Starting realtime subscription for room:', roomId)
+    
+    // Using the same channel naming and filter pattern as the teacher side
+    const channel = supabase
+      .channel(`room:${roomId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_messages',
+          filter: `room_id=eq.${roomId}`
+        },
+        (payload) => {
+          const newMessage = payload.new as Message
+          console.log('New message detected via Realtime:', newMessage)
+          
+          setMessages(prev => {
+            // Check for duplicates (e.g. from optimistic update or race condition)
+            if (prev.some(m => m.id === newMessage.id)) return prev
+            const updated = [...prev, newMessage]
+            // Ensure sorting is preserved just in case
+            return updated.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+          })
+          scrollToBottom()
+        }
+      )
+      .subscribe((status) => {
+        console.log(`Student subscription status for ${roomId}:`, status)
+      })
+
+    return () => {
+      console.log('Cleaning up realtime subscription for:', roomId)
+      supabase.removeChannel(channel)
+    }
+  }, [isOpen, roomId])
 
   // 📜 Auto-scroll
   const scrollToBottom = () => {
@@ -146,6 +199,7 @@ export function ChatModal({
   const handleSendMessage = async () => {
     if ((!content.trim() && !selectedFile) || !roomId) return
 
+    const messageContent = content.trim()
     setIsUploading(true)
     let mediaUrl = null
     let mediaType = null
@@ -175,21 +229,45 @@ export function ChatModal({
         mediaType = selectedFile.type.startsWith('image') ? 'image' : 'video'
       }
 
-      const newMsg = {
+      // Optimistic Update (Temporary ID)
+      const tempId = crypto.randomUUID()
+      const optimisticMessage: Message = {
+        id: tempId,
         room_id: roomId,
         sender_id: studentId,
-        content: content.trim() || null,
+        content: messageContent || null,
         media_url: mediaUrl,
         media_type: mediaType,
+        created_at: new Date().toISOString()
       }
-
-      const { error: sendError } = await supabase.from('chat_messages').insert(newMsg)
-      if (sendError) throw sendError
-
-      // Clear state
+      
+      setMessages(prev => [...prev, optimisticMessage])
+      scrollToBottom()
+      
+      // Clear inputs early for better UX
       setContent('')
       setSelectedFile(null)
       setFilePreview(null)
+
+      const { data: sentData, error: sendError } = await supabase.from('chat_messages').insert({
+        room_id: roomId,
+        sender_id: studentId,
+        content: messageContent || null,
+        media_url: mediaUrl,
+        media_type: mediaType,
+      }).select().single()
+
+      if (sendError) {
+        // Rollback optimistic update on error
+        setMessages(prev => prev.filter(m => m.id !== tempId))
+        throw sendError
+      }
+
+      // Replace optimistic message with actual data from DB (to get correct ID/timestamp)
+      if (sentData) {
+        setMessages(prev => prev.map(m => m.id === tempId ? (sentData as Message) : m))
+      }
+
     } catch (error: any) {
       console.error('Send failed:', error)
       alert(`Failed to send message: ${error.message || 'Unknown error'}`)
@@ -202,6 +280,14 @@ export function ChatModal({
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+
+    // Limit to 50MB
+    const MAX_SIZE = 50 * 1024 * 1024
+    if (file.size > MAX_SIZE) {
+      alert('File is too large! Maximum limit is 50MB.')
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
 
     setSelectedFile(file)
     const reader = new FileReader()
@@ -221,8 +307,13 @@ export function ChatModal({
               <MessageSquare className="w-5 h-5 text-white" />
             </div>
             <div className="overflow-hidden">
-              <DialogTitle className="text-white font-bold text-sm truncate max-w-[200px] uppercase tracking-wider">
+              <DialogTitle className="text-white font-bold text-sm truncate max-w-[200px] uppercase tracking-wider flex items-center gap-2">
                 Support Chat
+                {isUserOnline(teacherId) && (
+                  <span className="flex items-center gap-1 text-[8px] bg-green-500 text-white px-1.5 py-0.5 rounded-full animate-pulse uppercase">
+                    Online
+                  </span>
+                )}
               </DialogTitle>
               <DialogDescription className="text-blue-100 text-[10px] truncate max-w-[200px] font-medium opacity-80">
                 {courseTitle}
@@ -361,6 +452,7 @@ export function ChatModal({
             className="hidden"
             accept="image/*,video/*"
             onChange={handleFileSelect}
+            title="Upload media"
           />
         </div>
       </DialogContent>

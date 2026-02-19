@@ -12,9 +12,10 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { ArrowLeft, BookOpen } from 'lucide-react'
+import { ArrowLeft, BookOpen, MessageSquare } from 'lucide-react'
 import { ChatTrigger } from '@/components/ChatTrigger'
 import { ChatModal } from '@/components/ChatModal'
+import { usePresence } from '@/hooks/usePresence'
 
 /* ================= TYPES ================= */
 interface Lesson {
@@ -42,7 +43,11 @@ export default function CourseDetailPage() {
   const [isEnrolled, setIsEnrolled] = useState(false)
   const [lastLessonId, setLastLessonId] = useState<string | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
+  const [userName, setUserName] = useState<string>('Student')
   const [isChatOpen, setIsChatOpen] = useState(false)
+
+  // 🛰️ Track Presence
+  const { isUserOnline } = usePresence(userId, userName, courseId)
 
   // ✅ linked capstone (single source of truth)
   const [linkedCapstone, setLinkedCapstone] = useState<{
@@ -104,6 +109,9 @@ export default function CourseDetailPage() {
 
       if (user) {
         setUserId(user.id)
+        const { data: profile } = await supabase.from('profiles').select('full_name, name').eq('id', user.id).maybeSingle()
+        setUserName(profile?.full_name || profile?.name || user.email?.split('@')[0] || 'Student')
+
         const { data: enrollment } = await supabase
           .from('course_enrollments')
           .select('id')
@@ -257,16 +265,32 @@ export default function CourseDetailPage() {
         </div>
       </div>
 
-      {/* 💬 Chat Feature */}
+      {/* 💬 Floating Chat Button */}
       {isEnrolled && userId && course && (
         <>
-          <ChatTrigger onClick={() => setIsChatOpen(true)} />
+          <Button
+            onClick={() => setIsChatOpen(true)}
+            className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-2xl bg-blue-600 hover:bg-blue-700 hover:scale-110 transition-all duration-300 z-50 group border-4 border-white"
+            size="icon"
+          >
+            <div className="relative">
+              <MessageSquare className="w-6 h-6 text-white" />
+              {isUserOnline(course.teacher_id) && (
+                <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white animate-pulse" />
+              )}
+            </div>
+            
+            <span className="absolute right-16 bg-slate-900 text-white text-[10px] px-3 py-1.5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none font-bold uppercase tracking-wider shadow-lg">
+              Support Chat
+            </span>
+          </Button>
+
           <ChatModal
             isOpen={isChatOpen}
             onClose={() => setIsChatOpen(false)}
             studentId={userId}
             teacherId={course.teacher_id}
-            courseId={course.id}
+            courseId={courseId}
             courseTitle={course.title}
           />
         </>

@@ -6,10 +6,12 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import supabase from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, ChevronRight } from 'lucide-react'
+import { ArrowLeft, ChevronRight, MessageSquare } from 'lucide-react'
 import Video from 'next-video'
 import getStarted from '@/videos/get-started.mp4.json'
 import Instaplay from 'player.style/instaplay/react'
+import { usePresence } from '@/hooks/usePresence'
+import { ChatModal } from '@/components/ChatModal'
 
 interface Lesson {
   id: string
@@ -62,135 +64,145 @@ const [capstoneCompleted, setCapstoneCompleted] = useState(false)
 const [certificateIssued, setCertificateIssued] = useState(false)
 
 const [certificateRequested, setCertificateRequested] = useState(false)
+  const [user, setUser] = useState<{ id: string; name: string } | null>(null)
+  const [isChatOpen, setIsChatOpen] = useState(false)
+  const [teacherId, setTeacherId] = useState<string | null>(null)
 
+  // 🛰️ Track Presence
+  const { isUserOnline } = usePresence(user?.id || null, user?.name || null, courseId)
 
   useEffect(() => {
     const loadCourse = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      // ================= ENROLLMENT CHECK =================
-if (user) {
-  const { data: enrollment } = await supabase
-    .from('course_enrollments')
-    .select('id')
-    .eq('student_id', user.id)
-    .eq('course_id', courseId)
-    .maybeSingle()
+      try {
+        const { data: { user: authUser } } = await supabase.auth.getUser()
+        if (authUser) {
+          const { data: profile } = await supabase.from('profiles').select('full_name, name').eq('id', authUser.id).maybeSingle()
+          setUser({
+            id: authUser.id,
+            name: profile?.full_name || profile?.name || authUser.email?.split('@')[0] || 'Student'
+          })
+        }
 
-  setIsEnrolled(!!enrollment)
-}
+        // ================= ENROLLMENT CHECK =================
+        if (authUser) {
+          const { data: enrollment } = await supabase
+            .from('course_enrollments')
+            .select('id')
+            .eq('student_id', authUser.id)
+            .eq('course_id', courseId)
+            .maybeSingle()
 
+          setIsEnrolled(!!enrollment)
+        }
 
-      const { data: courseData } = await supabase
-  .from('courses')
-  .select('id, title, is_capstone')
-  .eq('id', courseId)
-  .single()
+        const { data: courseData } = await supabase
+          .from('courses')
+          .select('id, title, is_capstone, teacher_id')
+          .eq('id', courseId)
+          .single()
 
-if (!courseData) {
-  setLoading(false)
-  return
-}
+        if (!courseData) {
+          // setLoading(false) // Removed as it's handled in finally
+          return
+        }
 
-// 🔐 BLOCK capstone from video player
-if (courseData.is_capstone) {
-  router.replace('/student/courses')
-  return
-}
+        setTeacherId(courseData.teacher_id)
 
+        // 🔐 BLOCK capstone from video player
+        if (courseData.is_capstone) {
+          router.replace('/student/courses')
+          return
+        }
 
+        const { data: sections } = await supabase
+          .from('sections')
+          .select('id, title')   // 👈 yaha title ADD
+          .eq('course_id', courseId)
 
-      const { data: sections } = await supabase
-        .from('sections')
-        .select('id, title')   // 👈 yaha title ADD
-        .eq('course_id', courseId)
+        const sectionIds = sections?.map(s => s.id) || []
 
-      const sectionIds = sections?.map(s => s.id) || []
+        let sectionsWithLessons: Section[] = []
 
-      let sectionsWithLessons: Section[] = []
+        if (sectionIds.length > 0) {
+          const { data: lessonData } = await supabase
+            .from('lessons')
+            .select('id, title, description, video_url, section_id')
+            .in('section_id', sectionIds)
+            .order('order_index', { ascending: true })
 
-if (sectionIds.length > 0) {
-  const { data: lessonData } = await supabase
-    .from('lessons')
-    .select('id, title, description, video_url, section_id')
-    .in('section_id', sectionIds)
-    .order('order_index', { ascending: true })
+          const lessonsBySection: Record<string, Lesson[]> = {}
 
-  const lessonsBySection: Record<string, Lesson[]> = {}
+          lessonData?.forEach(lesson => {
+            if (!lessonsBySection[lesson.section_id]) {
+              lessonsBySection[lesson.section_id] = []
+            }
+            lessonsBySection[lesson.section_id].push(lesson)
+          })
 
-  lessonData?.forEach(lesson => {
-    if (!lessonsBySection[lesson.section_id]) {
-      lessonsBySection[lesson.section_id] = []
-    }
-    lessonsBySection[lesson.section_id].push(lesson)
-  })
-
-  sectionsWithLessons = (sections ?? []).map(section => ({
-    id: section.id,
-    title: section.title,
-    lessons: lessonsBySection[section.id] || [],
-  }))
-}
-
-
-
-// ================= CAPSTONE FETCH =================
-let capstoneData = null
-
-if (!courseData.is_capstone) {
-  const { data } = await supabase
-    .from('courses')
-    .select('id, title')
-    .eq('parent_course_id', courseId)
-    .eq('is_capstone', true)
-    .maybeSingle()
-
-  capstoneData = data
-}
-
-setCapstoneCourse(capstoneData)
-// ================= CAPSTONE PROGRESS =================
-if (capstoneData && user) {
-  const { data: progress } = await supabase
-  .from('student_capstone_progress')
-  .select(`
-    current_stage,
-    stage3_submitted,
-    completed,
-    certificate_issued,
-    certificate_requested
-  `)
-    .eq('student_id', user.id)
-  .eq('capstone_id', capstoneData.id)
-  .maybeSingle()
-
-setCapstoneStage(progress?.current_stage ?? 1)
-setStage3Submitted(!!progress?.stage3_submitted)
-setCapstoneCompleted(!!progress?.completed)
-setCertificateIssued(!!progress?.certificate_issued)
-setCertificateRequested(!!progress?.certificate_requested)
+          sectionsWithLessons = (sections ?? []).map(section => ({
+            id: section.id,
+            title: section.title,
+            lessons: lessonsBySection[section.id] || [],
+          }))
+        }
 
 
 
+        // ================= CAPSTONE FETCH =================
+        let capstoneData = null
 
-}
+        if (!courseData.is_capstone) {
+          const { data } = await supabase
+            .from('courses')
+            .select('id, title')
+            .eq('parent_course_id', courseId)
+            .eq('is_capstone', true)
+            .maybeSingle()
+
+          capstoneData = data
+        }
+
+        setCapstoneCourse(capstoneData)
+        // ================= CAPSTONE PROGRESS =================
+        if (capstoneData && authUser) { // Changed user to authUser
+          const { data: progress } = await supabase
+            .from('student_capstone_progress')
+            .select(`
+              current_stage,
+              stage3_submitted,
+              completed,
+              certificate_issued,
+              certificate_requested
+            `)
+            .eq('student_id', authUser.id) // Changed user.id to authUser.id
+            .eq('capstone_id', capstoneData.id)
+            .maybeSingle()
+
+          setCapstoneStage(progress?.current_stage ?? 1)
+          setStage3Submitted(!!progress?.stage3_submitted)
+          setCapstoneCompleted(!!progress?.completed)
+          setCertificateIssued(!!progress?.certificate_issued)
+          setCertificateRequested(!!progress?.certificate_requested)
+
+
+
+
+        }
 
 
 
 
 
-   
-      
-
-
-    
-setCourse({
-  id: courseData.id,
-  title: courseData.title,
-  sections: sectionsWithLessons,
-})
-
-
-      setLoading(false)
+        setCourse({
+          id: courseData.id,
+          title: courseData.title,
+          sections: sectionsWithLessons,
+        })
+      } catch (error) {
+        console.error('Error loading course:', error)
+      } finally {
+        setLoading(false)
+      }
     }
 
     loadCourse()
@@ -563,9 +575,40 @@ if (!currentLesson) {
           </div>
         </div>
       </div>
+      
+      {/* 💬 Floating Chat Button */}
+      {isEnrolled && teacherId && (
+        <>
+          <Button
+            onClick={() => setIsChatOpen(true)}
+            className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-2xl bg-blue-600 hover:bg-blue-700 hover:scale-110 transition-all duration-300 z-50 group border-4 border-white"
+            size="icon"
+          >
+            <div className="relative">
+              <MessageSquare className="w-6 h-6 text-white" />
+              {isUserOnline(teacherId) && (
+                <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white animate-pulse" />
+              )}
+            </div>
+            
+            {/* Tooltip-like label on hover */}
+            <span className="absolute right-16 bg-slate-900 text-white text-[10px] px-3 py-1.5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none font-bold uppercase tracking-wider shadow-lg">
+              Support Chat
+            </span>
+          </Button>
+
+          <ChatModal
+            isOpen={isChatOpen}
+            onClose={() => setIsChatOpen(false)}
+            studentId={user?.id || ''}
+            teacherId={teacherId}
+            courseId={courseId}
+            courseTitle={course.title}
+          />
+        </>
+      )}
     </div>
   )
-  
 }
 
 

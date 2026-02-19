@@ -20,6 +20,8 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 
+import { usePresence } from '@/hooks/usePresence'
+
 interface Room {
   id: string
   student_id: string
@@ -48,18 +50,27 @@ export default function TeacherChatPage() {
   const [loading, setLoading] = useState(true)
   const [msgLoading, setMsgLoading] = useState(false)
   const [teacherId, setTeacherId] = useState<string | null>(null)
+  const [teacherName, setTeacherName] = useState('Teacher')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [filePreview, setFilePreview] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
-  
+  const [searchQuery, setSearchQuery] = useState('')
+
   const scrollRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // 🛰️ Track Presence
+  const { isUserOnline } = usePresence(teacherId, teacherName)
 
   useEffect(() => {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
       setTeacherId(user.id)
+
+      // Fetch teacher name
+      const { data: profile } = await supabase.from('profiles').select('full_name, name').eq('id', user.id).maybeSingle()
+      if (profile) setTeacherName(profile.full_name || profile.name || 'Teacher')
 
       // 1. Fetch Chat Rooms with profiles and courses info
       // NOTE: In a real app, you might need extra joins or RPC to get student names properly
@@ -213,6 +224,14 @@ export default function TeacherChatPage() {
     const file = e.target.files?.[0]
     if (!file) return
 
+    // Limit to 50MB
+    const MAX_SIZE = 50 * 1024 * 1024
+    if (file.size > MAX_SIZE) {
+      alert('File is too large! Maximum limit is 50MB.')
+      e.target.value = ''
+      return
+    }
+
     setSelectedFile(file)
     const reader = new FileReader()
     reader.onloadend = () => {
@@ -236,11 +255,20 @@ export default function TeacherChatPage() {
         <div className="p-4 border-b bg-white">
           <h2 className="text-xl font-bold flex items-center gap-2">
             <MessageSquare className="w-5 h-5 text-primary" />
-            Messages
+            Inbox
+            <span className="flex items-center gap-1.5 ml-auto">
+              <span className={`w-2 h-2 rounded-full ${(teacherId && isUserOnline(teacherId)) ? 'bg-green-500 animate-pulse' : 'bg-slate-300'}`} />
+              <span className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Live Status</span>
+            </span>
           </h2>
           <div className="mt-4 relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <Input className="pl-9 bg-slate-50" placeholder="Search students..." />
+            <Input 
+              className="pl-9 bg-slate-50" 
+              placeholder="Search students..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
         </div>
 
@@ -251,7 +279,12 @@ export default function TeacherChatPage() {
                 <p className="text-sm">No conversations yet.</p>
               </div>
             ) : (
-              rooms.map((room) => (
+              rooms
+                .filter(room => 
+                  room.student_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  room.course_title?.toLowerCase().includes(searchQuery.toLowerCase())
+                )
+                .map((room) => (
                 <button
                   key={room.id}
                   onClick={() => setSelectedRoom(room)}
@@ -268,7 +301,9 @@ export default function TeacherChatPage() {
                         <User className="w-6 h-6" />
                       </AvatarFallback>
                     </Avatar>
-                    <div className={`absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full ${selectedRoom?.id === room.id ? 'border-blue-600' : ''}`} />
+                    {isUserOnline(room.student_id, room.course_id) && (
+                      <div className={`absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full ${selectedRoom?.id === room.id ? 'border-blue-600' : ''}`} />
+                    )}
                   </div>
                   <div className="flex-1 text-left overflow-hidden">
                     <p className={`font-extrabold text-sm truncate ${selectedRoom?.id === room.id ? 'text-white' : 'text-slate-900'}`}>
@@ -294,14 +329,24 @@ export default function TeacherChatPage() {
             {/* Header */}
             <div className="p-4 border-b flex justify-between items-center shadow-sm z-10">
               <div className="flex items-center gap-3">
-                <Avatar className="w-10 h-10 border shadow-sm">
-                  <AvatarImage src={selectedRoom.student_image} />
-                  <AvatarFallback className="bg-primary/10 text-primary">
-                    <User className="w-5 h-5" />
-                  </AvatarFallback>
-                </Avatar>
+                <div className="relative">
+                  <Avatar className="w-10 h-10 border shadow-sm">
+                    <AvatarImage src={selectedRoom.student_image} />
+                    <AvatarFallback className="bg-primary/10 text-primary">
+                      <User className="w-5 h-5" />
+                    </AvatarFallback>
+                  </Avatar>
+                  {isUserOnline(selectedRoom.student_id, selectedRoom.course_id) && (
+                    <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full" />
+                  )}
+                </div>
                 <div>
-                  <h3 className="font-bold text-slate-800">{selectedRoom.student_name}</h3>
+                  <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                    {selectedRoom.student_name}
+                    {isUserOnline(selectedRoom.student_id, selectedRoom.course_id) && (
+                      <span className="text-[10px] text-green-600 font-bold animate-pulse uppercase tracking-wider">Online</span>
+                    )}
+                  </h3>
                   <Badge variant="secondary" className="text-[10px] font-medium bg-primary/5 text-primary hover:bg-primary/5 border-none px-2">
                     {selectedRoom.course_title}
                   </Badge>
@@ -423,6 +468,7 @@ export default function TeacherChatPage() {
                 className="hidden"
                 accept="image/*,video/*"
                 onChange={handleFileSelect}
+                title="Upload media"
               />
             </div>
           </>
