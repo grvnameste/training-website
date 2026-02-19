@@ -127,6 +127,7 @@ export function ChatModal({
 
         if (msgError) console.error('Error fetching messages:', msgError)
         setMessages(initialMessages || [])
+        // Initial fetch done
       } catch (err: any) {
         console.error('Failed to init chat:', err)
       } finally {
@@ -137,6 +138,26 @@ export function ChatModal({
 
     initChat()
   }, [isOpen, studentId, courseId, teacherId])
+
+  // 📖 Mark messages as read when modal opens
+  useEffect(() => {
+    if (isOpen && roomId && studentId) {
+      const markAsRead = async () => {
+        console.log('API call: Marking messages as read for room:', roomId)
+        try {
+          const res = await fetch('/api/chat/mark-read', {
+            method: 'POST',
+            body: JSON.stringify({ roomId, userId: studentId })
+          })
+          if (res.ok) console.log('Successfully marked all messages as read via API')
+          else console.error('API failed to mark as read')
+        } catch (err) {
+          console.error('Fetch error marking as read:', err)
+        }
+      }
+      markAsRead()
+    }
+  }, [isOpen, roomId, studentId])
 
   // 🛰️ Realtime Subscription
   useEffect(() => {
@@ -166,6 +187,15 @@ export function ChatModal({
             // Ensure sorting is preserved just in case
             return updated.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
           })
+
+          // Mark as read if it's from the teacher
+          if (newMessage.sender_id !== studentId) {
+            fetch('/api/chat/mark-read', {
+              method: 'POST',
+              body: JSON.stringify({ roomId, userId: studentId })
+            }).then(() => console.log('Marked incoming message as read'))
+          }
+
           scrollToBottom()
         }
       )

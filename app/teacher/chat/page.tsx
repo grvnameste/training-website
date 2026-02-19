@@ -31,6 +31,7 @@ interface Room {
   course_title?: string
   last_message?: string
   last_message_at?: string
+  unread_count?: number
 }
 
 interface Message {
@@ -100,15 +101,66 @@ export default function TeacherChatPage() {
             ...room,
             student_name: studentName,
             student_image: profile?.avatar || profile?.avatar_url || profile?.image,
-            course_title: room.course?.title
+            course_title: room.course?.title,
+            unread_count: 0 // Will fetch below
           }
         }))
-        setRooms(enrichedRooms)
+
+        // Fetch unread counts for each room
+        const roomsWithUnread = await Promise.all(enrichedRooms.map(async (room) => {
+          const { count } = await supabase
+            .from('chat_messages')
+            .select('*', { count: 'exact', head: true })
+            .eq('room_id', room.id)
+            .eq('is_read', false)
+            .neq('sender_id', user.id)
+          
+          return { ...room, unread_count: count || 0 }
+        }))
+
+        setRooms(roomsWithUnread)
       }
       setLoading(false)
     }
     init()
   }, [])
+
+  // 🔔 Global Unread Tracker (Listen for ALL new messages for the teacher's rooms)
+  useEffect(() => {
+    if (!teacherId || rooms.length === 0) return
+
+    const channel = supabase
+      .channel('global-unread-tracker')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_messages'
+        },
+        async (payload) => {
+          const newMessage = payload.new as Message
+          // Check if this message belongs to any room the teacher is in
+          const roomToUpdate = rooms.find(r => r.id === newMessage.room_id)
+          
+          if (roomToUpdate && newMessage.sender_id !== teacherId) {
+            // If the room is NOT currently selected, increment its unread count
+            if (selectedRoom?.id !== newMessage.room_id) {
+              setRooms(prev => prev.map(r => 
+                r.id === newMessage.room_id 
+                  ? { ...r, unread_count: (r.unread_count || 0) + 1 } 
+                  : r
+              ))
+            }
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [teacherId, rooms, selectedRoom])
 
   // 💬 Load Messages for Selected Room
   useEffect(() => {
@@ -127,7 +179,32 @@ export default function TeacherChatPage() {
       scrollToBottom()
     }
 
+    const markMessagesAsRead = async () => {
+      if (!selectedRoom || !teacherId) return
+      
+      console.log('Teacher API call: Marking messages as read for room:', selectedRoom.id)
+      try {
+        const res = await fetch('/api/chat/mark-read', {
+          method: 'POST',
+          body: JSON.stringify({ roomId: selectedRoom.id, userId: teacherId })
+        })
+        
+        if (res.ok) {
+          console.log('Teacher successfully marked all messages as read via API')
+          // Update local state for unread count
+          setRooms(prev => prev.map(r => 
+            r.id === selectedRoom.id ? { ...r, unread_count: 0 } : r
+          ))
+        } else {
+          console.error('Teacher API failed to mark as read')
+        }
+      } catch (err) {
+        console.error('Teacher Fetch error marking as read:', err)
+      }
+    }
+
     loadMessages()
+    markMessagesAsRead()
 
     // Realtime subscription
     const channel = supabase
@@ -141,7 +218,14 @@ export default function TeacherChatPage() {
           filter: `room_id=eq.${selectedRoom.id}`
         },
         (payload) => {
-          setMessages(prev => [...prev, payload.new as Message])
+          const newMessage = payload.new as Message
+          setMessages(prev => [...prev, newMessage])
+          
+          // If this room is currently selected, mark the new message as read if it's from the student
+          if (newMessage.sender_id !== teacherId) {
+            markMessagesAsRead()
+          }
+          
           scrollToBottom()
         }
       )
@@ -304,8 +388,13 @@ export default function TeacherChatPage() {
                     {isUserOnline(room.student_id, room.course_id) && (
                       <div className={`absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full ${selectedRoom?.id === room.id ? 'border-blue-600' : ''}`} />
                     )}
+                    {room.unread_count !== undefined && room.unread_count > 0 && (
+                      <div className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white border-2 border-white shadow-sm animate-in zoom-in duration-300">
+                        {room.unread_count}
+                      </div>
+                    )}
                   </div>
-                  <div className="flex-1 text-left overflow-hidden">
+                    <div className="flex-1 text-left overflow-hidden">
                     <p className={`font-extrabold text-sm truncate ${selectedRoom?.id === room.id ? 'text-white' : 'text-slate-900'}`}>
                       {room.student_name}
                     </p>

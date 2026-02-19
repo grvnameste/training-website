@@ -6,11 +6,12 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import supabase from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, ChevronRight, MessageSquare } from 'lucide-react'
+import { ArrowLeft, ChevronRight, MessageCircle } from 'lucide-react'
 import Video from 'next-video'
 import getStarted from '@/videos/get-started.mp4.json'
 import Instaplay from 'player.style/instaplay/react'
 import { usePresence } from '@/hooks/usePresence'
+import { useUnreadCount } from '@/hooks/useUnreadCount'
 import { ChatModal } from '@/components/ChatModal'
 
 interface Lesson {
@@ -70,6 +71,7 @@ const [certificateRequested, setCertificateRequested] = useState(false)
 
   // 🛰️ Track Presence
   const { isUserOnline } = usePresence(user?.id || null, user?.name || null, courseId)
+  const unreadCount = useUnreadCount(user?.id || null, courseId)
 
   useEffect(() => {
     const loadCourse = async () => {
@@ -585,9 +587,14 @@ if (!currentLesson) {
             size="icon"
           >
             <div className="relative">
-              <MessageSquare className="w-6 h-6 text-white" />
+              <MessageCircle className="w-6 h-6 text-white" />
               {isUserOnline(teacherId) && (
                 <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white animate-pulse" />
+              )}
+              {unreadCount > 0 && !isChatOpen && (
+                <span className="absolute -top-2 -right-2 min-w-[20px] h-5 px-1 bg-red-500 text-white text-[10px] font-bold rounded-full border-2 border-white flex items-center justify-center shadow-lg animate-bounce">
+                  {unreadCount}
+                </span>
               )}
             </div>
             

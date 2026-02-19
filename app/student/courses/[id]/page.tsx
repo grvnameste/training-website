@@ -12,10 +12,10 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { ArrowLeft, BookOpen, MessageSquare } from 'lucide-react'
-import { ChatTrigger } from '@/components/ChatTrigger'
+import { ArrowLeft, BookOpen, MessageCircle } from 'lucide-react'
 import { ChatModal } from '@/components/ChatModal'
 import { usePresence } from '@/hooks/usePresence'
+import { useUnreadCount } from '@/hooks/useUnreadCount'
 
 /* ================= TYPES ================= */
 interface Lesson {
@@ -48,6 +48,7 @@ export default function CourseDetailPage() {
 
   // 🛰️ Track Presence
   const { isUserOnline } = usePresence(userId, userName, courseId)
+  const unreadCount = useUnreadCount(userId, courseId)
 
   // ✅ linked capstone (single source of truth)
   const [linkedCapstone, setLinkedCapstone] = useState<{
@@ -274,9 +275,14 @@ export default function CourseDetailPage() {
             size="icon"
           >
             <div className="relative">
-              <MessageSquare className="w-6 h-6 text-white" />
+              <MessageCircle className="w-6 h-6 text-white" />
               {isUserOnline(course.teacher_id) && (
                 <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white animate-pulse" />
+              )}
+              {unreadCount > 0 && !isChatOpen && (
+                <span className="absolute -top-2 -right-2 min-w-[20px] h-5 px-1 bg-red-500 text-white text-[10px] font-bold rounded-full border-2 border-white flex items-center justify-center shadow-lg animate-bounce">
+                  {unreadCount}
+                </span>
               )}
             </div>
             

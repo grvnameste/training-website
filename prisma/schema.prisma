@@ -79,6 +79,7 @@ model ChatMessage {
   content   String?
   mediaUrl  String?  @map("media_url")
   mediaType String?  @map("media_type") // 'image' | 'video'
+  isRead    Boolean  @default(false) @map("is_read")
   createdAt DateTime @default(now()) @map("created_at")
 
   room      ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
