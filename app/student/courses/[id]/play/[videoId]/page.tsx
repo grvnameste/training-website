@@ -1,245 +1,48 @@
 //app/student/courses/[id]/play/[videoId]/page.tsx
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import supabase from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, ChevronRight, MessageCircle, Video as VideoIcon } from 'lucide-react'
+import { ArrowLeft, ChevronRight, MessageCircle } from 'lucide-react'
 import Video from 'next-video'
 import getStarted from '@/videos/get-started.mp4.json'
 import Instaplay from 'player.style/instaplay/react'
 import { usePresence } from '@/hooks/usePresence'
 import { useUnreadCount } from '@/hooks/useUnreadCount'
 import { ChatModal } from '@/components/ChatModal'
-
-interface Lesson {
-  id: string
-  title: string
-  description: string | null
-  video_url: string | null
-}
-
-interface Section {
-  id: string
-  title: string
-  lessons: Lesson[]
-}
-
-interface Course {
-  id: string
-  title: string
-  sections: Section[]
-}
-
-
-// interface Capstone {
-//   id: string
-//   title: string
-//   description: string
-// }
-
+import { useStudentCourse } from '@/hooks/useStudentCourse'
+import { LessonList } from '@/components/student/LessonList'
+import { CapstoneSection } from '@/components/student/CapstoneSection'
+import { CertificateSection } from '@/components/student/CertificateSection'
 
 export default function CoursePlayerPage() {
   const params = useParams()
   const router = useRouter()
-
   const courseId = params.id as string
   const videoId = params.videoId as string
 
-  const [course, setCourse] = useState<Course | null>(null)
-  const [loading, setLoading] = useState(true)
-  // const [capstone, setCapstone] = useState<Capstone | null>(null)
-  const [isEnrolled, setIsEnrolled] = useState(false)
-  const [capstoneCourse, setCapstoneCourse] = useState<{
-    id: string
-    title: string
-  } | null>(null)
+  const {
+    course,
+    loading,
+    isEnrolled,
+    capstoneCourse,
+    capstoneStage,
+    stage3Submitted,
+    certificateRequested,
+    certificateIssued,
+    setCertificateRequested,
+    user,
+    teacherId,
+    meeting
+  } = useStudentCourse(courseId, videoId)
 
-  const [capstoneStage, setCapstoneStage] = useState(1)
-
-
-  const [stage3Submitted, setStage3Submitted] = useState(false)
-  const [capstoneCompleted, setCapstoneCompleted] = useState(false)
-  const [certificateIssued, setCertificateIssued] = useState(false)
-
-  const [certificateRequested, setCertificateRequested] = useState(false)
-  const [user, setUser] = useState<{ id: string; name: string } | null>(null)
   const [isChatOpen, setIsChatOpen] = useState(false)
-  const [teacherId, setTeacherId] = useState<string | null>(null)
-  const [meeting, setMeeting] = useState<{
-    meeting_link: string
-    meeting_date: string
-    meeting_time: string
-    notes: string
-  } | null>(null)
 
   // 🛰️ Track Presence
   const { isUserOnline } = usePresence(user?.id || null, user?.name || null, courseId)
   const unreadCount = useUnreadCount(user?.id || null, courseId)
-
-  useEffect(() => {
-    const loadCourse = async () => {
-      try {
-        setMeeting(null)
-        const { data: { user: authUser } } = await supabase.auth.getUser()
-        if (authUser) {
-          const { data: profile } = await supabase.from('profiles').select('full_name, name').eq('id', authUser.id).maybeSingle()
-          setUser({
-            id: authUser.id,
-            name: profile?.full_name || profile?.name || authUser.email?.split('@')[0] || 'Student'
-          })
-        }
-
-        // ================= ENROLLMENT CHECK =================
-        if (authUser) {
-          const { data: enrollment } = await supabase
-            .from('course_enrollments')
-            .select('id')
-            .eq('student_id', authUser.id)
-            .eq('course_id', courseId)
-            .maybeSingle()
-
-          setIsEnrolled(!!enrollment)
-        }
-
-        const { data: courseData } = await supabase
-          .from('courses')
-          .select('id, title, is_capstone, teacher_id')
-          .eq('id', courseId)
-          .single()
-
-        if (!courseData) {
-          // setLoading(false) // Removed as it's handled in finally
-          return
-        }
-
-        setTeacherId(courseData.teacher_id)
-
-        // 🔐 ALLOW capstone in video player (user requested icons here)
-        // if (courseData.is_capstone) {
-        //   router.replace('/student/courses')
-        //   return
-        // }
-
-        const { data: sections } = await supabase
-          .from('sections')
-          .select('id, title')   // 👈 yaha title ADD
-          .eq('course_id', courseId)
-
-        const sectionIds = sections?.map(s => s.id) || []
-
-        let sectionsWithLessons: Section[] = []
-
-        if (sectionIds.length > 0) {
-          const { data: lessonData } = await supabase
-            .from('lessons')
-            .select('id, title, description, video_url, section_id')
-            .in('section_id', sectionIds)
-            .order('order_index', { ascending: true })
-
-          const lessonsBySection: Record<string, Lesson[]> = {}
-
-          lessonData?.forEach(lesson => {
-            if (!lessonsBySection[lesson.section_id]) {
-              lessonsBySection[lesson.section_id] = []
-            }
-            lessonsBySection[lesson.section_id].push(lesson)
-          })
-
-          sectionsWithLessons = (sections ?? []).map(section => ({
-            id: section.id,
-            title: section.title,
-            lessons: lessonsBySection[section.id] || [],
-          }))
-        }
-
-
-
-        // ================= CAPSTONE FETCH =================
-        let capstoneData = null
-
-        if (courseData.is_capstone) {
-          capstoneData = { id: courseId, title: courseData.title }
-        } else {
-          const { data } = await supabase
-            .from('courses')
-            .select('id, title')
-            .eq('parent_course_id', courseId)
-            .eq('is_capstone', true)
-            .maybeSingle()
-
-          capstoneData = data
-        }
-
-        setCapstoneCourse(capstoneData)
-        // ================= CAPSTONE PROGRESS =================
-        if (capstoneData && authUser) { // Changed user to authUser
-          const { data: progress } = await supabase
-            .from('student_capstone_progress')
-            .select(`
-              current_stage,
-              stage3_submitted,
-              completed,
-              certificate_issued,
-              certificate_requested
-            `)
-            .eq('student_id', authUser.id) // Changed user.id to authUser.id
-            .eq('capstone_id', capstoneData.id)
-            .maybeSingle()
-
-          setCapstoneStage(progress?.current_stage ?? 1)
-          setStage3Submitted(!!progress?.stage3_submitted)
-          setCapstoneCompleted(!!progress?.completed)
-          setCertificateIssued(!!progress?.certificate_issued)
-          setCertificateRequested(!!progress?.certificate_requested)
-
-          // 🗓️ FETCH MEETING (Fallback logic: Try capstone ID first, then parent course ID)
-          try {
-            // Try 1: Child Capstone ID
-            let res = await fetch(`/api/capstone/meeting?capstoneId=${capstoneData.id}&studentId=${authUser.id}`)
-            let mData = res.ok ? await res.json() : null
-
-            // Try 2: Parent Course ID (Fallback)
-            if (!mData) {
-              res = await fetch(`/api/capstone/meeting?capstoneId=${courseId}&studentId=${authUser.id}`)
-              mData = res.ok ? await res.json() : null
-            }
-
-            setMeeting(mData)
-          } catch (mErr) {
-            // Silently fail
-          }
-        }
-
-
-
-
-
-        setCourse({
-          id: courseData.id,
-          title: courseData.title,
-          sections: sectionsWithLessons,
-        })
-      } catch (error) {
-        console.error('Error loading course:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    loadCourse()
-  }, [courseId, videoId])
-
-  // 🔐 capstone stage lock logic
-  const isLocked = (stage: number) => {
-    return capstoneStage < stage
-  }
-
-
-  // ✅ SAVE LAST WATCHED LESSON (CONTINUE FEATURE)
-
 
   if (loading || !course) {
     return (
@@ -247,9 +50,7 @@ export default function CoursePlayerPage() {
         <div className="h-10 w-10 rounded-full border-2 border-blue-200 border-t-blue-600 animate-spin" />
       </div>
     )
-
   }
-
 
   if (!isEnrolled) {
     return (
@@ -260,14 +61,8 @@ export default function CoursePlayerPage() {
   }
 
   // ================= FLATTEN LESSONS =================
-  const flatLessons = course.sections.flatMap(
-    section => section.lessons
-  )
-
-  const currentVideoIndex = flatLessons.findIndex(
-    l => l.id === videoId
-  )
-
+  const flatLessons = course.sections.flatMap(section => section.lessons)
+  const currentVideoIndex = flatLessons.findIndex(l => l.id === videoId)
   const currentLesson = flatLessons[currentVideoIndex]
   const nextLesson = flatLessons[currentVideoIndex + 1]
 
@@ -278,12 +73,6 @@ export default function CoursePlayerPage() {
       </div>
     )
   }
-
-  // ✅ SAVE LAST WATCHED LESSON (CONTINUE FEATURE)
-
-
-
-
 
   return (
     <div className="min-h-screen bg-neutral-50 text-neutral-900">
@@ -300,9 +89,7 @@ export default function CoursePlayerPage() {
 
           <div className="text-right hidden md:block">
             <p className="text-xs text-neutral-500 uppercase">Course</p>
-            <p className="text-sm font-medium max-w-xs truncate">
-              {course.title}
-            </p>
+            <p className="text-sm font-medium max-w-xs truncate">{course.title}</p>
           </div>
         </div>
 
@@ -313,9 +100,7 @@ export default function CoursePlayerPage() {
 
             {/* TITLE */}
             <div>
-              <h1 className="text-2xl font-semibold leading-tight">
-                {currentLesson?.title}
-              </h1>
+              <h1 className="text-2xl font-semibold leading-tight">{currentLesson?.title}</h1>
               <p className="text-sm text-neutral-500">
                 Lesson {currentVideoIndex + 1} of {flatLessons.length}
               </p>
@@ -325,7 +110,7 @@ export default function CoursePlayerPage() {
             <div className="rounded-2xl overflow-hidden border bg-white">
               {currentLesson?.video_url ? (
                 <Video
-                  src={getStarted}
+                  src={getStarted as any}
                   theme={Instaplay}
                   controls
                   autoPlay
@@ -341,9 +126,7 @@ export default function CoursePlayerPage() {
             {/* DESCRIPTION */}
             {currentLesson?.description && (
               <div className="rounded-xl border bg-white p-5">
-                <h3 className="text-sm font-semibold mb-2">
-                  Lesson overview
-                </h3>
+                <h3 className="text-sm font-semibold mb-2">Lesson overview</h3>
                 <p className="text-sm text-neutral-600 leading-relaxed">
                   {currentLesson.description}
                 </p>
@@ -356,9 +139,7 @@ export default function CoursePlayerPage() {
                 <div
                   className="h-full bg-blue-600 transition-all"
                   style={{
-                    width: `${((currentVideoIndex + 1) / flatLessons.length) * 100
-
-                      }%`,
+                    width: `${((currentVideoIndex + 1) / flatLessons.length) * 100}%`,
                   }}
                 />
               </div>
@@ -367,11 +148,8 @@ export default function CoursePlayerPage() {
                 <Button
                   className="w-full rounded-full bg-blue-600 hover:bg-blue-700"
                   onClick={() => {
-                    router.push(
-                      `/student/courses/${courseId}/play/${nextLesson.id}`
-                    )
+                    router.push(`/student/courses/${courseId}/play/${nextLesson.id}`)
                   }}
-
                 >
                   Next lesson
                   <ChevronRight className="w-4 h-4 ml-2" />
@@ -383,218 +161,34 @@ export default function CoursePlayerPage() {
           {/* ================= RIGHT : LESSON LIST ================= */}
           <div className="sticky top-20 h-fit">
             <div className="rounded-2xl border bg-white overflow-hidden">
-
-              {/* HEADER */}
               <div className="px-5 py-4 border-b">
-                <h3 className="text-sm font-semibold">
-                  Course content
-                </h3>
-                <p className="text-xs text-neutral-500">
-                  {flatLessons.length} lessons
-                </p>
+                <h3 className="text-sm font-semibold">Course content</h3>
+                <p className="text-xs text-neutral-500">{flatLessons.length} lessons</p>
               </div>
 
-              {/* LESSONS */}
-              <div className="max-h-[420px] overflow-y-auto p-3 space-y-1">
-                {course.sections.map((section, sIndex) => (
-                  <div key={section.id} className="space-y-1">
+              <LessonList
+                sections={course.sections}
+                currentLessonId={videoId}
+                courseId={courseId}
+              />
 
-                    <div className="px-4 pt-3 text-xs font-semibold text-neutral-500 uppercase">
-                      {sIndex + 1}. {section.title}
-                    </div>
-
-                    {section.lessons.map((lesson, lIndex) => {
-                      const globalIndex =
-                        course.sections
-                          .slice(0, sIndex)
-                          .reduce((acc, s) => acc + s.lessons.length, 0) + lIndex
-
-                      return (
-                        <Link
-                          key={lesson.id}
-                          href={`/student/courses/${courseId}/play/${lesson.id}`}
-                        >
-                          <div
-                            className={`ml-3 px-4 py-2 rounded-lg text-sm transition cursor-pointer ${lesson.id === currentLesson?.id
-                              ? 'bg-blue-600 text-white font-medium'
-                              : 'hover:bg-neutral-100 text-neutral-700'
-                              }`}
-                          >
-                            {globalIndex + 1}. {lesson.title}
-                          </div>
-                        </Link>
-                      )
-                    })}
-                  </div>
-                ))}
-
-
-
+              <div className="p-3 bg-slate-50 border-t space-y-4">
                 {/* ================= CAPSTONE ================= */}
-                {capstoneCourse && (
-                  <div className="mt-4 rounded-2xl border border-blue-200 bg-white p-5 space-y-4 shadow-sm">
-
-                    {/* HEADER */}
-                    <div className="flex items-center gap-4">
-                      <div className="h-11 w-11 flex items-center justify-center rounded-full bg-blue-600 text-white text-xl">
-                        🎯
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-blue-700">
-                          Capstone Project
-                        </p>
-                        <p className="text-xs text-neutral-500">
-                          Apply everything you’ve learned in a real project
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* STAGES */}
-                    <div className="space-y-2">
-
-                      {/* STAGE 1 */}
-                      <StageItem
-                        title="Stage 1 – Requirements"
-                        unlocked
-                        completed={capstoneStage > 1}
-                        meeting={meeting}
-                        onClick={() =>
-                          router.push(`/student/capstone/${capstoneCourse.id}/stage/1`)
-                        }
-                      />
-
-                      {/* STAGE 2 */}
-                      <StageItem
-                        title="Stage 2 – Backlog Planning"
-                        unlocked={!isLocked(2)}
-                        completed={capstoneStage > 2}
-                        meeting={meeting}
-                        onClick={() =>
-                          !isLocked(2) &&
-                          router.push(`/student/capstone/${capstoneCourse.id}/stage/2`)
-                        }
-                      />
-
-                      {/* STAGE 3 */}
-                      <StageItem
-                        title="Stage 3 – Development & Submission"
-                        unlocked={!isLocked(3)}
-                        completed={stage3Submitted}
-                        meeting={meeting}
-                        onClick={() =>
-                          !isLocked(3) &&
-                          router.push(`/student/capstone/${capstoneCourse.id}/stage/3`)
-                        }
-                      />
-
-                    </div>
-                  </div>
-                )}
-
+                <CapstoneSection
+                  capstoneCourse={capstoneCourse}
+                  capstoneStage={capstoneStage}
+                  stage3Submitted={stage3Submitted}
+                  meeting={meeting}
+                />
 
                 {/* ================= CERTIFICATE ================= */}
-                {capstoneCourse && (
-                  <div className="mt-4 rounded-2xl border border-green-200 bg-white p-5 space-y-4 shadow-sm">
-
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 flex items-center justify-center rounded-full bg-green-600 text-white">
-                        🎓
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-green-700">
-                          Course Certificate
-                        </p>
-                        <p className="text-xs text-neutral-500">
-                          Earn a verified certificate after completing the capstone
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* LOCKED STATE */}
-                    {!stage3Submitted && (
-                      <div className="rounded-xl bg-green-50 border border-green-200 p-4 text-sm text-green-800">
-                        🔒 <span className="font-medium">
-                          Complete the capstone project to unlock your certificate.
-                        </span>
-                        <p className="text-xs text-green-700 mt-1">
-                          Finish all capstone stages and submit your final solution.
-                        </p>
-                      </div>
-                    )}
-
-                    {/* REQUEST CERTIFICATE */}
-                    {stage3Submitted &&
-                      !certificateRequested &&
-                      !certificateIssued && (
-                        <Button
-                          className="w-full bg-purple-600 hover:bg-purple-700 text-white"
-                          onClick={async () => {
-                            const { data: { user } } = await supabase.auth.getUser()
-
-                            await supabase
-                              .from('student_capstone_progress')
-                              .update({ certificate_requested: true })
-                              .eq('student_id', user!.id)
-                              .eq('capstone_id', capstoneCourse.id)
-
-                            setCertificateRequested(true)
-                          }}
-                        >
-                          Request Certificate
-                        </Button>
-                      )}
-
-                    {/* PENDING */}
-                    {certificateRequested && !certificateIssued && (
-                      <div className="rounded-xl bg-yellow-50 border border-yellow-200 p-4 text-sm text-yellow-800">
-                        ⏳ Certificate request submitted.
-                        <p className="text-xs mt-1">
-                          Your certificate will be issued after review by the instructor.
-                        </p>
-                      </div>
-                    )}
-
-                    {/* DOWNLOAD */}
-                    {certificateIssued && (
-                      <Button
-                        variant="outline"
-                        className="w-full border-green-300 text-green-700"
-                        onClick={async () => {
-                          const { data: { session } } = await supabase.auth.getSession()
-
-                          const res = await fetch(
-                            `/api/certificate/download?courseId=${capstoneCourse.id}`,
-                            {
-                              headers: {
-                                Authorization: `Bearer ${session?.access_token}`,
-                              },
-                            }
-                          )
-
-                          if (!res.ok) {
-                            alert('Failed to download certificate')
-                            return
-                          }
-
-                          const blob = await res.blob()
-                          const url = window.URL.createObjectURL(blob)
-
-                          const a = document.createElement('a')
-                          a.href = url
-                          a.download = 'certificate.pdf'
-                          a.click()
-
-                          window.URL.revokeObjectURL(url)
-                        }}
-                      >
-                        Download Certificate
-                      </Button>
-                    )}
-                  </div>
-                )}
-
-
-
+                <CertificateSection
+                  capstoneCourse={capstoneCourse}
+                  stage3Submitted={stage3Submitted}
+                  certificateRequested={certificateRequested}
+                  certificateIssued={certificateIssued}
+                  setCertificateRequested={setCertificateRequested}
+                />
               </div>
             </div>
           </div>
@@ -620,8 +214,6 @@ export default function CoursePlayerPage() {
                 </span>
               )}
             </div>
-
-            {/* Tooltip-like label on hover */}
             <span className="absolute right-16 bg-slate-900 text-white text-[10px] px-3 py-1.5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none font-bold uppercase tracking-wider shadow-lg">
               Support Chat
             </span>
@@ -637,68 +229,6 @@ export default function CoursePlayerPage() {
           />
         </>
       )}
-    </div>
-  )
-}
-
-
-function StageItem({
-  title,
-  unlocked,
-  completed,
-  onClick,
-  meeting,
-}: {
-  title: string
-  unlocked: boolean
-  completed: boolean
-  onClick: () => void
-  meeting?: any
-}) {
-  return (
-    <div
-      className={`group relative px-4 py-3 rounded-xl text-sm font-medium border
-        flex justify-between items-center transition
-        ${unlocked
-          ? 'bg-white hover:bg-blue-50 cursor-pointer border-blue-200'
-          : 'bg-gray-50 text-gray-400 cursor-not-allowed border-gray-200'}
-      `}
-    >
-      <span onClick={unlocked ? onClick : undefined} className="flex-1">{title}</span>
-
-      <div className="flex items-center gap-3">
-        {meeting && unlocked && (
-          <a
-            href={meeting.meeting_link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="p-1.5 rounded-full bg-red-100 text-red-600 hover:bg-red-600 hover:text-white transition-all animate-pulse"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <VideoIcon className="w-4 h-4" />
-
-            {/* Tooltip */}
-            <div className="absolute bottom-full mb-2 right-0 w-48 p-2 bg-slate-900 text-white text-[10px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-xl border border-slate-700 font-normal shadow-red-500/20">
-              <p className="font-bold border-b border-slate-700 pb-1 mb-1 flex items-center gap-1">
-                🗓️ Meeting Scheduled
-              </p>
-              <p>Date: {meeting.meeting_date}</p>
-              <p>Time: {meeting.meeting_time}</p>
-              {meeting.notes && <p className="mt-1 italic opacity-80">"{meeting.notes}"</p>}
-            </div>
-          </a>
-        )}
-
-        <div onClick={unlocked ? onClick : undefined}>
-          {completed ? (
-            <span className="text-green-600">✔</span>
-          ) : unlocked ? (
-            <span className="text-blue-500">→</span>
-          ) : (
-            <span>🔒</span>
-          )}
-        </div>
-      </div>
     </div>
   )
 }
