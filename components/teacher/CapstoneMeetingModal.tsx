@@ -101,7 +101,6 @@ export function CapstoneMeetingModal({
       return
     }
 
-    console.log('SAVING MEETING:', { studentId, capstoneId, meetingLink, meetingDate, meetingTime });
 
     try {
       setLoading(true)
@@ -141,7 +140,7 @@ export function CapstoneMeetingModal({
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold flex items-center gap-2">
             <Video className="w-6 h-6 text-blue-600" />
-            Schedule Meeting
+            {(meetingLink && !errors.link && !fetching) ? 'Edit Meeting' : 'Schedule Meeting'}
           </DialogTitle>
           <DialogDescription className="text-slate-500">
             Schedule a Google Meet session with <strong>{studentName}</strong> for <strong>{capstoneTitle}</strong>.
@@ -156,9 +155,8 @@ export function CapstoneMeetingModal({
           <div className="grid gap-6 py-4">
             {/* Status Message */}
             {status.message && (
-              <div className={`p-4 rounded-xl text-sm font-medium ${
-                status.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
-              }`}>
+              <div className={`p-4 rounded-xl text-sm font-medium ${status.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
+                }`}>
                 {status.message}
               </div>
             )}
@@ -225,11 +223,15 @@ export function CapstoneMeetingModal({
         )}
 
         <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="ghost" onClick={onClose} className="rounded-xl border border-slate-200 hover:bg-slate-50">
+          <Button
+            variant="ghost"
+            onClick={onClose}
+            className="rounded-xl border border-slate-200 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+          >
             Cancel
           </Button>
-          <Button 
-            onClick={handleSave} 
+          <Button
+            onClick={handleSave}
             disabled={loading || status.type === 'success'}
             className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8"
           >

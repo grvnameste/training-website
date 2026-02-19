@@ -28,6 +28,7 @@ interface ApprovalItem {
     file_url: string
     approved: boolean
   }[]
+  meeting?: any
 }
 
 
@@ -54,11 +55,11 @@ export default function CapstoneApprovalsPage() {
 
       /* ================= AUTH ================= */
       const { data: { user } } = await supabase.auth.getUser()
-if (!user) {
-  setItems([])
-  setLoading(false)
-  return
-}
+      if (!user) {
+        setItems([])
+        setLoading(false)
+        return
+      }
 
       /* ============ TEACHER COURSES ============ */
       const { data: courses } = await supabase
@@ -74,40 +75,40 @@ if (!user) {
 
       /* ============ CAPSTONES ============ */
       const { data: capstonesData } = await supabase
-      .from('courses')
-      .select('id, title, parent_course_id')
-      .eq('is_capstone', true)
-      .in('parent_course_id', courseIds)
-    
-    const capstones = capstonesData ?? []
-    
-    if (!capstones.length) {
-      setItems([])
-      return
-    }
-    
+        .from('courses')
+        .select('id, title, parent_course_id')
+        .eq('is_capstone', true)
+        .in('parent_course_id', courseIds)
+
+      const capstones = capstonesData ?? []
+
+      if (!capstones.length) {
+        setItems([])
+        return
+      }
+
 
 
       /* ============ STAGE 1 (Requirements) ============ */
       const { data: stage1 } = await supabase
-  .from('requirement_documents')
-  .select(`
+        .from('requirement_documents')
+        .select(`
     student_id,
     capstone_id,
     file_url
   `)
-  .eq('approved', false)
-  .in('capstone_id', capstones.map(c => c.id))
+        .eq('approved', false)
+        .in('capstone_id', capstones.map(c => c.id))
 
-    
-    
 
-        
+
+
+
       /* ============ STAGE 2 & 3 (Progress) ============ */
       const { data: progress } = await supabase
-      .from('student_capstone_progress')
-      .select(
-        `
+        .from('student_capstone_progress')
+        .select(
+          `
         id,
         student_id,
         capstone_id,
@@ -117,30 +118,30 @@ if (!user) {
         stage3_approved,
         trello_board_url
         `
-      )
-      
-      .in('capstone_id', capstones.map(c => c.id))
-      
+        )
+
+        .in('capstone_id', capstones.map(c => c.id))
 
 
-    
+
+
       /* ============ STAGE 3 FILES ============ */
       const { data: stage3Files } = await supabase
-      .from('stage3_submissions')
-      .select('id, student_id, capstone_id, file_name, file_url, approved')
-      .in('capstone_id', capstones.map(c => c.id))
-      
+        .from('stage3_submissions')
+        .select('id, student_id, capstone_id, file_name, file_url, approved')
+        .in('capstone_id', capstones.map(c => c.id))
+
 
       const merged: ApprovalItem[] = []
 
-      
+
 
 
       /* ========= MERGE STAGE 1 ========= */
       for (const r of stage1 ?? []) {
         const cap = capstones.find(c => c.id === r.capstone_id)
         if (!cap || !courseIds.includes(cap.parent_course_id)) continue
-      
+
         merged.push({
           progress_id: `stage1-${r.student_id}-${r.capstone_id}`,
           student_id: r.student_id,
@@ -153,8 +154,8 @@ if (!user) {
           stage3_files: [],
         })
       }
-      
-      
+
+
 
       /* ========= MERGE STAGE 2 & 3 ========= */
       for (const p of progress ?? []) {
@@ -173,7 +174,7 @@ if (!user) {
             trello_board_url: p.trello_board_url,
             stage3_files: [],
           })
-          
+
         }
 
         if (p.stage3_submitted && !p.stage3_approved) {
@@ -184,51 +185,67 @@ if (!user) {
                 f.capstone_id === p.capstone_id
             ) ?? []
 
-            merged.push({
-              progress_id: p.id,
-              student_id: p.student_id,
-              student_name: '',
-              capstone_id: p.capstone_id,
-              title: cap.title,
-              current_stage: 3,
-              requirement_url: null,
-              trello_board_url: null,
-              stage3_files: files,
-            })
-            
+          merged.push({
+            progress_id: p.id,
+            student_id: p.student_id,
+            student_name: '',
+            capstone_id: p.capstone_id,
+            title: cap.title,
+            current_stage: 3,
+            requirement_url: null,
+            trello_board_url: null,
+            stage3_files: files,
+          })
+
         }
       }
-/* ============ COLLECT STUDENT IDS ============ */
-const studentIds = new Set<string>()
-merged.forEach(item => {
-  studentIds.add(item.student_id)
-})
+      /* ============ COLLECT STUDENT IDS ============ */
+      const studentIds = new Set<string>()
+      merged.forEach(item => {
+        studentIds.add(item.student_id)
+      })
 
-/* ============ FETCH STUDENT NAMES ============ */
-let studentMap: Record<string, string> = {}
+      /* ============ FETCH STUDENT NAMES ============ */
+      let studentMap: Record<string, string> = {}
 
-if (studentIds.size > 0) {
-  const { data: profiles } = await supabase
-  .from('student_profiles')
-  .select('id, name')
-  .in('id', Array.from(studentIds))
+      if (studentIds.size > 0) {
+        const { data: profiles } = await supabase
+          .from('student_profiles')
+          .select('id, name')
+          .in('id', Array.from(studentIds))
 
-  studentMap =
-    profiles?.reduce<Record<string, string>>((acc, p) => {
-      acc[p.id] = p.name || 'Student'
-      return acc
-    }, {}) ?? {}
-}
+        studentMap =
+          profiles?.reduce<Record<string, string>>((acc, p) => {
+            acc[p.id] = p.name || 'Student'
+            return acc
+          }, {}) ?? {}
+      }
 
-/* ============ FINAL ITEMS ============ */
-const finalItems: ApprovalItem[] = merged.map(item => ({
-  ...item,
-  student_name: studentMap[item.student_id] ?? 'Unknown Student',
-}))
+      /* ============ FETCH EXISTING MEETINGS ============ */
+      let meetingMap: Record<string, any> = {}
+      const allCapstoneIds = Array.from(new Set(merged.map(m => m.capstone_id)))
+      if (studentIds.size > 0 && allCapstoneIds.length > 0) {
+        const { data: meetings } = await supabase
+          .from('capstone_meetings')
+          .select('*')
+          .in('student_id', Array.from(studentIds))
+          .in('capstone_id', allCapstoneIds)
 
-setItems(finalItems)
+        meetings?.forEach(m => {
+          meetingMap[`${m.student_id}-${m.capstone_id}`] = m
+        })
+      }
 
-      
+      /* ============ FINAL ITEMS ============ */
+      const finalItems: ApprovalItem[] = merged.map(item => ({
+        ...item,
+        student_name: studentMap[item.student_id] ?? 'Unknown Student',
+        meeting: meetingMap[`${item.student_id}-${item.capstone_id}`],
+      }))
+
+      setItems(finalItems)
+
+
     } catch (err) {
       console.error(err)
     } finally {
@@ -273,100 +290,105 @@ setItems(finalItems)
       <h1 className="text-2xl font-semibold">Capstone Approvals</h1>
 
       <div className="overflow-x-auto rounded-lg border">
-  <table className="w-full border-collapse text-sm">
-    <thead className="bg-slate-100 text-left">
-      <tr>
-        <th className="px-4 py-3 border">Capstone</th>
-        <th className="px-4 py-3 border">Student</th>
-        <th className="px-4 py-3 border">Stage</th>
-        <th className="px-4 py-3 border">Details</th>
-        <th className="px-4 py-3 border">Action</th>
-      </tr>
-    </thead>
+        <table className="w-full border-collapse text-sm">
+          <thead className="bg-slate-100 text-left">
+            <tr>
+              <th className="px-4 py-3 border">Capstone</th>
+              <th className="px-4 py-3 border">Student</th>
+              <th className="px-4 py-3 border">Stage</th>
+              <th className="px-4 py-3 border">Details</th>
+              <th className="px-4 py-3 border">Action</th>
+            </tr>
+          </thead>
 
-    <tbody>
-      {items.map(item => (
-        <tr key={item.progress_id} className="hover:bg-slate-50">
-          {/* Capstone */}
-          <td className="px-4 py-3 border font-medium">
-            {item.title}
-          </td>
+          <tbody>
+            {items.map(item => (
+              <tr key={item.progress_id} className="hover:bg-slate-50">
+                {/* Capstone */}
+                <td className="px-4 py-3 border font-medium">
+                  {item.title}
+                </td>
 
-          {/* Student */}
-          <td className="px-4 py-3 border">
-            <div className="font-medium text-slate-900">{item.student_name}</div>
-            <div className="text-[10px] text-slate-400 font-mono mt-0.5">{item.student_id}</div>
-          </td>
+                {/* Student */}
+                <td className="px-4 py-3 border">
+                  {item.student_name}
+                </td>
 
-          {/* Stage */}
-          <td className="px-4 py-3 border">
-            Stage {item.current_stage}
-          </td>
+                {/* Stage */}
+                <td className="px-4 py-3 border">
+                  Stage {item.current_stage}
+                </td>
 
-          {/* Details */}
-          <td className="px-4 py-3 border">
-            {item.current_stage === 1 && item.requirement_url && (
-              <a
-                href={item.requirement_url}
-                target="_blank"
-                className="text-blue-600 underline"
-              >
-                View Requirement
-              </a>
-            )}
+                {/* Details */}
+                <td className="px-4 py-3 border">
+                  {item.current_stage === 1 && item.requirement_url && (
+                    <a
+                      href={item.requirement_url}
+                      target="_blank"
+                      className="text-blue-600 underline"
+                    >
+                      View Requirement
+                    </a>
+                  )}
 
-            {item.current_stage === 2 && item.trello_board_url && (
-              <a
-                href={item.trello_board_url}
-                target="_blank"
-                className="text-blue-600 underline"
-              >
-                View Trello
-              </a>
-            )}
+                  {item.current_stage === 2 && item.trello_board_url && (
+                    <a
+                      href={item.trello_board_url}
+                      target="_blank"
+                      className="text-blue-600 underline"
+                    >
+                      View Trello
+                    </a>
+                  )}
 
-            {item.current_stage === 3 &&
-              item.stage3_files?.map(f => (
-                <a
-                  key={f.id}
-                  href={f.file_url}
-                  target="_blank"
-                  className="block text-blue-600 underline"
-                >
-                  {f.file_name}
-                </a>
-              ))}
-          </td>
+                  {item.current_stage === 3 &&
+                    item.stage3_files?.map(f => (
+                      <a
+                        key={f.id}
+                        href={f.file_url}
+                        target="_blank"
+                        className="block text-blue-600 underline"
+                      >
+                        {f.file_name}
+                      </a>
+                    ))}
+                </td>
 
-          {/* Action */}
-          <td className="px-4 py-3 border space-x-2">
-            <Button
-              size="sm"
-              onClick={() => approve(item)}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              Approve
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => openMeetingModal(item)}
-              className="border-blue-600 text-blue-600 hover:bg-blue-50"
-            >
-              <Video className="w-4 h-4 mr-2" />
-              Meeting
-            </Button>
-          </td>
-        </tr>
-      ))}
-    </tbody>
-  </table>
+                {/* Action */}
+                <td className="px-4 py-3 border space-x-2">
+                  <Button
+                    size="sm"
+                    onClick={() => approve(item)}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    Approve
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => openMeetingModal(item)}
+                    className={item.meeting
+                      ? "border-amber-600 text-amber-600 hover:bg-amber-50"
+                      : "border-blue-600 text-blue-600 hover:bg-blue-50"
+                    }
+                  >
+                    <Video className="w-4 h-4 mr-2" />
+                    {item.meeting ? 'Edit Meeting' : 'Add Meeting'}
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       {selectedItem && (
         <CapstoneMeetingModal
           isOpen={isMeetingModalOpen}
-          onClose={() => setIsMeetingModalOpen(false)}
+          onClose={() => {
+            setIsMeetingModalOpen(false)
+            load() // Refresh to update Add/Edit button
+          }}
           studentId={selectedItem.student_id}
           capstoneId={selectedItem.capstone_id}
           studentName={selectedItem.student_name}

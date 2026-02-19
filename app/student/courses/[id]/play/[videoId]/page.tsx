@@ -197,27 +197,20 @@ export default function CoursePlayerPage() {
 
           // 🗓️ FETCH MEETING (Fallback logic: Try capstone ID first, then parent course ID)
           try {
-            console.log('DEBUG: Starting meeting fetch for capstoneId:', capstoneData.id, 'studentId:', authUser.id)
-
             // Try 1: Child Capstone ID
             let res = await fetch(`/api/capstone/meeting?capstoneId=${capstoneData.id}&studentId=${authUser.id}`)
             let mData = res.ok ? await res.json() : null
-            console.log('DEBUG: Primary fetch (Capstone ID) result:', mData)
 
             // Try 2: Parent Course ID (Fallback)
             if (!mData) {
-              console.log('DEBUG: Primary fetch failed, trying fallback with courseId:', courseId)
               res = await fetch(`/api/capstone/meeting?capstoneId=${courseId}&studentId=${authUser.id}`)
               mData = res.ok ? await res.json() : null
-              console.log('DEBUG: Fallback fetch (Course ID) result:', mData)
             }
 
             setMeeting(mData)
           } catch (mErr) {
-            console.error('DEBUG: Meeting fetch failed:', mErr)
+            // Silently fail
           }
-        } else {
-          console.log('DEBUG: Skipping meeting fetch - capstoneData or authUser missing', { capstoneData, authUser: !!authUser })
         }
 
 
@@ -452,10 +445,6 @@ export default function CoursePlayerPage() {
                         </p>
                         <p className="text-xs text-neutral-500">
                           Apply everything you’ve learned in a real project
-                          {/* Debug Info (Subtle) */}
-                          <span className="opacity-0 hover:opacity-10 text-[6px] ml-2 select-none pointer-events-none">
-                            S:{user?.id?.slice(0, 5)} C:{capstoneCourse?.id?.slice(0, 5)} P:{courseId?.slice(0, 5)}
-                          </span>
                         </p>
                       </div>
                     </div>

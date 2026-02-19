@@ -7,7 +7,6 @@ export async function GET(req: Request) {
     const capstoneId = searchParams.get('capstoneId')
     const studentId = searchParams.get('studentId')
 
-    console.log('API GET Meeting Request:', { capstoneId, studentId })
 
     if (!capstoneId || !studentId) {
       return NextResponse.json({ error: 'Missing params' }, { status: 400 })
@@ -24,21 +23,18 @@ export async function GET(req: Request) {
       .select('*')
       .eq('student_id', studentId)
 
-    console.log('API GET All Student Meetings:', meetings)
 
     // Find the best match
     let match = meetings?.find(m => m.capstone_id === capstoneId)
 
     // Fallback: If not exact capstoneId, maybe it's a child/parent relation
     if (!match && meetings && meetings.length > 0) {
-      console.log('No exact match, trying flexible matching...')
       // For now, if student has ONLY ONE meeting, just show it to them to avoid confusion
       if (meetings.length === 1) {
         match = meetings[0]
       }
     }
 
-    console.log('API GET Best Match:', match)
 
     if (error) throw error
 
