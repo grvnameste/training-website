@@ -14,6 +14,7 @@ import {
   ClipboardCheck,
   Plus,
   LayoutDashboard,
+  MessageSquare,
 } from 'lucide-react'
 
 import supabase from '@/lib/supabase/client'
@@ -165,6 +166,21 @@ export default function TeacherLayout({
     Certificate Approvals
   </Button>
 </Link>
+            
+            {/* Messages */}
+            <Link href="/teacher/chat">
+              <Button
+                variant={
+                  pathname === '/teacher/chat'
+                    ? 'secondary'
+                    : 'ghost'
+                }
+                className="w-full justify-start gap-2"
+              >
+                <MessageSquare className="w-4 h-4" />
+                Messages
+              </Button>
+            </Link>
 
           </nav>
         </aside>

@@ -13,6 +13,8 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { ArrowLeft, BookOpen } from 'lucide-react'
+import { ChatTrigger } from '@/components/ChatTrigger'
+import { ChatModal } from '@/components/ChatModal'
 
 /* ================= TYPES ================= */
 interface Lesson {
@@ -25,6 +27,7 @@ interface Course {
   title: string
   price: number
   thumbnail_url: string | null
+  teacher_id: string
   lessons: Lesson[]
 }
 
@@ -38,6 +41,8 @@ export default function CourseDetailPage() {
   const [loading, setLoading] = useState(true)
   const [isEnrolled, setIsEnrolled] = useState(false)
   const [lastLessonId, setLastLessonId] = useState<string | null>(null)
+  const [userId, setUserId] = useState<string | null>(null)
+  const [isChatOpen, setIsChatOpen] = useState(false)
 
   // ✅ linked capstone (single source of truth)
   const [linkedCapstone, setLinkedCapstone] = useState<{
@@ -49,7 +54,7 @@ export default function CourseDetailPage() {
     const loadCourse = async () => {
       const { data: courseData } = await supabase
         .from('courses')
-        .select('id, title, price, thumbnail_url, is_capstone, parent_course_id')
+        .select('id, title, price, thumbnail_url, is_capstone, parent_course_id, teacher_id')
         .eq('id', courseId)
         .single()
 
@@ -98,6 +103,7 @@ export default function CourseDetailPage() {
       const { data: { user } } = await supabase.auth.getUser()
 
       if (user) {
+        setUserId(user.id)
         const { data: enrollment } = await supabase
           .from('course_enrollments')
           .select('id')
@@ -250,6 +256,21 @@ export default function CourseDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* 💬 Chat Feature */}
+      {isEnrolled && userId && course && (
+        <>
+          <ChatTrigger onClick={() => setIsChatOpen(true)} />
+          <ChatModal
+            isOpen={isChatOpen}
+            onClose={() => setIsChatOpen(false)}
+            studentId={userId}
+            teacherId={course.teacher_id}
+            courseId={course.id}
+            courseTitle={course.title}
+          />
+        </>
+      )}
     </div>
   )
 }
