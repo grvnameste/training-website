@@ -68,6 +68,8 @@ export function MessageInput({
                     placeholder={filePreview ? "Add a caption..." : "Type a message..."}
                     className="border-none bg-transparent focus-visible:ring-0 shadow-none text-[13px] h-8"
                     disabled={isUploading}
+                    title="Message content"
+                    aria-label="Message content"
                 />
 
                 <Button
@@ -75,6 +77,8 @@ export function MessageInput({
                     className="shrink-0 bg-blue-600 hover:bg-blue-700 text-white rounded-lg h-8 w-8"
                     onClick={onSend}
                     disabled={isUploading || (!content.trim() && !filePreview)}
+                    title="Send message"
+                    aria-label="Send message"
                 >
                     {isUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
                 </Button>
@@ -85,6 +89,8 @@ export function MessageInput({
                 className="hidden"
                 accept="image/*,video/*"
                 onChange={onFileSelect}
+                title="Upload media"
+                aria-label="Upload media"
             />
         </div>
     )

@@ -15,6 +15,7 @@ export interface Room {
 
 export interface Message {
   id: string
+  room_id: string
   sender_id: string
   content: string | null
   media_url: string | null
