@@ -1,76 +1,55 @@
 //app/api/trello/create-board/route.ts
-import { NextResponse } from 'next/server'
+import { NextResponse } from "next/server"
+import { createClient } from "@supabase/supabase-js"
 
 export async function POST(req: Request) {
-  try {
-    const { projectName } = await req.json()
 
-    if (!projectName) {
-      return NextResponse.json(
-        { error: 'Project name required' },
-        { status: 400 }
-      )
-    }
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
 
-    /* ===============================
-       1️⃣ CREATE BOARD
-    =============================== */
-    const boardRes = await fetch(
-      `https://api.trello.com/1/boards/?` +
-        new URLSearchParams({
-          name: projectName,
-          key: process.env.TRELLO_KEY!,
-          token: process.env.TRELLO_TOKEN!,
-          idOrganization: process.env.TRELLO_WORKSPACE_ID!,
-          defaultLists: 'false',
-        }),
-      { method: 'POST' }
-    )
+  const { capstoneId, studentId } = await req.json()
 
-    if (!boardRes.ok) {
-      const err = await boardRes.text()
-      throw new Error(err)
-    }
-
-    const board = await boardRes.json()
-
-    /* ===============================
-       2️⃣ CREATE SDLC LISTS
-    =============================== */
-    const lists = [
-      'Backlog',
-      'To Do',
-      'In Progress',
-      'Review',
-      'Done',
-    ]
-
-    for (const listName of lists) {
-      await fetch(
-        `https://api.trello.com/1/lists?` +
-          new URLSearchParams({
-            name: listName,
-            idBoard: board.id,
-            key: process.env.TRELLO_KEY!,
-            token: process.env.TRELLO_TOKEN!,
-          }),
-        { method: 'POST' }
-      )
-    }
-
-    /* ===============================
-       3️⃣ RESPONSE
-    =============================== */
-    return NextResponse.json({
-      boardId: board.id,
-      boardUrl: board.url,
-    })
-  } catch (error: any) {
-    console.error('Trello error:', error.message)
-
+  if (!studentId) {
     return NextResponse.json(
-      { error: 'Failed to create Trello board' },
-      { status: 500 }
+      { error: "Student ID missing" },
+      { status: 400 }
     )
   }
+
+  // UPSERT (atomic)
+  const { data: board, error } = await supabase
+    .from("boards")
+    .upsert(
+      {
+        capstone_id: capstoneId,
+        student_id: studentId
+      },
+      {
+        onConflict: "capstone_id,student_id"
+      }
+    )
+    .select()
+    .single()
+
+  if (error) throw error
+
+  // check lists
+  const { data: lists } = await supabase
+    .from("lists")
+    .select("id")
+    .eq("board_id", board.id)
+
+  if (!lists || lists.length === 0) {
+
+    await supabase.from("lists").insert([
+      { title: "Todo", board_id: board.id, position: 1 },
+      { title: "Doing", board_id: board.id, position: 2 },
+      { title: "Done", board_id: board.id, position: 3 }
+    ])
+
+  }
+
+  return NextResponse.json(board)
 }

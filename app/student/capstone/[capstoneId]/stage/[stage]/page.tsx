@@ -16,11 +16,19 @@ export default function CapstoneStagePage() {
   const stage = Number(params.stage)
 
   const {
-    allowed, loading, submitted, approved, trelloUrl, trelloRequested,
-    stage2Submitted, stage3Submitted, cardCount, certificateRequested, certificateIssued,
-    handleStage1Upload, requestTrello, submitStage2Review, handleStage3Upload, requestCertificate
+    allowed,
+    loading,
+    submitted,
+    approved,
+    stage2Submitted,
+    stage3Submitted,
+    certificateRequested,
+    certificateIssued,
+    handleStage1Upload,
+    submitStage2Review,
+    handleStage3Upload,
+    requestCertificate
   } = useCapstoneStage(capstoneId, stage)
-
   if (!allowed) {
     return (
       <div className="flex justify-center py-20">
@@ -46,16 +54,13 @@ export default function CapstoneStagePage() {
         />
       )}
 
-      {stage === 2 && (
-        <Stage2Content
-          trelloUrl={trelloUrl}
-          trelloRequested={trelloRequested}
-          cardCount={cardCount}
-          stage2Submitted={stage2Submitted}
-          onRequestTrello={requestTrello}
-          onSubmitReview={submitStage2Review}
-        />
-      )}
+{stage === 2 && (
+  <Stage2Content
+    capstoneId={capstoneId}
+    stage2Submitted={stage2Submitted}
+    onSubmitReview={submitStage2Review}
+  />
+)}
 
       {stage === 3 && (
         <Stage3Content

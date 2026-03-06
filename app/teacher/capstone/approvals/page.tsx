@@ -1,6 +1,5 @@
 //app/teacher/capstone/approvals/page.tsx
 'use client'
-
 import { useState } from 'react'
 import { CapstoneMeetingModal } from '@/components/teacher/CapstoneMeetingModal'
 import { useCapstoneApprovals, ApprovalItem } from '@/hooks/useCapstoneApprovals'

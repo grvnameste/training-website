@@ -1,3 +1,4 @@
+//components/teacher/ApprovalTable.tsx
 import { Button } from '@/components/ui/button'
 import { Video } from 'lucide-react'
 import { ApprovalItem } from '@/hooks/useCapstoneApprovals'
@@ -33,11 +34,15 @@ export function ApprovalTable({ items, onApprove, onOpenMeeting }: ApprovalTable
                                         View Requirement
                                     </a>
                                 )}
-                                {item.current_stage === 2 && item.trello_board_url && (
-                                    <a href={item.trello_board_url} target="_blank" className="text-blue-600 underline">
-                                        View Trello
-                                    </a>
-                                )}
+                           {item.current_stage === 2 && (
+  <a
+    href={`/teacher/board/${item.capstone_id}/${item.student_id}`}
+    target="_blank"
+    className="text-blue-600 underline"
+  >
+    View Board
+  </a>
+)}
                                 {item.current_stage === 3 && item.stage3_files?.map(f => (
                                     <a key={f.id} href={f.file_url} target="_blank" className="block text-blue-600 underline">
                                         {f.file_name}

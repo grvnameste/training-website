@@ -42,7 +42,7 @@ export default function CoursePreviewPage() {
   const { id } = useParams<{ id: string }>()
   const [course, setCourse] = useState<Course | null>(null)
   const [sections, setSections] = useState<Section[]>([])
-
+const EARLY_ACCESS_COURSE_ID = 'a54443c0-533e-435c-8a2f-ad89f9e07c95'
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -190,28 +190,83 @@ export default function CoursePreviewPage() {
           </div>
         </div>
 
-        {/* RIGHT */}
-        <Card className="h-fit sticky top-24">
-          <CardHeader>
-            <CardTitle>
-              {course.price === 0
-                ? 'Free Course'
-                : `₹${course.price}`}
-            </CardTitle>
-          </CardHeader>
+{/* RIGHT */}
+{/* RIGHT */}
+<div className="lg:col-span-1">
 
-          <CardContent className="space-y-4">
-          <Link href="/login">
-  <Button className="w-full">
-    Login to Enroll
-  </Button>
-</Link>
+  {course.id === EARLY_ACCESS_COURSE_ID ? (
 
-            <p className="text-xs text-slate-500 text-center">
-              Preview lessons available
-            </p>
-          </CardContent>
-        </Card>
+    // 🔥 EARLY ACCESS CARD
+    <Card className="h-fit sticky top-24 bg-transparent shadow-none border-none">
+      <CardContent className="p-6">
+
+        <div className="relative rounded-3xl bg-white/70 backdrop-blur-xl border border-indigo-100 p-7 space-y-5 shadow-lg">
+
+          <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-indigo-200/20 to-purple-200/20 blur-2xl opacity-40 pointer-events-none"></div>
+
+          <div className="relative flex justify-center">
+            <span className="rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 px-5 py-1 text-xs font-semibold text-white shadow-md animate-pulse">
+              🚀 Coming Soon
+            </span>
+          </div>
+
+          <h3 className="relative text-lg font-semibold text-center text-slate-800">
+            Early Access Launch
+          </h3>
+
+          <p className="relative text-sm text-slate-600 text-center leading-relaxed">
+            Be the first to access this course before public release.
+            Limited early spots available!
+          </p>
+
+          <a
+            href="https://forms.gle/7pBGSViM7N6wk2RX7"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="relative block"
+          >
+            <Button className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300">
+              Get Early Access
+            </Button>
+          </a>
+
+          <div className="relative h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent"></div>
+
+          <p className="relative text-xs text-slate-500 text-center">
+            📩 We'll notify you when the course goes live
+          </p>
+
+        </div>
+
+      </CardContent>
+    </Card>
+
+  ) : (
+
+    // ✅ NORMAL COURSES CARD
+    <Card className="h-fit sticky top-24">
+      <CardHeader>
+        <CardTitle>
+          {course.price === 0 ? 'Free Course' : `₹${course.price}`}
+        </CardTitle>
+      </CardHeader>
+
+      <CardContent className="space-y-4">
+        <Link href="/login">
+          <Button className="w-full">
+            Login to Enroll
+          </Button>
+        </Link>
+
+        <p className="text-xs text-slate-500 text-center">
+          Preview lessons available
+        </p>
+      </CardContent>
+    </Card>
+
+  )}
+
+</div>
       </div>
     </div>
   )
