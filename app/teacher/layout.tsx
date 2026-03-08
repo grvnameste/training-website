@@ -178,7 +178,7 @@ export default function TeacherLayout({
                 className="w-full justify-start gap-2"
               >
                 <MessageSquare className="w-4 h-4" />
-                Messages
+                Inbox
               </Button>
             </Link>
 
