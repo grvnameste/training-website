@@ -1,3 +1,4 @@
+//app/api/certificate/download/route.ts
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { generateCertificatePDF } from '@/lib/certificates/generatePdf'

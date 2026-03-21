@@ -1,3 +1,4 @@
+//app/api/chat/mark-read/route.ts
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 
