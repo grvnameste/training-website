@@ -33,6 +33,7 @@ export default function CoursesListPage() {
 
     loadCourses()
   }, [])
+// console.log("courses",courses);
 
   if (loading) {
     return (

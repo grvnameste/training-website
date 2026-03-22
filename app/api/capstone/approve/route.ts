@@ -40,6 +40,20 @@ export async function POST(req: Request) {
         .eq('capstone_id', capstone_id)
 
       if (progErr) throw progErr
+      // ✅ Create board for this capstone if not exists
+const { data: board } = await supabase
+.from('boards')
+.select('id')
+.eq('capstone_id', capstone_id)
+.single()
+
+if (!board) {
+await supabase
+  .from('boards')
+  .insert({
+    capstone_id: capstone_id
+  })
+}
 
       return NextResponse.json({ success: true })
     }

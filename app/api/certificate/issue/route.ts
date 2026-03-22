@@ -1,3 +1,4 @@
+//app/api/certificate/issue/route.ts
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
@@ -57,11 +58,9 @@ export async function POST(req: Request) {
       .single()
 
     console.log('PROFILE:', profile)
-
-    if (!profile || profile.role !== 'teacher') {
+    if (!profile || !['teacher','super_admin'].includes(profile.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
-
     /* ===============================
        3️⃣ CHECK CAPSTONE STATUS
     =============================== */

@@ -47,6 +47,8 @@ export default function StudentDashboard() {
         console.error('Enroll fetch error', error)
         return
       }
+
+    // console.log("data",data);
     
       const courses = data
         ?.map((row: any) => row.courses)
