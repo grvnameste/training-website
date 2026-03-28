@@ -17,6 +17,8 @@ interface Course {
 
 export default function CoursesListPage() {
   const [courses, setCourses] = useState<Course[]>([])
+  const [enrolledCourses, setEnrolledCourses] = useState<string[]>([])
+const [firstLessons, setFirstLessons] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -28,6 +30,41 @@ export default function CoursesListPage() {
       .order('created_at', { ascending: false })
       
       setCourses(data || [])
+      const { data: { user } } = await supabase.auth.getUser()
+
+if (user) {
+  const { data: enrollments } = await supabase
+    .from('course_enrollments')
+    .select('course_id')
+    .eq('student_id', user.id)
+
+  const enrolledIds = (enrollments || []).map(e => e.course_id)
+  setEnrolledCourses(enrolledIds)
+
+  // 🔥 get first lesson for each course
+  const lessonMap: Record<string, string> = {}
+
+  for (const courseId of enrolledIds) {
+    const { data: sections } = await supabase
+      .from('sections')
+      .select(`
+        id,
+        lessons (
+          id,
+          order_index
+        )
+      `)
+      .eq('course_id', courseId)
+      .order('order_index', { ascending: true })
+
+    const firstLesson = sections?.[0]?.lessons?.[0]?.id
+    if (firstLesson) {
+      lessonMap[courseId] = firstLesson
+    }
+  }
+
+  setFirstLessons(lessonMap)
+}
       setLoading(false)
     }
 
@@ -100,9 +137,24 @@ export default function CoursesListPage() {
                       <span className="font-semibold text-blue-600">
                         {course.price === 0 ? 'Free' : `₹${course.price}`}
                       </span>
-                      <span className="text-xs text-slate-400">
-                        View details →
-                      </span>
+                      {enrolledCourses.includes(course.id) ? (
+  <button
+    onClick={(e) => {
+      e.preventDefault()
+      const lessonId = firstLessons[course.id]
+      if (lessonId) {
+        window.location.href = `/student/courses/${course.id}/play/${lessonId}`
+      }
+    }}
+    className="text-xs text-green-600 font-semibold"
+  >
+    Continue Learning →
+  </button>
+) : (
+  <span className="text-xs text-slate-400">
+    View details →
+  </span>
+)}
                     </div>
                   </div>
                 </CardContent>

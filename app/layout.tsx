@@ -1,7 +1,8 @@
-// app/layout.tsx
 import type { Metadata } from 'next'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
+import Navbar from '@/components/navbar'
+import Footer from '@/components/footer'   // 👈 ADD THIS
 
 export const metadata: Metadata = {
   title: 'ReadnRevise - Professional Learning Management System',
@@ -16,10 +17,22 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      {/* ❌ global bg/theme hata diya */}
-      <body className="font-sans antialiased">
-        {children}
+      <body className="font-sans antialiased flex flex-col min-h-screen">
+
+        {/* Navbar */}
+        <Navbar />
+
+        {/* Main Content */}
+        <main className="flex-1">
+          {children}
+        </main>
+
+        {/* Footer */}
+        <Footer />
+
+        {/* Analytics */}
         <Analytics />
+
       </body>
     </html>
   )

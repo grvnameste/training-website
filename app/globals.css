@@ -102,3 +102,71 @@
     display: none !important;
   }
 }
+
+
+
+/* ================= STEPPER FIX ================= */
+
+.wizard-stepper__container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.wizard-stepper__step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 80px;
+}
+
+.wizard-stepper__circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  border: 2px solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+}
+
+.wizard-stepper__circle--completed {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: white;
+}
+
+.wizard-stepper__circle--current {
+  border-color: #2563eb;
+  color: #2563eb;
+}
+
+.wizard-stepper__line {
+  flex: 1;
+  height: 3px;
+  background: #e2e8f0;
+  margin: 0 10px;
+}
+
+.wizard-stepper__line--completed {
+  background: #2563eb;
+}
+
+/* globals.css */
+@keyframes pop {
+  0%   { transform: scale(0.7); }
+  60%  { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+@keyframes pulse-ring {
+  0%   { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.4); }
+  70%  { box-shadow: 0 0 0 8px rgba(37, 99, 235, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+}
+
+.animate-pop {
+  animation: pop 0.4s ease, pulse-ring 1.8s ease-out infinite 0.4s;
+}
