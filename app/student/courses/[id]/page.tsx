@@ -1,3 +1,4 @@
+//app/student/courses/[id]/page.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -121,25 +122,11 @@ setHasCapstone((capstoneData || []).length > 0)
       setCourse({ ...courseData, sections: sectionsData || [] })
       setLoading(false)
     }
-
+   
     loadCourse()
   }, [courseId])
 
-  const handleEnroll = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user || !course) return
-
-    await supabase.from('course_enrollments').upsert(
-      {
-        student_id: user.id,
-        course_id: course.id,
-      },
-      { onConflict: 'student_id,course_id' }
-    )
-
-    setIsEnrolled(true)
-    router.refresh()
-  }
+  
 
   if (loading) {
     return <div className="text-center py-20">Loading...</div>
@@ -147,18 +134,19 @@ setHasCapstone((capstoneData || []).length > 0)
 
   if (!course) return null
 
-  const firstLesson = course.sections[0]?.lessons[0]
+  const firstLesson = course?.sections?.[0]?.lessons?.[0]
 
   return (
     <div className="min-h-screen px-8 py-12 bg-slate-50">
       <div className="max-w-7xl mx-auto space-y-10">
 
-        <Link href="/student/courses">
-          <Button variant="ghost">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Courses
-          </Button>
-        </Link>
+      <Button
+  variant="ghost"
+  onClick={() => router.push('/student/courses')}
+>
+  <ArrowLeft className="w-4 h-4 mr-2" />
+  Back to Courses
+</Button>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
 
@@ -263,10 +251,12 @@ setHasCapstone((capstoneData || []).length > 0)
 {/* Button */}
 {!isEnrolled ? (
   <Button
-    onClick={handleEnroll}
+    onClick={() =>
+      router.push(`/student/courses/${courseId}/checkout/details`)
+    }
     className="w-full bg-orange-500 hover:bg-orange-600 text-white py-6 text-lg font-semibold rounded-lg"
   >
-    ENROLL FOR FREE
+    {course.price === 0 ? 'Enroll Now' : 'Buy Now'}
   </Button>
 ) : firstLesson ? (
   <Button

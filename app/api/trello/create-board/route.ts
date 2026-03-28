@@ -1,9 +1,7 @@
-//app/api/trello/create-board/route.ts
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 
 export async function POST(req: Request) {
-
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -12,43 +10,93 @@ export async function POST(req: Request) {
   const { capstoneId, studentId } = await req.json()
 
   if (!studentId) {
-    return NextResponse.json(
-      { error: "Student ID missing" },
-      { status: 400 }
-    )
+    return NextResponse.json({ error: "Student ID missing" }, { status: 400 })
   }
 
-  // UPSERT (atomic)
+  // 1️⃣ CREATE / GET BOARD
   const { data: board, error } = await supabase
-    .from("boards")
-    .upsert(
-      {
-        capstone_id: capstoneId,
-        student_id: studentId
-      },
-      {
-        onConflict: "capstone_id,student_id"
-      }
-    )
-    .select()
+  .from("boards")
+  .upsert(
+    { capstone_id: capstoneId, student_id: studentId },
+    { onConflict: "capstone_id,student_id" }
+  )
+  .select()
+  .maybeSingle()
+
+if (error || !board) {
+  return NextResponse.json({ error: "Board creation failed" }, { status: 500 })
+}
+
+  if (!board) {
+    return NextResponse.json({ error: "Board creation failed" }, { status: 500 })
+  }
+
+  // 2️⃣ CHECK IF ALREADY INITIALIZED
+ // 2️⃣ CHECK IF ALREADY INITIALIZED
+const { data: existingLists } = await supabase
+.from("lists")
+.select("id")
+.eq("board_id", board.id)
+
+if (existingLists && existingLists.length > 0) {
+// 🧹 PURANA BOARD DELETE KAR
+const listIds = existingLists.map(l => l.id)
+
+await supabase
+  .from("cards")
+  .delete()
+  .in("list_id", listIds)
+
+await supabase
+  .from("lists")
+  .delete()
+  .eq("board_id", board.id)
+}
+
+  // 3️⃣ GET TEMPLATE
+  const { data: template } = await supabase
+    .from("board_templates")
+    .select("*")
+    .eq("capstone_id", capstoneId)
     .single()
 
-  if (error) throw error
+  if (!template) return NextResponse.json(board)
 
-  // check lists
-  const { data: lists } = await supabase
-    .from("lists")
-    .select("id")
-    .eq("board_id", board.id)
+  // 4️⃣ TEMPLATE LISTS
+  const { data: templateLists } = await supabase
+    .from("template_lists")
+    .select("*")
+    .eq("template_id", template.id)
+    .order("position")
 
-  if (!lists || lists.length === 0) {
+  const listMap: Record<string, string> = {}
 
-    await supabase.from("lists").insert([
-      { title: "Todo", board_id: board.id, position: 1 },
-      { title: "Doing", board_id: board.id, position: 2 },
-      { title: "Done", board_id: board.id, position: 3 }
-    ])
+  for (const l of templateLists || []) {
+    const { data: newList } = await supabase
+      .from("lists")
+      .insert({
+        board_id: board.id,
+        title: l.title,
+        position: l.position
+      })
+      .select()
+      .single()
 
+    listMap[l.id] = newList.id
+  }
+
+  // 5️⃣ TEMPLATE CARDS
+  const { data: templateCards } = await supabase
+    .from("template_cards")
+    .select("*")
+    .in("list_id", (templateLists || []).map(l => l.id))
+
+  for (const c of templateCards || []) {
+    await supabase.from("cards").insert({
+      list_id: listMap[c.list_id],
+      title: c.title,
+      position: c.position || 0
+    })
   }
 
   return NextResponse.json(board)
