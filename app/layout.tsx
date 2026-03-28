@@ -1,38 +1,32 @@
-import type { Metadata } from 'next'
-import { Analytics } from '@vercel/analytics/next'
-import './globals.css'
-import Navbar from '@/components/navbar'
-import Footer from '@/components/footer'   // 👈 ADD THIS
+'use client'
 
-export const metadata: Metadata = {
-  title: 'ReadnRevise - Professional Learning Management System',
-  description:
-    'Build and manage your online courses with ReadnRevise. Learn with our modern LMS platform.',
-}
+import Footer from '@/components/footer'
+import Navbar from '@/components/navbar'
+import './globals.css'
+import { usePathname } from 'next/navigation'
 
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const pathname = usePathname()
+
+  const hideNavbar =
+    pathname.startsWith('/student') ||
+    pathname.startsWith('/teacher')
+
   return (
     <html lang="en">
-      <body className="font-sans antialiased flex flex-col min-h-screen">
+      <body className="min-h-screen flex flex-col bg-white">
+        
+        {/* 👇 Navbar sirf public pages pe */}
+        {!hideNavbar && <Navbar />}
 
-        {/* Navbar */}
-        <Navbar />
+        <main className="flex-1">{children}</main>
 
-        {/* Main Content */}
-        <main className="flex-1">
-          {children}
-        </main>
-
-        {/* Footer */}
-        <Footer />
-
-        {/* Analytics */}
-        <Analytics />
-
+        {/* 👇 Footer bhi optionally hide kar sakte */}
+        {!hideNavbar && <Footer />}
       </body>
     </html>
   )
