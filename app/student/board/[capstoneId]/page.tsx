@@ -113,13 +113,13 @@ setNewTask(prev=>({
 
 return(
 
-<div className="h-screen bg-[#f1f2f4] p-6 overflow-x-auto">
-<h1 className="text-2xl font-bold mb-6">
+<div className="h-screen bg-gradient-to-br from-slate-100 via-blue-50 to-slate-200 p-6 overflow-x-auto"><h1 className="text-3xl font-bold mb-6 text-slate-800 tracking-tight">
 Project Board
 </h1>
 
-<div className="flex gap-6 w-max">
-{lists.map(list => {
+<div className="flex gap-5 w-max items-start">
+  
+  {lists.map(list => {
 
 const listCards = cards.filter(c => c.list_id === list.id)
 

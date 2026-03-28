@@ -1,175 +1,184 @@
-//app/page.tsx
 'use client'
 import Link from 'next/link'
-import Image from 'next/image'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import {
-  BookOpen,
-  Users,
-  TrendingUp,
-  ArrowRight,
-  Play,
-} from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { BookOpen, Users, TrendingUp, ArrowRight, Code2, Globe, Rocket, Shield, Terminal, Cpu, Database, Layout } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 export default function LandingPage() {
   return (
-<div className="min-h-screen flex flex-col">
-
-      {/* ================= HEADER ================= */}
-      <header className="sticky top-0 z-50 bg-white border-b">
-        <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-        <div className="flex items-center">
-  <Image
-    src="/assets/Readnrevise_logo.png"
-    alt="ReadNRevise Logo"
-    width={160}
-    height={40}
-    priority
-  />
-</div>
-
-
-          <div className="flex items-center gap-3">
-            <Link href="/login">
-              <Button variant="ghost">
-                Sign In
-              </Button>
-            </Link>
-            <Link href="/register">
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white px-6">
-                Get Started
-              </Button>
-            </Link>
-          </div>
-        </nav>
-      </header>
-
-      {/* ================= HERO ================= */}
+    <div className="min-h-screen flex flex-col bg-white">
       <main className="flex-1">
-      <section className="bg-gradient-to-b from-blue-50 to-white">
-      <div className="mx-auto max-w-7xl px-6 py-24 text-center">
-            <span className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-4 py-1 text-sm text-blue-700">
-              Now in Beta — Join 500+ developers
-            </span>
+        
+        {/* ================= HERO SECTION ================= */}
+        <section className="relative pt-28 pb-24 overflow-hidden">
+          {/* Advanced Background Pattern */}
+          <div className="absolute inset-0 -z-10 bg-[radial-gradient(45%_45%_at_50%_50%,#eff6ff_0,white_100%)]" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03] -z-10" />
+          
+          <div className="mx-auto max-w-7xl px-6 text-center">
+            {/* Badge */}
+            <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 border border-blue-100 px-4 py-1.5 text-sm font-semibold text-blue-700 mb-8 animate-fade-in shadow-sm">
+              <span className="flex h-2 w-2 rounded-full bg-blue-600 animate-pulse" />
+              Now in Beta — The Future of Tech Education
+            </div>
 
-            <h1 className="mt-8 text-4xl sm:text-5xl lg:text-6xl font-bold">
-              Learn to Build Software
-              <span className="block text-blue-600 mt-2">
-                The Way Professionals Do
+            {/* Main Heading */}
+            <h1 className="text-6xl md:text-8xl font-black tracking-tight text-slate-900 leading-[1.05] mb-8">
+              Build Software <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500">
+                Like a Senior Engineer
               </span>
             </h1>
 
-            <p className="mx-auto mt-6 max-w-2xl text-lg text-slate-600">
-              Master the complete Software Development Life Cycle through
-              hands-on, team-based projects — just like in real companies.
+            {/* Subtext */}
+            <p className="mx-auto max-w-2xl text-xl md:text-2xl text-slate-600 leading-relaxed mb-12">
+              Master the full SDLC through high-performance squad collaboration. 
+              <span className="text-slate-900 font-medium"> No tutorials, just production-grade code.</span>
             </p>
 
-            <div className="mt-12 flex justify-center gap-4 flex-wrap">
+            {/* Actions */}
+            <div className="flex justify-center gap-5 flex-wrap mb-20">
               <Link href="/register">
-                <Button
-                  size="lg"
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-10"
-                >
-                  Start Building Real Projects
+                <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white px-10 h-16 text-lg rounded-2xl shadow-2xl shadow-blue-200 transition-all hover:scale-105 active:scale-95">
+                  Start Your First Project
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
-
               <Link href="/courses">
-  <Button
-    size="lg"
-    variant="outline"
-    className="px-8"
-  >
-    Explore Courses
-    <ArrowRight className="ml-2 h-5 w-5" />
-  </Button>
-</Link>
+                <Button size="lg" variant="outline" className="px-10 h-16 text-lg rounded-2xl border-slate-200 hover:bg-slate-50 transition-all bg-white/50 backdrop-blur-sm">
+                  View Curriculum
+                </Button>
+              </Link>
+            </div>
 
+            {/* Floating Tech Stack Icons (Mockup ki jagah ye cool lagega) */}
+            <div className="flex justify-center items-center gap-8 md:gap-16 opacity-40 grayscale hover:grayscale-0 transition-all duration-500">
+                <TechIcon icon={<Code2 />} label="Next.js" />
+                <TechIcon icon={<Database />} label="PostgreSQL" />
+                <TechIcon icon={<Terminal />} label="Docker" />
+                <TechIcon icon={<Layout />} label="Tailwind" />
+                <TechIcon icon={<Cpu />} label="AWS" />
             </div>
           </div>
         </section>
 
-        {/* ================= FEATURES ================= */}
-        <section className="py-24">
-          <div className="mx-auto max-w-7xl px-6 grid gap-8 md:grid-cols-3">
-            <FeatureCard
-              icon={<BookOpen className="h-7 w-7 text-blue-600" />}
-              title="Structured SDLC Projects"
-              description="Follow industry-standard software development lifecycle."
-            />
-            <FeatureCard
-              icon={<Users className="h-7 w-7 text-blue-600" />}
-              title="Team-Based Learning"
-              description="Work like real development teams with roles & reviews."
-            />
-            <FeatureCard
-              icon={<TrendingUp className="h-7 w-7 text-blue-600" />}
-              title="Track Real Progress"
-              description="Move step-by-step from requirements to deployment."
-            />
+        {/* ================= FEATURES SECTION - Bento Style ================= */}
+        <section className="py-32 bg-slate-50/50 border-y border-slate-100">
+          <div className="mx-auto max-w-7xl px-6">
+            <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+                <div className="max-w-2xl text-left">
+                    <h2 className="text-4xl font-bold text-slate-900 tracking-tight mb-4">Built for Future Tech Leads</h2>
+                    <p className="text-slate-600 text-lg">We don't just teach syntax. We teach systems, architecture, and team dynamics.</p>
+                </div>
+                <div className="hidden md:block">
+                    <div className="px-4 py-2 bg-white border border-slate-200 rounded-full text-sm font-medium text-slate-500 shadow-sm">
+                        Total Modules: <span className="text-blue-600">42+</span>
+                    </div>
+                </div>
+            </div>
+
+            <div className="grid gap-8 md:grid-cols-3">
+              <FeatureCard
+                icon={<BookOpen size={28} />}
+                title="Structured SDLC"
+                description="Follow the exact roadmap used by FAANG: Planning, Dev, QA, and automated CI/CD Deployment."
+              />
+              <FeatureCard
+                icon={<Users size={28} />}
+                title="Agile Squads"
+                description="Work in 4-person squads with dedicated leads. Practice PR reviews, standups, and sprint planning."
+              />
+              <FeatureCard
+                icon={<TrendingUp size={28} />}
+                title="Proof of Competence"
+                description="Forget certificates. Your dashboard shows live metrics, commit velocity, and peer feedback."
+              />
+            </div>
           </div>
         </section>
 
-        {/* ================= CTA ================= */}
-        <section className="py-24 bg-blue-600 text-white text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold">
-            Build Your First Professional Project
-          </h2>
-          <p className="mt-4 text-blue-100">
-            Stop watching tutorials. Start building real software.
-          </p>
-          <Link href="/register">
-            <Button
-              size="lg"
-              className="mt-10 bg-white text-blue-600 hover:bg-blue-50 px-12"
-            >
-              Get Started Free
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-          </Link>
+        {/* ================= STATS SECTION ================= */}
+        <section className="py-24 bg-white">
+          <div className="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-12">
+            <Stat label="Active Builders" value="500+" />
+            <Stat label="Projects Shipped" value="1.2k" />
+            <Stat label="Code Reviews" value="10k+" />
+            <Stat label="Success Rate" value="98%" />
+          </div>
+        </section>
+
+        {/* ================= FINAL CTA - High Impact ================= */}
+        <section className="py-32 px-6">
+          <div className="max-w-7xl mx-auto bg-slate-900 rounded-[3.5rem] p-12 md:p-24 relative overflow-hidden shadow-3xl">
+            {/* Abstract Glows */}
+            <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/20 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2" />
+            <div className="absolute bottom-0 left-0 w-72 h-72 bg-indigo-600/10 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/2" />
+            
+            <div className="relative z-10 text-center">
+              <h2 className="text-4xl md:text-6xl font-black text-white mb-8 tracking-tight">
+                Stop Watching. <br /> Start Shipping.
+              </h2>
+              <p className="mt-6 text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed">
+                Join the only platform where your learning is measured by the quality of your production code. 
+                <span className="text-blue-400"> Limited beta spots available.</span>
+              </p>
+              <div className="mt-12">
+                <Link href="/register">
+                    <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white px-12 h-16 text-xl rounded-2xl shadow-xl shadow-blue-500/20 transition-all hover:scale-105">
+                    Claim Your Beta Access
+                    <Rocket className="ml-2 h-6 w-6" />
+                    </Button>
+                </Link>
+                <p className="mt-6 text-slate-500 text-sm">No credit card required • Free during beta</p>
+              </div>
+            </div>
+          </div>
         </section>
       </main>
-
-      {/* ================= FOOTER ================= */}
-      <footer className="border-t py-8 text-center text-sm text-slate-500">
-        © 2026 ReadNRevise. All rights reserved.
-      </footer>
     </div>
   )
 }
 
-/* ---------------- SUB COMPONENT ---------------- */
+/* ---------------- SUB COMPONENTS ---------------- */
 
-function FeatureCard({
-  icon,
-  title,
-  description,
-}: {
-  icon: ReactNode
-  title: string
-  description: string
-}) {
+function TechIcon({ icon, label }: { icon: ReactNode; label: string }) {
+    return (
+        <div className="flex flex-col items-center gap-2 group cursor-default">
+            <div className="text-slate-400 group-hover:text-blue-600 transition-colors">
+                {icon}
+            </div>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{label}</span>
+        </div>
+    )
+}
+
+function FeatureCard({ icon, title, description }: { icon: ReactNode; title: string; description: string }) {
   return (
-    <Card className="rounded-xl border bg-white shadow-sm hover:shadow-md transition">
-      <CardHeader className="text-center">
-        <div className="mx-auto mb-4 inline-flex rounded-lg bg-blue-50 p-3">
+    <Card className="group relative overflow-hidden rounded-[2rem] border border-slate-200 bg-white p-6 transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)]">
+      <CardHeader className="relative z-10 pb-2">
+        <div className="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-8 group-hover:bg-blue-600 group-hover:text-white group-hover:rotate-12 transition-all duration-500">
           {icon}
         </div>
-        <CardTitle>{title}</CardTitle>
-        <CardDescription className="text-slate-600">
+        <CardTitle className="text-2xl font-bold text-slate-900 mb-4">{title}</CardTitle>
+        <CardDescription className="text-slate-600 text-lg leading-relaxed">
           {description}
         </CardDescription>
       </CardHeader>
-      <CardContent />
+      {/* Decorative Ghost Icon */}
+      <div className="absolute -bottom-4 -right-4 text-slate-50 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none group-hover:scale-[3] rotate-12">
+        {icon}
+      </div>
     </Card>
+  )
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="text-center group">
+      <div className="text-5xl font-black text-slate-900 mb-2 group-hover:text-blue-600 transition-colors">{value}</div>
+      <div className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">{label}</div>
+      <div className="h-1 w-0 bg-blue-600 mx-auto mt-4 group-hover:w-12 transition-all duration-500" />
+    </div>
   )
 }
