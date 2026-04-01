@@ -17,10 +17,21 @@ export default function Footer() {
               The ultimate workspace for future software architects. Master the SDLC through real team collaboration.
             </p>
             <div className="flex gap-4 mt-6">
-              <SocialIcon icon={<Github size={18} />} />
-              <SocialIcon icon={<Twitter size={18} />} />
-              <SocialIcon icon={<Linkedin size={18} />} />
-            </div>
+  <SocialIcon 
+    icon={<Github size={18} />} 
+    href="https://github.com/ReadNRevise" 
+  />
+
+  <SocialIcon 
+    icon={<Linkedin size={18} />} 
+    href="https://www.linkedin.com/company/readnrevise/posts/?feedView=all" 
+  />
+
+  <SocialIcon 
+    icon={<Twitter size={18} />} 
+    href="https://twitter.com/" 
+  />
+</div>
           </div>
 
           {/* Quick Links */}
@@ -79,9 +90,14 @@ export default function Footer() {
   )
 }
 
-function SocialIcon({ icon }: { icon: React.ReactNode }) {
+function SocialIcon({ icon, href }: { icon: React.ReactNode; href: string }) {
   return (
-    <Link href="#" className="w-9 h-9 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-blue-600 hover:text-white transition-all">
+    <Link
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="w-9 h-9 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-blue-600 hover:text-white transition-all"
+    >
       {icon}
     </Link>
   )
