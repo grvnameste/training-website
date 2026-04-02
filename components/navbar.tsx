@@ -3,7 +3,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+// 1. Variants type import karein
+import { motion, AnimatePresence, Variants } from 'framer-motion' 
 import { ChevronDown, BookOpen, GraduationCap, MessagesSquare, ArrowRight, Sparkles } from 'lucide-react'
 
 const educationLinks = [
@@ -33,8 +34,8 @@ const educationLinks = [
 export default function Navbar() {
   const [open, setOpen] = useState(false)
 
-  // Animation variants for the full-width panel
-  const panelVariants = {
+  // 2. Explicitly define types for variants
+  const panelVariants: Variants = {
     hidden: { opacity: 0, y: -10 },
     visible: { 
       opacity: 1, 
@@ -43,7 +44,7 @@ export default function Navbar() {
         type: "spring", 
         stiffness: 300, 
         damping: 30,
-        staggerChildren: 0.05, // Children animate one by one
+        staggerChildren: 0.05,
         delayChildren: 0.1
       }
     },
@@ -54,7 +55,7 @@ export default function Navbar() {
     }
   }
 
-  const itemVariants = {
+  const itemVariants: Variants = {
     hidden: { opacity: 0, y: 10 },
     visible: { opacity: 1, y: 0 }
   }
@@ -64,7 +65,6 @@ export default function Navbar() {
       <header className="sticky top-0 z-50 w-full bg-white border-b border-slate-100">
         <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           
-          {/* Logo */}
           <div className="flex items-center">
             <Link href="/" className="hover:opacity-90 transition-opacity">
               <Image
@@ -77,14 +77,16 @@ export default function Navbar() {
             </Link>
           </div>
 
-          {/* Navigation Links */}
           <div className="hidden md:flex items-center gap-10 text-[15px] font-medium text-slate-600 relative">
             <Link href="/" className="hover:text-blue-600 transition-colors py-2">Home</Link>
             <Link href="/about" className="hover:text-blue-600 transition-colors py-2">About Us</Link>
+            <Link href="/contact" className="hover:text-blue-600 transition-colors py-2">
+  Contact
+</Link>
             <Link href="/Forinstitution" className="hover:text-blue-600 transition-colors py-2">For Institution</Link>
             <Link href="/Forstudents" className="hover:text-blue-600 transition-colors py-2">For Students</Link>
+            
 
-            {/* Mega Menu Trigger */}
             <button 
               onMouseEnter={() => setOpen(true)}
               className={`flex items-center gap-1.5 py-2 transition-colors outline-none ${open ? 'text-blue-600' : 'hover:text-blue-600'}`}
@@ -94,7 +96,6 @@ export default function Navbar() {
             </button>
           </div>
 
-          {/* Right Buttons */}
           <div className="flex items-center gap-3">
             <Link href="/login">
               <Button variant="ghost" className="text-slate-600 hover:text-blue-600 font-medium">Sign In</Button>
@@ -108,11 +109,10 @@ export default function Navbar() {
         </nav>
       </header>
 
-      {/* FULL-WIDTH MEGA PANEL (Outside <header> for proper layering) */}
       <AnimatePresence>
         {open && (
           <motion.div
-            className="fixed top-[73px] (adjust based on header height) left-0 w-full bg-white z-40 border-b border-slate-100 shadow-2xl shadow-slate-200/50"
+            className="fixed top-[69px] left-0 w-full bg-white z-40 border-b border-slate-100 shadow-2xl shadow-slate-200/50"
             initial="hidden"
             animate="visible"
             exit="exit"
@@ -122,7 +122,6 @@ export default function Navbar() {
           >
             <div className="mx-auto max-w-7xl px-6 py-10 grid grid-cols-12 gap-8">
               
-              {/* Left Side: Featured/Welcome */}
               <motion.div variants={itemVariants} className="col-span-4 border-r border-slate-100 pr-8">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
@@ -131,7 +130,7 @@ export default function Navbar() {
                   <h3 className="text-xl font-bold text-slate-950">Learning Hub</h3>
                 </div>
                 <p className="text-slate-600 text-sm leading-relaxed mb-6">
-                  Explore our curated resources designed to enhance your educational journey. From expert blogs to interactive communities.
+                  Explore our curated resources designed to enhance your educational journey.
                 </p>
                 <Link href="/education" className="text-sm font-semibold text-blue-600 flex items-center gap-1.5 group">
                   Explore All Resources 
@@ -139,7 +138,6 @@ export default function Navbar() {
                 </Link>
               </motion.div>
 
-              {/* Right Side: Links Grid */}
               <div className="col-span-8 grid grid-cols-2 gap-x-6 gap-y-2">
                 {educationLinks.map((item) => (
                   <motion.div key={item.title} variants={itemVariants}>
@@ -150,7 +148,7 @@ export default function Navbar() {
                     >
                       <item.icon className={`w-6 h-6 mt-1 flex-shrink-0 ${item.color}`} />
                       <div>
-                        <div className="text-[15px] font-semibold text-slate-900 group-hover:text-blue-600 flex items-center gap-1.5">
+                        <div className="text-[15px] font-semibold text-slate-900 group-hover:text-blue-600">
                           {item.title}
                         </div>
                         <p className="text-sm text-slate-500 leading-snug mt-1">
@@ -163,17 +161,15 @@ export default function Navbar() {
               </div>
             </div>
 
-            {/* Bottom Strip */}
             <div className="bg-slate-50 border-t border-slate-100">
               <div className="mx-auto max-w-7xl px-6 py-3 text-center text-xs text-slate-400">
-                © 2024 Readnrevise Education Platform. All rights reserved.
+                © 2026 Readnrevise Education Platform.
               </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
       
-      {/* Background Overlay (Optional, but looks nice) */}
       <AnimatePresence>
         {open && (
           <motion.div 
@@ -181,7 +177,7 @@ export default function Navbar() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-slate-950/10 z-30"
-            onMouseEnter={() => setOpen(false)} // Close when hovering overlay
+            onMouseEnter={() => setOpen(false)}
           />
         )}
       </AnimatePresence>
