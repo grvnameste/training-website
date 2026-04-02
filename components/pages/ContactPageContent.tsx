@@ -1,11 +1,48 @@
+//components/pages/ContactPageContent.tsx
 'use client'
-
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Mail, Phone, MapPin, Send, MessageSquare, Clock } from 'lucide-react'
+import { useState } from "react"
 
 export default function ContactPageContent() {
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    subject: "",
+    message: "",
+  })
+  
+  const handleSubmit = async (e: any) => {
+    e.preventDefault()
+  
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(form),
+      })
+  
+      const data = await res.json()
+  
+      if (data.success) {
+        alert("Message sent successfully!")
+        setForm({
+          name: "",
+          email: "",
+          subject: "",
+          message: "",
+        })
+      } else {
+        alert("Something went wrong")
+      }
+    } catch (err) {
+      alert("Error sending message")
+    }
+  }
   return (
     <div className="min-h-screen bg-white">
       {/* HERO SECTION - Dynamic Background */}
@@ -87,43 +124,51 @@ export default function ContactPageContent() {
                   </h3>
                 </div>
 
-                <form className="space-y-6">
-                  <div className="grid md:grid-cols-2 gap-6">
+                <form onSubmit={handleSubmit} className="space-y-6">
+                          <div className="grid md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <label className="text-sm font-semibold text-slate-700 ml-1">Full Name</label>
                       <Input 
-                        placeholder="John Doe"
-                        className="h-14 bg-slate-50/50 border-slate-200 focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all rounded-xl"
-                      />
+  placeholder="John Doe"
+  value={form.name}
+  onChange={(e) => setForm({ ...form, name: e.target.value })}
+  className="h-14 bg-slate-50/50 border-slate-200 focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all rounded-xl"
+/>
                     </div>
                     <div className="space-y-2">
                       <label className="text-sm font-semibold text-slate-700 ml-1">Email Address</label>
                       <Input 
-                        type="email"
-                        placeholder="john@example.com"
-                        className="h-14 bg-slate-50/50 border-slate-200 focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all rounded-xl"
-                      />
+  type="email"
+  placeholder="john@example.com"
+  value={form.email}
+  onChange={(e) => setForm({ ...form, email: e.target.value })}
+  className="h-14 bg-slate-50/50 border-slate-200 focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all rounded-xl"
+/>
                     </div>
                   </div>
 
                   <div className="space-y-2">
                     <label className="text-sm font-semibold text-slate-700 ml-1">Subject</label>
                     <Input 
-                      placeholder="How can we help?"
-                      className="h-14 bg-slate-50/50 border-slate-200 focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all rounded-xl"
-                    />
+  placeholder="How can we help?"
+  value={form.subject}
+  onChange={(e) => setForm({ ...form, subject: e.target.value })}
+  className="h-14 bg-slate-50/50 border-slate-200 focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all rounded-xl"
+/>
                   </div>
 
                   <div className="space-y-2">
                     <label className="text-sm font-semibold text-slate-700 ml-1">Message</label>
                     <Textarea 
-                      placeholder="Tell us more about your inquiry..."
-                      rows={6}
-                      className="bg-slate-50/50 border-slate-200 focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all rounded-xl resize-none"
-                    />
+  placeholder="Tell us more about your inquiry..."
+  rows={6}
+  value={form.message}
+  onChange={(e) => setForm({ ...form, message: e.target.value })}
+  className="bg-slate-50/50 border-slate-200 focus:bg-white focus:ring-2 focus:ring-blue-500 transition-all rounded-xl resize-none"
+/>
                   </div>
 
-                  <Button className="w-full h-14 bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg rounded-xl shadow-xl shadow-blue-200 flex items-center justify-center gap-2 group/btn transition-all">
+                 <Button type="submit" className="w-full h-14 bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg rounded-xl shadow-xl shadow-blue-200 flex items-center justify-center gap-2 group/btn transition-all">
                     Send Message
                     <Send className="w-5 h-5 group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />
                   </Button>

@@ -80,8 +80,12 @@ export default function Navbar() {
           <div className="hidden md:flex items-center gap-10 text-[15px] font-medium text-slate-600 relative">
             <Link href="/" className="hover:text-blue-600 transition-colors py-2">Home</Link>
             <Link href="/about" className="hover:text-blue-600 transition-colors py-2">About Us</Link>
+            <Link href="/contact" className="hover:text-blue-600 transition-colors py-2">
+  Contact
+</Link>
             <Link href="/Forinstitution" className="hover:text-blue-600 transition-colors py-2">For Institution</Link>
             <Link href="/Forstudents" className="hover:text-blue-600 transition-colors py-2">For Students</Link>
+            
 
             <button 
               onMouseEnter={() => setOpen(true)}
