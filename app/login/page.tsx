@@ -35,7 +35,7 @@ export default function LoginPage() {
       if (session) {
         const role = session.user.user_metadata?.role
         router.replace(
-          role === 'teacher'
+          role === 'super_admin'
             ? '/teacher/dashboard'
             : '/student/dashboard'
         )
@@ -71,29 +71,17 @@ export default function LoginPage() {
       return
     }
 
-    const { data } = await supabase.auth.getSession()
-    const session = data.session
+    // ✅ LOGIN SUCCESS → ROLE BASED REDIRECT
+const { data: userData } = await supabase.auth.getUser()
+const role = userData?.user?.user_metadata?.role
 
-    if (!session) {
-      setError('Login failed. Try again.')
-      setLoading(false)
-      return
-    }
+router.replace(
+  role === 'super_admin'
+    ? '/teacher/dashboard'
+    : '/student/dashboard'
+)
 
-    await supabase.from('student_activity').insert({
-      student_id: session.user.id,
-      type: 'LOGIN',
-    })
-
-    const role = session.user.user_metadata?.role
-
-    router.replace(
-      role === 'teacher'
-        ? '/teacher/dashboard'
-        : '/student/dashboard'
-    )
-    
-    router.refresh()
+router.refresh()
     
 
  
