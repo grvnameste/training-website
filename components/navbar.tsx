@@ -1,8 +1,12 @@
+//components/navbar.tsx
 'use client'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { useState } from 'react'
+import { useUser } from "@clerk/nextjs"
+import { Menu, X } from "lucide-react"
+
 // 1. Variants type import karein
 import { motion, AnimatePresence, Variants } from 'framer-motion' 
 import { ChevronDown, BookOpen, GraduationCap, MessagesSquare, ArrowRight, Sparkles } from 'lucide-react'
@@ -33,6 +37,10 @@ const educationLinks = [
 
 export default function Navbar() {
   const [open, setOpen] = useState(false)
+
+  const [mobileOpen, setMobileOpen] = useState(false)
+
+  const { user } = useUser() // 🔥 ADD THIS
 
   // 2. Explicitly define types for variants
   const panelVariants: Variants = {
@@ -96,18 +104,67 @@ export default function Navbar() {
             </button>
           </div>
 
-          <div className="flex items-center gap-3">
-            <Link href="/login">
+
+{/* Mobile Menu Button */}
+<div className="md:hidden">
+  <button onClick={() => setMobileOpen(!mobileOpen)}>
+    {mobileOpen ? <X /> : <Menu />}
+  </button>
+</div>
+
+<div className="hidden md:flex items-center gap-3">
+              <Link href="/login">
               <Button variant="ghost" className="text-slate-600 hover:text-blue-600 font-medium">Sign In</Button>
             </Link>
-            <Link href="/register">
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white px-5 rounded-full shadow-md shadow-blue-500/10 transition-all active:scale-95 font-semibold">
-                Get Started
-              </Button>
-            </Link>
+            <Link href={user ? "/student/dashboard" : "/register"}>
+  <Button className="bg-blue-600 hover:bg-blue-700 text-white px-5 rounded-full shadow-md shadow-blue-500/10 transition-all active:scale-95 font-semibold">
+    Get Started
+  </Button>
+</Link>
           </div>
         </nav>
       </header>
+
+
+      {mobileOpen && (
+  <div className="md:hidden px-6 pb-4 space-y-2 bg-white border-b">
+    
+    <Link href="/" className="block py-2 text-slate-700 hover:text-blue-600" onClick={() => setMobileOpen(false)}>
+      Home
+    </Link>
+
+    <Link href="/about" className="block py-2 text-slate-700 hover:text-blue-600" onClick={() => setMobileOpen(false)}>
+      About
+    </Link>
+
+    <Link href="/contact" className="block py-2 text-slate-700 hover:text-blue-600" onClick={() => setMobileOpen(false)}>
+      Contact
+    </Link>
+
+    <Link href="/Forinstitution" className="block py-2 text-slate-700 hover:text-blue-600" onClick={() => setMobileOpen(false)}>
+      For Institution
+    </Link>
+
+    <Link href="/Forstudents" className="block py-2 text-slate-700 hover:text-blue-600" onClick={() => setMobileOpen(false)}>
+      For Students
+    </Link>
+
+    <hr className="my-2"/>
+
+    <Link href="/education/blog" className="block py-2 text-slate-700 hover:text-blue-600" onClick={() => setMobileOpen(false)}>
+      Blog
+    </Link>
+
+    <Link href="/education/free-courses" className="block py-2 text-slate-700 hover:text-blue-600" onClick={() => setMobileOpen(false)}>
+      Free Courses
+    </Link>
+
+    <Link href="/education/discussion" className="block py-2 text-slate-700 hover:text-blue-600" onClick={() => setMobileOpen(false)}>
+      Discussion
+    </Link>
+
+  </div>
+)}
 
       <AnimatePresence>
         {open && (

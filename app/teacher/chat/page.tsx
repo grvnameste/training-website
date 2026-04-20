@@ -34,6 +34,9 @@ export default function TeacherChatPage() {
 
   const { isUserOnline } = usePresence(teacherId, teacherName)
 
+
+
+
   const scrollToBottom = () => {
     setTimeout(() => {
       if (scrollRef.current) {

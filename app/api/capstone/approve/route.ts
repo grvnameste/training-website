@@ -41,18 +41,68 @@ export async function POST(req: Request) {
 
       if (progErr) throw progErr
       // ✅ Create board for this capstone if not exists
-const { data: board } = await supabase
-.from('boards')
-.select('id')
-.eq('capstone_id', capstone_id)
-.single()
+// 🔥 CREATE BOARD FROM TEMPLATE (FINAL FIX)
 
-if (!board) {
-await supabase
+// check if already exists (student specific)
+const { data: existingBoard } = await supabase
   .from('boards')
-  .insert({
-    capstone_id: capstone_id
-  })
+  .select('id')
+  .eq('capstone_id', capstone_id)
+  .eq('student_id', student_id)
+  .maybeSingle()
+
+if (!existingBoard) {
+  // get template
+  const { data: template } = await supabase
+    .from('board_templates')
+    .select('id')
+    .eq('capstone_id', capstone_id)
+    .single()
+
+  if (template) {
+    // create board
+    const { data: board } = await supabase
+      .from('boards')
+      .insert({
+        capstone_id,
+        student_id
+      })
+      .select()
+      .single()
+
+    // get template lists
+    const { data: lists } = await supabase
+      .from('template_lists')
+      .select('*')
+      .eq('template_id', template.id)
+      .order('position')
+
+    for (const l of lists || []) {
+      const { data: newList } = await supabase
+        .from('lists')
+        .insert({
+          board_id: board.id,
+          title: l.title,
+          position: l.position
+        })
+        .select()
+        .single()
+
+      const { data: cards } = await supabase
+        .from('template_cards')
+        .select('*')
+        .eq('list_id', l.id)
+        .order('position')
+
+      for (const c of cards || []) {
+        await supabase.from('cards').insert({
+          list_id: newList.id,
+          title: c.title,
+          position: c.position
+        })
+      }
+    }
+  }
 }
 
       return NextResponse.json({ success: true })

@@ -1,14 +1,14 @@
-//app/teacher/dashoard/page.tsx
+//app/teacher/dashboard/page.tsx
 'use client'
-
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import supabase from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
+import { useRouter } from 'next/navigation'
+import { useUser } from "@clerk/nextjs"
 import {
   Users,
   Layers,
-  CheckCircle,
   TrendingUp,
 } from 'lucide-react'
 
@@ -37,78 +37,62 @@ export default function TeacherDashboard() {
   const [loading, setLoading] = useState(true)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
+  const router = useRouter()
+  const { user, isLoaded } = useUser()
+
+  // ✅ Auth check
   useEffect(() => {
-    const loadDashboardData = async () => {
-      setLoading(true)
-      setErrorMsg(null)
+    if (!isLoaded) return
 
-      // ===== AUTH =====
-      const { data: userData, error: userError } =
-        await supabase.auth.getUser()
+    if (!user) {
+      router.replace('/login')
+      return
+    }
+  }, [user, isLoaded])
 
-      if (userError || !userData.user) {
-        setErrorMsg('User not authenticated')
+  // ✅ Fetch courses (FIXED)
+  useEffect(() => {
+    if (!isLoaded || !user) return
+
+    const fetchCourses = async () => {
+      try {
+        setLoading(true)
+
+        // 🔥 Clerk → UUID
+        const { data: uuid, error: uuidError } = await supabase.rpc('clerk_to_uuid', {
+          clerk_id: user.id
+        })
+
+        if (uuidError) throw uuidError
+
+        console.log("UUID:", uuid)
+
+        // 🔥 Fetch courses
+        const { data, error } = await supabase
+          .from('courses')
+          .select('*')
+          .eq('teacher_id', uuid)
+
+        if (error) throw error
+
+        console.log("COURSES:", data)
+
+        setCourses(data || [])
+      } catch (err: any) {
+        console.error(err)
+        setErrorMsg(err.message)
+      } finally {
         setLoading(false)
-        return
       }
-
-     
-     
-
-      // ===== COURSES (TEACHER) =====
-      // ===== COURSES (TEACHER) =====
-      const { data: coursesData, error } = await supabase
-      .from('courses')
-      .select('*')
-      .eq('teacher_id', userData.user.id)
-      .eq('is_capstone', false)
-      .is('parent_course_id', null)
-      .order('created_at', { ascending: false })
-    
-if (error) {
-setErrorMsg(error.message)
-setCourses([])
-setTotalEnrollments(0)
-setLoading(false)
-return
-}
-
-// set courses
-const safeCourses = coursesData ?? []
-setCourses(safeCourses)
-
-// ===== DASHBOARD STATS (API - SERVICE ROLE) =====
-try {
-  const res = await fetch(
-    `/api/teacher/dashboard?teacherId=${userData.user.id}`
-  )
-  
-
-  if (!res.ok) {
-    console.error('Stats API failed')
-    setTotalStudents(0)
-    setTotalEnrollments(0)
-  } else {
-    const stats = await res.json()
-    setTotalStudents(stats.totalStudents)
-    setTotalEnrollments(stats.totalEnrollments)
-  }
-} catch (err) {
-  console.error(err)
-  setTotalStudents(0)
-  setTotalEnrollments(0)
-}
-
-
-
-
-      setLoading(false)
     }
 
-    loadDashboardData()
-  }, [])
+    fetchCourses()
+  }, [user, isLoaded])
 
-  /* Loading */
+  // ✅ Safe returns (AFTER hooks)
+  if (!isLoaded) return <div>Loading...</div>
+  if (!user) return null
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -117,7 +101,6 @@ try {
     )
   }
 
-  /* Error */
   if (errorMsg) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -134,7 +117,6 @@ try {
     <div className="min-h-screen py-12">
       <div className="max-w-7xl mx-auto space-y-12 px-4">
 
-        {/* ===== HEADER ===== */}
         <div className="max-w-3xl mx-auto space-y-3 text-center">
           <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">
             Instructor Dashboard
@@ -145,65 +127,44 @@ try {
           <div className="pt-6 border-b" />
         </div>
 
-        {/* ===== STATS GRID ===== */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          
-          {/* Total Courses */}
           <Card>
             <CardContent className="flex items-center justify-between py-6">
               <div>
-                <p className="text-sm text-muted-foreground">
-                  Total Courses
-                </p>
-                <h3 className="text-2xl font-semibold">
-                  {courses.length}
-                </h3>
+                <p className="text-sm text-muted-foreground">Total Courses</p>
+                <h3 className="text-2xl font-semibold">{courses.length}</h3>
               </div>
-              <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
+              <div className="w-12 h-12 bg-blue-100 flex items-center justify-center rounded-xl">
                 <Layers className="w-6 h-6 text-blue-600" />
               </div>
             </CardContent>
           </Card>
 
-          {/* Students */}
           <Card>
             <CardContent className="flex items-center justify-between py-6">
               <div>
-                <p className="text-sm text-muted-foreground">
-                  Total Students
-                </p>
-                <h3 className="text-2xl font-semibold">
-                  {totalStudents}
-                </h3>
+                <p className="text-sm text-muted-foreground">Total Students</p>
+                <h3 className="text-2xl font-semibold">{totalStudents}</h3>
               </div>
-              <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center">
+              <div className="w-12 h-12 bg-purple-100 flex items-center justify-center rounded-xl">
                 <Users className="w-6 h-6 text-purple-600" />
               </div>
             </CardContent>
           </Card>
 
-          {/* Course Enrollments */}
           <Card>
             <CardContent className="flex items-center justify-between py-6">
               <div>
-                <p className="text-sm text-muted-foreground">
-                  Course Enrollments
-                </p>
-                <h3 className="text-2xl font-semibold">
-                  {totalEnrollments}
-                </h3>
+                <p className="text-sm text-muted-foreground">Enrollments</p>
+                <h3 className="text-2xl font-semibold">{totalEnrollments}</h3>
               </div>
-              <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
+              <div className="w-12 h-12 bg-green-100 flex items-center justify-center rounded-xl">
                 <TrendingUp className="w-6 h-6 text-green-600" />
               </div>
             </CardContent>
           </Card>
-
-          {/* Pending Approvals (unchanged) */}
-         
         </div>
 
-        {/* ===== COURSES ===== */}
         {courses.length === 0 ? (
           <Card>
             <CardContent className="py-20 text-center space-y-4">
@@ -212,8 +173,8 @@ try {
                 You haven’t created any courses yet
               </p>
               <Link href="/teacher/courses/create">
-                <Button className="mt-4">
-                  <Plus className="w-4 h-4 mr-2" />
+                <Button>
+                  <Plus className="mr-2 w-4 h-4" />
                   Create Course
                 </Button>
               </Link>
@@ -222,37 +183,27 @@ try {
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {courses.map(course => (
-              <Card key={course.id} className="hover:shadow-md transition">
-                <div className="h-40 bg-muted overflow-hidden">
+              <Card key={course.id}>
+                <div className="h-40 bg-muted">
                   {course.thumbnail_url ? (
-                    <img
-                      src={course.thumbnail_url}
-                      alt={course.title}
-                      className="object-cover w-full h-full"
-                    />
+                    <img src={course.thumbnail_url} className="w-full h-full object-cover" />
                   ) : (
-                    <div className="h-full flex items-center justify-center text-muted-foreground">
-                      Course Thumbnail
+                    <div className="flex items-center justify-center h-full">
+                      No Thumbnail
                     </div>
                   )}
                 </div>
 
                 <CardContent className="space-y-3 pt-4">
-                  <h3 className="font-semibold text-lg line-clamp-1">
-                    {course.title}
-                  </h3>
-
-                  <p className="text-sm text-muted-foreground line-clamp-2">
-                    {course.description || 'No description provided'}
+                  <h3 className="font-semibold text-lg">{course.title}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {course.description || 'No description'}
                   </p>
 
-                  <div className="flex items-center justify-between pt-2">
-                    <span className="font-semibold">
-                      ₹{course.price}
-                    </span>
-
+                  <div className="flex justify-between items-center">
+                    <span>₹{course.price}</span>
                     <Link href={`/teacher/courses/${course.id}/edit`}>
-                      <Button size="sm" variant="secondary">
+                      <Button size="sm">
                         <Pencil className="w-4 h-4 mr-1" />
                         Manage
                       </Button>

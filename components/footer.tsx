@@ -49,9 +49,8 @@ export default function Footer() {
           <div>
             <h3 className="font-bold text-slate-900 mb-6 uppercase text-xs tracking-widest">Solutions</h3>
             <ul className="space-y-4 text-sm text-slate-600">
-              <li><Link href="/for-students" className="hover:text-blue-600 transition-colors">For Students</Link></li>
-              <li><Link href="/for-institution" className="hover:text-blue-600 transition-colors">For Institutions</Link></li>
-              <li><Link href="#" className="hover:text-blue-600 transition-colors">Enterprise</Link></li>
+            <li><Link href="/Forstudents" className="hover:text-blue-600 transition-colors">For Students</Link></li>
+            <li><Link href="/Forinstitution" className="hover:text-blue-600 transition-colors">For Institutions</Link></li>              <li><Link href="#" className="hover:text-blue-600 transition-colors">Enterprise</Link></li>
             </ul>
           </div>
 
@@ -81,9 +80,13 @@ export default function Footer() {
             © 2026 ReadNRevise. All rights reserved.
           </p>
           <div className="flex gap-6 text-xs text-slate-400">
-            <Link href="#" className="hover:text-slate-600">Privacy Policy</Link>
-            <Link href="#" className="hover:text-slate-600">Terms of Service</Link>
-          </div>
+  <Link href="/privacyPolicy" className="hover:text-slate-600">
+    Privacy Policy
+  </Link>
+  <Link href="/termsCondition" className="hover:text-slate-600">
+    Terms & Conditions
+  </Link>
+</div>
         </div>
       </div>
     </footer>

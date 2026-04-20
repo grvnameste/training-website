@@ -58,9 +58,11 @@ export default function ContactPageContent() {
           <h1 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tight leading-none">
             Let's Start a <span className="text-blue-600 italic">Conversation</span>
           </h1>
+          <p className="text-sm text-gray-500 mt-2">
+  For support, general queries, or partnership opportunities
+</p>
           <p className="mt-8 text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
-            Whether you have a question about features, trials, pricing, or anything else, our team is ready to answer all your questions.
-          </p>
+          We’re here to support your learning journey. Whether you have questions, need assistance, or want to explore collaboration opportunities, our team is ready to help. Expect a response within 24 hours.          </p>
         </div>
       </section>
 
@@ -73,8 +75,7 @@ export default function ContactPageContent() {
             <div>
               <h2 className="text-3xl font-bold text-slate-900 mb-6">Contact Information</h2>
               <p className="text-lg text-gray-600 leading-relaxed">
-                Fill out the form and our team will get back to you within 24 hours.
-              </p>
+              Have a question, need support, or want to partner with us? Reach out anytime — our team typically responds within 24 hours.              </p>
             </div>
 
             <div className="grid gap-6">
@@ -93,7 +94,7 @@ export default function ContactPageContent() {
               <ContactMethod 
                 icon={<MapPin className="w-6 h-6" />}
                 label="Visit us"
-                value="Innovative Tech Labs, India"
+                value="ReadNRevise, India"
                 href="#"
               />
             </div>

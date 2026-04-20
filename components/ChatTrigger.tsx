@@ -1,3 +1,4 @@
+//components/ChatTrigger.tsx
 'use client'
 
 import { MessageCircle } from 'lucide-react'

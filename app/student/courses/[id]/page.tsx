@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import supabase from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
+import { useUser } from "@clerk/nextjs"
 import {
   Card,
   CardContent,
@@ -56,6 +57,12 @@ export default function CourseDetailPage() {
   const unreadCount = useUnreadCount(userId, courseId)
   const [hasCapstone, setHasCapstone] = useState(false)
 
+
+
+  const { user } = useUser()
+
+
+
   useEffect(() => {
     const loadCourse = async () => {
       const { data: courseData } = await supabase
@@ -84,32 +91,41 @@ export default function CourseDetailPage() {
         .eq('course_id', courseId)
         .order('order_index', { ascending: true })
 
-      const { data: { user } } = await supabase.auth.getUser()
-
-      if (user) {
-        setUserId(user.id)
-
-        const { data: enrollment } = await supabase
-          .from('course_enrollments')
-          .select('id')
-          .eq('student_id', user.id)
-          .eq('course_id', courseId)
-          .maybeSingle()
-
-        setIsEnrolled(!!enrollment)
-
-        if (enrollment) {
-          const { data: progress } = await supabase
-            .from('student_lesson_progress')
-            .select('lesson_id')
-            .eq('student_id', user.id)
-            .eq('course_id', courseId)
+        if (user) {
+          // 🔥 STEP 1: clerk_id se UUID lao
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("id")
+            .eq("clerk_id", user.id)
+            .single()
+        
+          if (!profile) return
+        
+          const uuid = profile.id
+          setUserId(uuid)
+        
+          // 🔥 STEP 2: enrollment check
+          const { data: enrollment } = await supabase
+            .from("course_enrollments")
+            .select("id")
+            .eq("student_id", uuid)
+            .eq("course_id", courseId)
             .maybeSingle()
-
-          setLastLessonId(progress?.lesson_id ?? null)
+        
+          setIsEnrolled(!!enrollment)
+        
+          // 🔥 STEP 3: progress check
+          if (enrollment) {
+            const { data: progress } = await supabase
+              .from("student_lesson_progress")
+              .select("lesson_id")
+              .eq("student_id", uuid)
+              .eq("course_id", courseId)
+              .maybeSingle()
+        
+            setLastLessonId(progress?.lesson_id ?? null)
+          }
         }
-      }
-
       // 🔥 Check capstone (parent_course_id match)
 const { data: capstoneData } = await supabase
 .from('courses')

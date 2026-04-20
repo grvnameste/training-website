@@ -1,5 +1,7 @@
+//components/student/CertificateSection.tsx
 import { Button } from '@/components/ui/button'
 import supabase from '@/lib/supabase/client'
+import { useUser } from "@clerk/nextjs"
 
 interface CertificateSectionProps {
     capstoneCourse: { id: string; title: string } | null
@@ -17,34 +19,58 @@ export function CertificateSection({
     setCertificateRequested
 }: CertificateSectionProps) {
     if (!capstoneCourse) return null
-
+    const { user } = useUser()
     const handleRequest = async () => {
-        const { data: { user } } = await supabase.auth.getUser()
-        await supabase
+        if (!user) {
+            console.log("❌ No Clerk user")
+            return
+        }
+    
+        // 🔥 get UUID from profiles
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('clerk_id', user.id)
+            .single()
+    
+        if (!profile?.id) {
+            console.log("❌ No profile found")
+            return
+        }
+    
+        const uuid = profile.id
+        console.log("✅ UUID:", uuid)
+    
+        const { error } = await supabase
             .from('student_capstone_progress')
             .update({ certificate_requested: true })
-            .eq('student_id', user!.id)
+            .eq('student_id', uuid)
             .eq('capstone_id', capstoneCourse.id)
-
+    
+        if (error) {
+            console.log("❌ REQUEST ERROR:", error)
+            return
+        }
+    
         setCertificateRequested(true)
     }
 
     const handleDownload = async () => {
-        const { data: { session } } = await supabase.auth.getSession()
         const res = await fetch(
             `/api/certificate/download?courseId=${capstoneCourse.id}`,
             {
-                headers: {
-                    Authorization: `Bearer ${session?.access_token}`,
-                },
+                method: 'GET',
+                credentials: 'include', // ✅ IMPORTANT (Clerk cookies)
             }
         )
-
+    
         if (!res.ok) {
+            const text = await res.text()
+            console.log("❌ DOWNLOAD ERROR:", text)
             alert('Failed to download certificate')
             return
         }
-
+    
         const blob = await res.blob()
         const url = window.URL.createObjectURL(blob)
         const a = document.createElement('a')
@@ -53,7 +79,6 @@ export function CertificateSection({
         a.click()
         window.URL.revokeObjectURL(url)
     }
-
     return (
         <div className="mt-3 rounded-2xl border border-green-200 bg-white p-4 space-y-3 shadow-sm">
             <div className="flex items-center gap-2">

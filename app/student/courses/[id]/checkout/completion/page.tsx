@@ -1,17 +1,59 @@
-//app/student/courses/[id]/checkout/completion/page.tsx
 'use client'
+
 import { useParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { CheckCircle2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import supabase from '@/lib/supabase/client'
 
 export default function CompletionPage() {
   const params = useParams()
   const router = useRouter()
   const courseId = params.id as string
 
+  // ✅ INIT SUPABASE (MOST IMPORTANT)
+
+  const [firstLessonId, setFirstLessonId] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  // 🔥 get first lesson
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true)
+
+        const { data: sections, error } = await supabase
+          .from('sections')
+          .select(`
+            id,
+            lessons (
+              id,
+              order_index
+            )
+          `)
+          .eq('course_id', courseId)
+          .order('order_index', { ascending: true })
+
+        if (error) {
+          console.error(error)
+          return
+        }
+
+        const lessonId = sections?.[0]?.lessons?.[0]?.id
+        setFirstLessonId(lessonId || null)
+
+      } catch (err) {
+        console.error("Error loading lessons:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (courseId) load()
+  }, [courseId, supabase])
+
   return (
-    <>
-<div className="max-w-5xl mx-auto">
+    <div className="max-w-5xl mx-auto">
       <div className="flex flex-col items-center justify-center py-20 text-center">
 
         {/* ✅ ICON */}
@@ -30,15 +72,20 @@ export default function CompletionPage() {
 
         {/* ✅ CTA */}
         <Button
-          onClick={() => router.push(`/student/courses/${courseId}`)}
+          disabled={loading}
+          onClick={() => {
+            if (firstLessonId) {
+              router.push(`/student/courses/${courseId}/play/${firstLessonId}`)
+            } else {
+              router.push(`/student/courses/${courseId}`)
+            }
+          }}
           className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl"
         >
-          Go to Course →
+          {loading ? "Loading..." : "Go to Course →"}
         </Button>
 
       </div>
-      </div>
-    </>
+    </div>
   )
-  
 }

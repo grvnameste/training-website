@@ -1,9 +1,11 @@
+//app/student/questionnaire/page.tsx
 'use client'
-
 import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import supabase from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
+import { useUser } from "@clerk/nextjs"
+
 import {
   Card,
   CardContent,
@@ -64,19 +66,22 @@ export default function StudentQuestionnaire() {
   const [userId, setUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
-  /* 🔐 AUTH CHECK */
-  useEffect(() => {
-    const init = async () => {
-      const { data } = await supabase.auth.getUser()
-      if (!data.user) {
-        router.replace('/login')
-        return
-      }
-      setUserId(data.user.id)
-      setLoading(false)
-    }
-    init()
-  }, [router])
+
+  const { user, isLoaded } = useUser()
+
+
+  /* 🔐 AUTH CHECK (CLERK BASED) */
+useEffect(() => {
+  if (!isLoaded) return
+
+  if (!user) {
+    router.replace('/login')
+    return
+  }
+
+  setUserId(user.id)   // 👈 Clerk ID
+  setLoading(false)
+}, [user, isLoaded])
 
   if (loading) return null
 
@@ -99,20 +104,38 @@ export default function StudentQuestionnaire() {
   }
 
   const finishQuestionnaire = async () => {
-    if (!userId) return
-
-    const { error } = await supabase.from('questionnaire_results').insert({
-      user_id: userId,
-      career_answers: careerAnswers,
-      career_open_answers: careerOpenAnswers,
-      culture_answers: cultureAnswers,
-    })
-
-    if (error) {
-      alert('Failed to save questionnaire')
+    if (!user) return
+  
+    // 🔥 STEP 1: get UUID from profiles
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('clerk_id', user.id)
+      .single()
+  
+    console.log("PROFILE:", profile, profileError)
+  
+    if (!profile) {
+      alert("Profile not found")
       return
     }
-
+  
+    // 🔥 STEP 2: insert questionnaire
+    const { error } = await supabase
+      .from('questionnaire_results')
+      .insert({
+        user_id: user.id,   // Clerk user id        career_answers: careerAnswers,
+        career_open_answers: careerOpenAnswers,
+        culture_answers: cultureAnswers,
+      })
+  
+    console.log("INSERT ERROR:", error)
+  
+    if (error) {
+      alert(error.message)   // 🔥 SHOW REAL ERROR
+      return
+    }
+  
     router.replace('/student/result')
   }
 

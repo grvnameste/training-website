@@ -1,5 +1,5 @@
+//app/teacher/courses/[id]/capstone/page.tsx
 'use client'
-
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -43,7 +43,6 @@ export default function TeacherCapstonePage() {
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(false)
   const [capstone, setCapstone] = useState<Capstone | null>(null)
-
   /* =======================
      LOAD CAPSTONE
   ======================= */

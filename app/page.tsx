@@ -1,3 +1,4 @@
+//app/page.tsx
 'use client'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -47,8 +48,8 @@ export default function LandingPage() {
               </Link>
               <Link href="/courses">
                 <Button size="lg" variant="outline" className="px-10 h-16 text-lg rounded-2xl border-slate-200 hover:bg-slate-50 transition-all bg-white/50 backdrop-blur-sm">
-                  View Curriculum
-                </Button>
+Explore Courses              
+  </Button>
               </Link>
             </div>
 
@@ -105,6 +106,74 @@ export default function LandingPage() {
             <Stat label="Projects Shipped" value="1.2k" />
             <Stat label="Code Reviews" value="10k+" />
             <Stat label="Success Rate" value="98%" />
+          </div>
+        </section>
+
+       {/* ================= UPDATED BRANDING & TRUST SECTION ================= */}
+        
+        {/* Branding Badge - High Visibility */}
+        <div className="flex justify-center mt-12 mb-[-24px] relative z-20">
+          <div className="group flex items-center gap-2.5 px-5 py-2.5 bg-white/80 backdrop-blur-md border border-slate-200 rounded-2xl shadow-sm hover:border-blue-300 transition-all duration-300 cursor-default">
+            <div className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-600"></span>
+            </div>
+            <p className="text-sm font-bold text-slate-500 tracking-tight">
+              Internal Product Ecosystem <span className="mx-1.5 text-slate-200">|</span> 
+              <span className="text-slate-900 group-hover:text-blue-600 transition-colors">ReadNRevise</span>
+            </p>
+          </div>
+        </div>
+
+        {/* Trust Section - Professional Grid */}
+        <section className="py-32 bg-[#fcfcfd] border-t border-slate-100 relative overflow-hidden">
+          {/* Subtle background decoration */}
+          <div className="absolute top-0 left-0 w-full h-full opacity-[0.015] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/asfalt-dark.png')]" />
+          
+          <div className="max-w-7xl mx-auto px-6 relative z-10">
+            <div className="text-center mb-20">
+              <h2 className="text-4xl md:text-5xl font-black mb-6 text-slate-900 tracking-tight">
+                Why Developers <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Choose Us</span>
+              </h2>
+              <p className="text-slate-500 text-lg max-w-2xl mx-auto leading-relaxed">
+                Built as a real production-grade platform focused on practical learning and real-world development protocols.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-8">
+              {/* Card 1 */}
+              <div className="group p-10 bg-white rounded-[2.5rem] border border-slate-200/60 shadow-sm hover:shadow-2xl hover:shadow-blue-500/5 transition-all duration-500 hover:-translate-y-2">
+                <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center mb-8 group-hover:scale-110 group-hover:bg-blue-600 transition-all duration-500">
+                  <Rocket className="w-6 h-6 text-blue-600 group-hover:text-white" />
+                </div>
+                <h3 className="font-bold text-2xl mb-4 text-slate-900">Real Projects</h3>
+                <p className="text-slate-500 leading-relaxed">
+                  Work on real-world applications with actual user flows, not just dummy todo-list tutorials.
+                </p>
+              </div>
+
+              {/* Card 2 */}
+              <div className="group p-10 bg-white rounded-[2.5rem] border border-slate-200/60 shadow-sm hover:shadow-2xl hover:shadow-indigo-500/5 transition-all duration-500 hover:-translate-y-2">
+                <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center mb-8 group-hover:scale-110 group-hover:bg-indigo-600 transition-all duration-500">
+                  <Shield className="w-6 h-6 text-indigo-600 group-hover:text-white" />
+                </div>
+                <h3 className="font-bold text-2xl mb-4 text-slate-900">Industry Workflow</h3>
+                <p className="text-slate-500 leading-relaxed">
+                  Follow high-standard Git workflows, automated PR reviews, and production-grade pipelines.
+                </p>
+              </div>
+
+              {/* Card 3 */}
+              <div className="group p-10 bg-white rounded-[2.5rem] border border-slate-200/60 shadow-sm hover:shadow-2xl hover:shadow-emerald-500/5 transition-all duration-500 hover:-translate-y-2">
+                <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center mb-8 group-hover:scale-110 group-hover:bg-emerald-600 transition-all duration-500">
+                  <TrendingUp className="w-6 h-6 text-emerald-600 group-hover:text-white" />
+                </div>
+                <h3 className="font-bold text-2xl mb-4 text-slate-900">Career Ready</h3>
+                <p className="text-slate-500 leading-relaxed">
+                  Master the soft skills and technical depth that hiring managers actually look for in Senior roles.
+                </p>
+              </div>
+            </div>
           </div>
         </section>
 

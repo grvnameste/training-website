@@ -1,5 +1,5 @@
+//app/teacher/certificates/page.tsx
 'use client'
-
 import { useEffect, useState } from 'react'
 import supabase from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -44,8 +44,7 @@ export default function TeacherCertificateApprovals() {
     .eq('certificate_requested', true)
     .eq('certificate_issued', false)
     .eq('stage3_submitted', true)
-  
-  console.log('TEACHER DATA:', data)
+      console.log('TEACHER DATA:', data)
   console.log('TEACHER ERROR:', error)
   
     
@@ -165,21 +164,19 @@ export default function TeacherCertificateApprovals() {
       return
     }
 
-    const session = await supabase.auth.getSession()
 
     const res = await fetch('/api/certificate/issue', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${session.data.session?.access_token}`,
       },
+      credentials: 'include',
       body: JSON.stringify({
         studentId: p.student_id,
         courseId: p.capstone_id,
         studentName: p.student_name,
         courseName: p.capstone_title,
       }),
-      
     })
     
     setIssuing(false)

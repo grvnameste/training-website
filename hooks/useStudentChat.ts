@@ -1,3 +1,4 @@
+//hooks/useStudentChat.ts
 import { useEffect, useState } from 'react'
 import supabase from '@/lib/supabase/client'
 
@@ -11,31 +12,38 @@ export interface Message {
   created_at: string
 }
 
-export function useStudentChat(isOpen: boolean, studentId: string, teacherId: string, courseId: string) {
+export function useStudentChat(
+  isOpen: boolean,
+  studentId: string,
+  teacherId: string,
+  courseId: string
+) {
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(true)
   const [roomId, setRoomId] = useState<string | null>(null)
   const [studentName, setStudentName] = useState('Student')
 
+  // ✅ INIT CHAT (ROOM + MESSAGES)
   useEffect(() => {
-    if (!isOpen || !studentId || studentId === '') return
-
-    const initChat = async () => {
+    if (!isOpen || !studentId || !teacherId || !courseId) return
+      const initChat = async () => {
       try {
         setLoading(true)
-        
-        // Get student name
+
+        console.log("🔥 HOOK INPUT:", { isOpen, studentId, teacherId, courseId })
+
+        // get name
         const { data: profile } = await supabase
           .from('profiles')
           .select('full_name, name')
           .eq('id', studentId)
           .maybeSingle()
-        
+
         if (profile) {
           setStudentName(profile.full_name || profile.name || 'Student')
         }
 
-        // 1. Get or Create Room
+        // get room
         let { data: room } = await supabase
           .from('chat_rooms')
           .select('id')
@@ -43,8 +51,9 @@ export function useStudentChat(isOpen: boolean, studentId: string, teacherId: st
           .eq('course_id', courseId)
           .maybeSingle()
 
+        // create room if not exists
         if (!room) {
-          const { data: newRoom } = await supabase
+          const { data: newRoom, error } = await supabase
             .from('chat_rooms')
             .insert({
               student_id: studentId,
@@ -53,23 +62,29 @@ export function useStudentChat(isOpen: boolean, studentId: string, teacherId: st
             })
             .select('id')
             .single()
+
+          console.log("ROOM CREATE:", newRoom)
+          console.log("ROOM ERROR:", error)
+
+          if (error) return
+
           room = newRoom
         }
 
         if (room) {
           setRoomId(room.id)
 
-          // 2. Fetch Initial Messages
-          const { data: initialMessages } = await supabase
+          const { data } = await supabase
             .from('chat_messages')
             .select('*')
             .eq('room_id', room.id)
             .order('created_at', { ascending: true })
 
-          setMessages(initialMessages || [])
+          setMessages(data || [])
         }
+
       } catch (err) {
-        console.error('Failed to init chat:', err)
+        console.error('Init error:', err)
       } finally {
         setLoading(false)
       }
@@ -78,42 +93,51 @@ export function useStudentChat(isOpen: boolean, studentId: string, teacherId: st
     initChat()
   }, [isOpen, studentId, courseId, teacherId])
 
-  // Mark messages as read
+  // ✅ MARK READ
   useEffect(() => {
-    if (isOpen && roomId && studentId) {
-      fetch('/api/chat/mark-read', {
-        method: 'POST',
-        body: JSON.stringify({ roomId, userId: studentId })
-      })
-    }
+    if (!isOpen || !roomId || !studentId) return
+
+    fetch('/api/chat/mark-read', {
+      method: 'POST',
+      body: JSON.stringify({ roomId, userId: studentId })
+    })
   }, [isOpen, roomId, studentId])
 
-  // Realtime
+  // ✅ REALTIME
   useEffect(() => {
     if (!isOpen || !roomId) return
 
     const channel = supabase
       .channel(`room:${roomId}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `room_id=eq.${roomId}` }, 
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_messages',
+          filter: `room_id=eq.${roomId}`
+        },
         (payload) => {
           const newMessage = payload.new as Message
+
           setMessages(prev => {
             if (prev.some(m => m.id === newMessage.id)) return prev
-            return [...prev, newMessage].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+            return [...prev, newMessage]
           })
-
-          if (newMessage.sender_id !== studentId) {
-            fetch('/api/chat/mark-read', {
-              method: 'POST',
-              body: JSON.stringify({ roomId, userId: studentId })
-            })
-          }
         }
       )
       .subscribe()
 
-    return () => { supabase.removeChannel(channel) }
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [isOpen, roomId])
 
-  return { messages, setMessages, loading, roomId, studentName }
+  return {
+    messages,
+    setMessages,
+    loading,
+    roomId,
+    studentName
+  }
 }

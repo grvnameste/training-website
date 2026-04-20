@@ -1,3 +1,4 @@
+//components/chat/Messageinput.tsx
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Paperclip, Send, Loader2, X } from 'lucide-react'

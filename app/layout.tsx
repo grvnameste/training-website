@@ -1,9 +1,16 @@
 'use client'
-
 import Footer from '@/components/footer'
 import Navbar from '@/components/navbar'
 import './globals.css'
+import { Inter } from "next/font/google"
+import { ClerkProvider } from "@clerk/nextjs"
 import { usePathname } from 'next/navigation'
+
+// ✅ MOVE THIS OUTSIDE
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+})
 
 export default function RootLayout({
   children,
@@ -17,17 +24,18 @@ export default function RootLayout({
     pathname.startsWith('/teacher')
 
   return (
-    <html lang="en">
-      <body className="min-h-screen flex flex-col bg-white">
-        
-        {/* 👇 Navbar sirf public pages pe */}
-        {!hideNavbar && <Navbar />}
+    <ClerkProvider>
+      <html lang="en">
+        <body className={`min-h-screen flex flex-col bg-white ${inter.className}`}>
+          
+          {!hideNavbar && <Navbar />}
 
-        <main className="flex-1">{children}</main>
+          <main className="flex-1">{children}</main>
 
-        {/* 👇 Footer bhi optionally hide kar sakte */}
-        {!hideNavbar && <Footer />}
-      </body>
-    </html>
+          {!hideNavbar && <Footer />}
+
+        </body>
+      </html>
+    </ClerkProvider>
   )
 }

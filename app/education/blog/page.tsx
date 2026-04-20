@@ -39,6 +39,23 @@ export default function BlogPage() {
         
         {/* Header Section */}
         <div className="mb-16">
+        <div className="mb-8 flex items-center gap-2 text-sm">
+  <Link href="/" className="text-slate-400 hover:text-blue-600 transition-colors">
+    Home
+  </Link>
+
+  <ChevronRight size={14} className="text-slate-300" />
+
+  <Link href="/education/blog" className="text-slate-400 hover:text-blue-600 transition-colors">
+    Education
+  </Link>
+
+  <ChevronRight size={14} className="text-slate-300" />
+
+  <span className="px-2 py-1 rounded-md bg-blue-50 text-blue-600 font-medium">
+    Blog
+  </span>
+</div>
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
