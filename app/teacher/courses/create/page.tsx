@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import supabase from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
+import { useUser } from "@clerk/nextjs"
 import {
   Card,
   CardContent,
@@ -64,6 +65,10 @@ export default function CreateCoursePage() {
 
   const [hasCapstone, setHasCapstone] = useState(false)
 
+
+
+  const { user } = useUser()
+  console.log("USER ID:", user?.id)
   // ===== BOARD BUILDER STATE =====
 const [boardName, setBoardName] = useState("")
 const [boardLists, setBoardLists] = useState<any[]>([])
@@ -210,23 +215,29 @@ const addCard = (listId: string) => {
     setLoading(true)
 
     try {
-      const { data: auth } = await supabase.auth.getUser()
-      if (!auth.user) throw new Error('Not authenticated')
+      if (!user) throw new Error('Not authenticated')
 
       /* Thumbnail */
       let thumbnailUrl: string | null = null
       if (thumbnailFile) {
         thumbnailUrl = await uploadThumbnail(
           thumbnailFile,
-          auth.user.id
+          user.id
         )
       }
 
       /* Course */
-      const { data: course, error } = await supabase
+     // 🔥 Clerk → UUID
+const { data: uuid, error: uuidError } = await supabase.rpc('clerk_to_uuid', {
+  clerk_id: user.id
+})
+
+if (uuidError) throw uuidError
+
+const { data: course, error } = await supabase
   .from('courses')
   .insert({
-    teacher_id: auth.user.id,
+    teacher_id: uuid,
     title,
     subtitle,
     description,
@@ -256,8 +267,8 @@ if (hasCapstone) {
     const { data: capstoneCourse, error: capstoneError } = await supabase
       .from('courses')
       .insert({
-        teacher_id: auth.user.id,
-        title: `${title} – Capstone Project`,
+        teacher_id: uuid,
+                title: `${title} – Capstone Project`,
         subtitle: 'Capstone Project',
         description: `Apply everything learned in ${title} through a real-world project.`,
         price: 0,
@@ -337,17 +348,21 @@ if (hasCapstone) {
       for (let i = 0; i < sections.length; i++) {
         const sec = sections[i]
 
-        const { data: section } = await supabase
-          .from('sections')
-          .insert({
-            course_id: course.id,
-            title: sec.title,
-            order_index: i,
-          })
-          .select()
-          .single()
+        const { data: section, error: sectionError } = await supabase
+  .from('sections')
+  .insert({
+    course_id: course.id,
+    title: sec.title,
+    order_index: i,
+  })
+  .select()
+  .single()
 
-        if (!section) continue
+if (sectionError) {
+  console.error("❌ SECTION ERROR:", sectionError)
+  alert(sectionError.message)
+  throw sectionError
+}
 
         for (let j = 0; j < sec.lessons.length; j++) {
           const lesson = sec.lessons[j]
@@ -356,11 +371,13 @@ if (hasCapstone) {
           if (lesson.videoFile) {
             videoUrl = await uploadVideo(
               lesson.videoFile,
-              auth.user.id
+              user.id
             )
           }
 
-          await supabase.from('lessons').insert({
+          const { error: lessonError } = await supabase
+          .from('lessons')
+          .insert({
             section_id: section.id,
             title: lesson.title,
             description: lesson.description,
@@ -368,6 +385,12 @@ if (hasCapstone) {
             order_index: j,
             video_url: videoUrl,
           })
+        
+        if (lessonError) {
+          console.error("❌ LESSON ERROR:", lessonError)
+          alert(lessonError.message)
+          throw lessonError
+        }
         }
       }
 

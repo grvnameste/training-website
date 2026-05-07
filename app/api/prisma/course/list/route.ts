@@ -1,3 +1,5 @@
+
+// app/api/prisma/course/list/route.ts
 import prisma from '../../../../../lib/prisma'
 import { NextResponse } from 'next/server'
 

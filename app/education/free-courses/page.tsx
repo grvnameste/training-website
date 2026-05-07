@@ -1,4 +1,7 @@
+//app/education/free-courses/page.tsx
 'use client'
+import Link from "next/link"
+import { ChevronRight } from "lucide-react"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { PlayCircle, Star, Users, Layout, Database,ArrowRight, Layers } from "lucide-react"
@@ -34,6 +37,24 @@ export default function FreeCoursesPage() {
   return (
     <div className="min-h-screen bg-slate-50 pt-28 pb-20">
       <div className="max-w-7xl mx-auto px-6">
+      <div className="mb-8 flex items-center gap-2 text-sm">
+  <Link href="/" className="text-slate-400 hover:text-blue-600 transition-colors">
+    Home
+  </Link>
+
+  <ChevronRight size={14} className="text-slate-300" />
+
+  <Link href="/education/blog" className="text-slate-400 hover:text-blue-600 transition-colors">
+    Education
+  </Link>
+
+  <ChevronRight size={14} className="text-slate-300" />
+
+  <span className="px-2 py-1 rounded-md bg-blue-50 text-blue-600 font-medium">
+    Free Courses
+  </span>
+</div>
+        
         <div className="text-center mb-20">
           <motion.span 
             initial={{ opacity: 0 }} animate={{ opacity: 1 }}

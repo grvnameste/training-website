@@ -1,3 +1,4 @@
+//components/courses.tsx
 'use client'
 import { useEffect, useState } from 'react'
 import supabase from '@/lib/supabase/client'
@@ -95,8 +96,8 @@ export default function Courses() {
           >
             {/* Thumbnail */}
             <div className="relative h-44 w-full">
-              <Image
-                src={course.thumbnail_url}
+            <Image
+  src={course.thumbnail_url || "/default-course.png"}
                 alt={course.title}
                 fill
                 className="object-cover"

@@ -1,8 +1,13 @@
 'use client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Building, Users, ShieldCheck, BarChart, CheckCircle2 } from 'lucide-react'
+import { useState } from "react"
+import { motion } from "framer-motion"
+
 
 export default function InstitutionPageContent() {
+  const [showDemoForm, setShowDemoForm] = useState(false)
+
   return (
     <div className="min-h-screen bg-white">
       {/* HERO SECTION - Corporate & Professional */}
@@ -24,9 +29,97 @@ export default function InstitutionPageContent() {
               academic theory and industry requirements with our structured project-based learning.
             </p>
             <div className="mt-10 flex flex-wrap justify-center gap-4">
-              <button className="px-8 py-3.5 bg-slate-900 text-white font-semibold rounded-xl hover:bg-slate-800 transition-all shadow-xl">
-                Book a Demo
-              </button>
+            <button
+  onClick={() => setShowDemoForm(true)}
+  className="px-8 py-3.5 bg-slate-900 text-white font-semibold rounded-xl hover:bg-slate-800 transition-all shadow-xl"
+>
+  Book a Demo
+</button>
+{showDemoForm && (
+  <div className="fixed inset-0 flex items-center justify-center z-[100] px-4">
+    {/* Backdrop with Blur */}
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      onClick={() => setShowDemoForm(false)}
+      className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+    />
+
+    {/* Modal Card */}
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.9, y: 20 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      className="bg-white rounded-[2.5rem] p-8 md:p-10 w-full max-w-md shadow-2xl relative z-10 border border-slate-100"
+    >
+      {/* Close Button */}
+      <button
+        onClick={() => setShowDemoForm(false)}
+        className="absolute top-6 right-6 h-10 w-10 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all"
+      >
+        ✕
+      </button>
+
+      <div className="mb-8">
+        <h2 className="text-3xl font-black text-slate-900 tracking-tight">
+          Book a <span className="text-blue-600">Demo</span>
+        </h2>
+        <p className="text-slate-500 mt-2 text-sm">
+          Experience the future of engineering education. Our team will reach out within 24 hours.
+        </p>
+      </div>
+
+      <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+        <div className="space-y-1">
+          <label className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Full Name</label>
+          <input
+            type="text"
+            placeholder="John Doe"
+            className="w-full bg-slate-50 border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-blue-500 p-3 rounded-xl outline-none transition-all placeholder:text-slate-300"
+          />
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Work Email</label>
+          <input
+            type="email"
+            placeholder="john@company.com"
+            className="w-full bg-slate-50 border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-blue-500 p-3 rounded-xl outline-none transition-all placeholder:text-slate-300"
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <label className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Phone</label>
+            <input
+              type="tel"
+              placeholder="+91..."
+              className="w-full bg-slate-50 border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-blue-500 p-3 rounded-xl outline-none transition-all placeholder:text-slate-300"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Org</label>
+            <input
+              type="text"
+              placeholder="IITB / Google"
+              className="w-full bg-slate-50 border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-blue-500 p-3 rounded-xl outline-none transition-all placeholder:text-slate-300"
+            />
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-100 transition-all active:scale-[0.98] mt-4"
+        >
+          Confirm Demo Request
+        </button>
+        
+        <p className="text-[10px] text-center text-slate-400 mt-4">
+          By clicking submit, you agree to our Terms of Service.
+        </p>
+      </form>
+    </motion.div>
+  </div>
+)}
               <button className="px-8 py-3.5 bg-white text-blue-600 font-semibold rounded-xl border border-blue-200 hover:border-blue-400 transition-all">
                 Download Brochure
               </button>
@@ -133,5 +226,9 @@ function Feature({ icon, title, desc }: any) {
       {/* Subtle bottom accent */}
       <div className="absolute bottom-0 left-0 w-0 h-1 bg-blue-600 group-hover:w-full transition-all duration-500" />
     </Card>
+
+
+
   )
+  
 }

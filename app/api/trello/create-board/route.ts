@@ -1,3 +1,4 @@
+//app/api/trello/create-board/route.ts
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 
@@ -31,26 +32,15 @@ if (error || !board) {
     return NextResponse.json({ error: "Board creation failed" }, { status: 500 })
   }
 
-  // 2️⃣ CHECK IF ALREADY INITIALIZED
  // 2️⃣ CHECK IF ALREADY INITIALIZED
 const { data: existingLists } = await supabase
 .from("lists")
 .select("id")
 .eq("board_id", board.id)
 
+// ❗ ONLY CREATE IF EMPTY
 if (existingLists && existingLists.length > 0) {
-// 🧹 PURANA BOARD DELETE KAR
-const listIds = existingLists.map(l => l.id)
-
-await supabase
-  .from("cards")
-  .delete()
-  .in("list_id", listIds)
-
-await supabase
-  .from("lists")
-  .delete()
-  .eq("board_id", board.id)
+return NextResponse.json(board)
 }
 
   // 3️⃣ GET TEMPLATE

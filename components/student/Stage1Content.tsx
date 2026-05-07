@@ -1,3 +1,4 @@
+//components/student/Stage1Content.tsx
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -13,6 +14,22 @@ interface Stage1ContentProps {
 
 export function Stage1Content({ submitted, approved, loading, onUpload, onNext }: Stage1ContentProps) {
     const [file, setFile] = useState<File | null>(null)
+    const handleSubmit = () => {
+        if (!file) {
+            alert("Select file first")
+            return
+        }
+
+        console.log("BUTTON CLICKED")
+        console.log("FILE:", file)              // 👈 ADD THIS
+        console.log("CALLING onUpload")         // 👈 ADD THIS
+
+        if (onUpload) {
+            onUpload(file)
+        } else {
+            console.log("onUpload is undefined ❌")
+        }
+        }
 
     return (
         <Card className="rounded-xl border bg-white shadow-sm hover:shadow-md transition">
@@ -57,8 +74,7 @@ export function Stage1Content({ submitted, approved, loading, onUpload, onNext }
 
                         {file && <p className="text-xs text-blue-600 font-medium">Selected: {file.name}</p>}
 
-                        <Button onClick={() => file && onUpload(file)} disabled={loading || !file} className="w-full h-9 text-sm">
-                            Submit Requirement
+                        <Button onClick={handleSubmit} className="w-full h-9 text-sm">         Submit Requirement
                         </Button>
                     </>
                 ) : approved ? (

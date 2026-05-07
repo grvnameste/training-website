@@ -1,5 +1,7 @@
+//hooks/useStudentCourse.ts
 import { useEffect, useState } from 'react'
 import supabase from '@/lib/supabase/client'
+import { useUser } from "@clerk/nextjs"
 
 interface Lesson {
   id: string
@@ -32,6 +34,7 @@ export function useStudentCourse(courseId: string, videoId: string) {
   const [certificateRequested, setCertificateRequested] = useState(false)
   const [user, setUser] = useState<{ id: string; name: string } | null>(null)
   const [teacherId, setTeacherId] = useState<string | null>(null)
+  const { user: authUser } = useUser()
   const [meeting, setMeeting] = useState<{
     meeting_link: string
     meeting_date: string
@@ -40,33 +43,65 @@ export function useStudentCourse(courseId: string, videoId: string) {
   } | null>(null)
 
   useEffect(() => {
+    let uuid: string | null = null
+    const fetchCapstoneProgress = async (capstoneId: string, studentId: string) => {
+      const { data: progress } = await supabase
+        .from('student_capstone_progress')
+        .select('*')
+        .eq('student_id', studentId)
+        .eq('capstone_id', capstoneId)
+        .maybeSingle()
+    
+      console.log("REALTIME PROGRESS:", progress)
+    
+      if (progress) {
+        setCapstoneStage(progress.current_stage ?? 1)
+        setStage3Submitted(!!progress.stage3_submitted)
+        setCapstoneCompleted(!!progress.completed)
+        setCertificateIssued(!!progress.certificate_issued)
+        setCertificateRequested(!!progress.certificate_requested)
+      }
+    }
     const loadCourse = async () => {
       try {
         setLoading(true)
         setMeeting(null)
-        const { data: { user: authUser } } = await supabase.auth.getUser()
         
         if (authUser) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('full_name, name')
-            .eq('id', authUser.id)
-            .maybeSingle()
+          const { data: userProfile } = await supabase
+          .from('profiles')
+          .select('full_name, name')
+          .eq('clerk_id', authUser.id)
+                  .maybeSingle()
             
           setUser({
             id: authUser.id,
-            name: profile?.full_name || profile?.name || authUser.email?.split('@')[0] || 'Student'
-          })
+            name: userProfile?.full_name || userProfile?.name || authUser.emailAddresses?.[0]?.emailAddress?.split('@')[0] || 'Student'          })
 
           // Enrollment check
-          const { data: enrollment } = await supabase
-            .from('course_enrollments')
-            .select('id')
-            .eq('student_id', authUser.id)
-            .eq('course_id', courseId)
-            .maybeSingle()
+         // 🔥 STEP 1: clerk_id se UUID nikaal
+const { data: profile, error: profileError } = await supabase
+.from('profiles')
+.select('id')
+.eq('clerk_id', authUser.id)
+.single()
 
-          setIsEnrolled(!!enrollment)
+if (profileError || !profile) {
+console.error("Profile not found", profileError)
+setIsEnrolled(false)
+return
+}
+
+uuid = profile.id
+// 🔥 STEP 2: enrollment check UUID se karo
+const { data: enrollment } = await supabase
+.from('course_enrollments')
+.select('id')
+.eq('student_id', uuid)   // ✅ FIXED
+.eq('course_id', courseId)
+.maybeSingle()
+
+setIsEnrolled(!!enrollment)
         }
 
         const { data: courseData } = await supabase
@@ -122,30 +157,36 @@ export function useStudentCourse(courseId: string, videoId: string) {
         setCapstoneCourse(capstoneData)
 
         // Capstone Progress
-        if (capstoneData && authUser) {
+        if (capstoneData && uuid) {
           const { data: progress } = await supabase
             .from('student_capstone_progress')
             .select('*')
-            .eq('student_id', authUser.id)
+            .eq('student_id', uuid)
             .eq('capstone_id', capstoneData.id)
             .maybeSingle()
-
+        
           setCapstoneStage(progress?.current_stage ?? 1)
           setStage3Submitted(!!progress?.stage3_submitted)
           setCapstoneCompleted(!!progress?.completed)
           setCertificateIssued(!!progress?.certificate_issued)
           setCertificateRequested(!!progress?.certificate_requested)
-
-          // Meeting Fetch
-          try {
-            let res = await fetch(`/api/capstone/meeting?capstoneId=${capstoneData.id}&studentId=${authUser.id}`)
-            let mData = res.ok ? await res.json() : null
-            if (!mData) {
-              res = await fetch(`/api/capstone/meeting?capstoneId=${courseId}&studentId=${authUser.id}`)
-              mData = res.ok ? await res.json() : null
-            }
-            setMeeting(mData)
-          } catch (e) {}
+        
+          // 🔥 REALTIME
+          const channel = supabase
+            .channel('capstone-progress')
+            .on(
+              'postgres_changes',
+              {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'student_capstone_progress',
+                filter: `student_id=eq.${uuid}`
+              },
+              () => {
+                fetchCapstoneProgress(capstoneData.id, uuid!) // safe now
+              }
+            )
+            .subscribe()
         }
 
         setCourse({

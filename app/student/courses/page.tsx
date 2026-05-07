@@ -6,6 +6,8 @@ import Link from 'next/link'
 import supabase from '@/lib/supabase/client'
 import { Card, CardContent } from '@/components/ui/card'
 import { GraduationCap } from 'lucide-react'
+import { useUnreadCount } from '@/hooks/useUnreadCount'
+import { useUser } from "@clerk/nextjs"
 
 interface Course {
   id: string
@@ -16,6 +18,7 @@ interface Course {
 }
 
 export default function CoursesListPage() {
+  const { user } = useUser()
   const [courses, setCourses] = useState<Course[]>([])
   const [enrolledCourses, setEnrolledCourses] = useState<string[]>([])
 const [firstLessons, setFirstLessons] = useState<Record<string, string>>({})
@@ -30,13 +33,17 @@ const [firstLessons, setFirstLessons] = useState<Record<string, string>>({})
       .order('created_at', { ascending: false })
       
       setCourses(data || [])
-      const { data: { user } } = await supabase.auth.getUser()
 
-if (user) {
-  const { data: enrollments } = await supabase
-    .from('course_enrollments')
-    .select('course_id')
-    .eq('student_id', user.id)
+      if (user) {
+        // 🔥 Clerk → UUID
+        const { data: uuid } = await supabase.rpc('clerk_to_uuid', {
+          clerk_id: user.id
+        })
+      
+        const { data: enrollments } = await supabase
+          .from('course_enrollments')
+          .select('course_id')
+          .eq('student_id', uuid)
 
   const enrolledIds = (enrollments || []).map(e => e.course_id)
   setEnrolledCourses(enrolledIds)
@@ -44,7 +51,7 @@ if (user) {
   // 🔥 get first lesson for each course
   const lessonMap: Record<string, string> = {}
 
-  for (const courseId of enrolledIds) {
+  for (const enrolledCourseId of enrolledIds) {
     const { data: sections } = await supabase
       .from('sections')
       .select(`
@@ -54,13 +61,12 @@ if (user) {
           order_index
         )
       `)
-      .eq('course_id', courseId)
-      .order('order_index', { ascending: true })
+      .eq('course_id', enrolledCourseId)
+            .order('order_index', { ascending: true })
 
     const firstLesson = sections?.[0]?.lessons?.[0]?.id
     if (firstLesson) {
-      lessonMap[courseId] = firstLesson
-    }
+      lessonMap[enrolledCourseId] = firstLesson    }
   }
 
   setFirstLessons(lessonMap)

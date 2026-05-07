@@ -67,6 +67,11 @@ export function ChatModal({
   useEffect(() => { scrollToBottom() }, [messages])
 
   const handleSendMessage = async () => {
+    console.log("🚀 SEND CLICKED")
+console.log("roomId:", roomId)
+console.log("studentId:", studentId)
+console.log("content:", content)
+console.log("selectedFile:", selectedFile)
     if ((!content.trim() && !selectedFile) || !roomId) return
 
     const messageContent = content.trim()

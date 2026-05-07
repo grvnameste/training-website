@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation'
 import supabase from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { CreditCard, Lock } from 'lucide-react'
+import { useUser } from "@clerk/nextjs"
 
 interface Course {
   id: string
@@ -18,6 +19,7 @@ export default function PaymentStep() {
   const params = useParams()
   const router = useRouter()
   const courseId = params.id as string
+  const { user } = useUser()
 
   const [course, setCourse] = useState<Course | null>(null)
   const [loading, setLoading] = useState(true)
@@ -32,7 +34,7 @@ export default function PaymentStep() {
         .from('courses')
         .select('id, title, price, thumbnail_url')
         .eq('id', courseId)
-        .single()
+        .maybeSingle()
       setCourse(data)
       setLoading(false)
     }
@@ -42,23 +44,68 @@ export default function PaymentStep() {
   const handleEnrollAndComplete = async () => {
     setProcessing(true)
   
-    const { data: { user } } = await supabase.auth.getUser()
-  
-    if (user) {
-        const { data, error } = await supabase
-        .from('course_enrollments')
-        .insert({
-          student_id: user.id,
-          course_id: courseId
-        })
-      
-      console.log("ENROLL RESULT:", data)
-      console.log("ENROLL ERROR:", error)
+    if (!user) {
+      alert("Not logged in")
+      setProcessing(false) // 🔥 IMPORTANT
+      return
     }
   
-    await new Promise(r => setTimeout(r, 1200))
+
+
+
+ // ✅ get UUID (FINAL FIX)
+const { data: profile, error: profileError } = await supabase
+.from('profiles')
+.select('id')
+.eq('clerk_id', user.id)
+.single()
+
+if (profileError || !profile) {
+console.error(profileError)
+alert("User not found (dashboard open karo ek baar)")
+setProcessing(false)
+return
+}
+
+const uuid = profile.id
+console.log("UUID:", uuid)
   
-    router.push(`/student/courses/${courseId}/checkout/completion`)
+    const { error } = await supabase
+      .from('course_enrollments')
+      .upsert(
+        {
+          student_id: uuid,
+          course_id: courseId
+        },
+        { onConflict: 'student_id,course_id' }
+      )
+      if (error) {
+        console.error(error)
+        alert("Enrollment failed")
+        setProcessing(false)
+        return
+      }
+  
+ // 🔥 get first lesson
+const { data: sections } = await supabase
+.from('sections')
+.select(`
+  id,
+  lessons (
+    id,
+    order_index
+  )
+`)
+.eq('course_id', courseId)
+.order('order_index', { ascending: true })
+
+const firstLessonId = sections?.[0]?.lessons?.[0]?.id
+
+if (firstLessonId) {
+router.push(`/student/courses/${courseId}/play/${firstLessonId}`)
+} else {
+router.push(`/student/courses/${courseId}`)
+}
   }
   if (loading) {
     return (

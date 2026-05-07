@@ -1,13 +1,14 @@
 //app/student/courses/[id]/play/[videoId]/page.tsx
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, ChevronRight, MessageCircle } from 'lucide-react'
 import Video from 'next-video'
 import getStarted from '@/videos/get-started.mp4.json'
+import supabase from '@/lib/supabase/client'
 import Instaplay from 'player.style/instaplay/react'
 import { usePresence } from '@/hooks/usePresence'
 import { useUnreadCount } from '@/hooks/useUnreadCount'
@@ -18,10 +19,19 @@ import { CapstoneSection } from '@/components/student/CapstoneSection'
 import { CertificateSection } from '@/components/student/CertificateSection'
 
 export default function CoursePlayerPage() {
+
+
+  
   const params = useParams()
   const router = useRouter()
   const courseId = params.id as string
   const videoId = params.videoId as string
+
+
+  const [studentUUID, setStudentUUID] = useState<string>('')
+
+  
+
 
   const {
     course,
@@ -38,12 +48,40 @@ export default function CoursePlayerPage() {
     meeting
   } = useStudentCourse(courseId, videoId)
 
+
+  useEffect(() => {
+    const getUUID = async () => {
+
+      console.log("👤 Clerk user:", user)  
+
+
+      if (!user?.id) return
+  
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('clerk_id', user.id)
+        .single()
+  
+      if (error) {
+        console.log('UUID fetch error:', error)
+        return
+      }
+  
+      if (data?.id) {
+        setStudentUUID(data.id)
+        console.log('✅ UUID:', data.id)
+      }
+    }
+  
+    getUUID()
+  }, [user])
+
   const [isChatOpen, setIsChatOpen] = useState(false)
 
   // 🛰️ Track Presence
   const { isUserOnline } = usePresence(user?.id || null, user?.name || null, courseId)
-  const unreadCount = useUnreadCount(user?.id || null, courseId)
-
+  const unreadCount = useUnreadCount(studentUUID || null, courseId)
   if (loading || !course) {
     return (
       <div className="flex justify-center py-32">
@@ -196,8 +234,8 @@ export default function CoursePlayerPage() {
       </div>
 
       {/* 💬 Floating Chat Button */}
-      {isEnrolled && teacherId && (
-        <>
+      {isEnrolled && teacherId && studentUUID && (
+                <>
           <Button
             onClick={() => setIsChatOpen(true)}
             className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-2xl bg-blue-600 hover:bg-blue-700 hover:scale-110 transition-all duration-300 z-50 group border-4 border-white"
@@ -222,8 +260,8 @@ export default function CoursePlayerPage() {
           <ChatModal
             isOpen={isChatOpen}
             onClose={() => setIsChatOpen(false)}
-            studentId={user?.id || ''}
-            teacherId={teacherId}
+            studentId={studentUUID}
+                          teacherId={teacherId}
             courseId={courseId}
             courseTitle={course.title}
           />

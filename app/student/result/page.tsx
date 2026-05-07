@@ -1,8 +1,10 @@
+//app/student/result/page.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import supabase from '@/lib/supabase/client'
+import { useUser } from "@clerk/nextjs"
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -59,35 +61,33 @@ export default function QuestionnaireResult() {
   const [careerOpenAnswers, setCareerOpenAnswers] = useState<CareerOpenAnswers | null>(null)
   const [cultureAnswers, setCultureAnswers] = useState<CultureAnswers | null>(null)
 
-  useEffect(() => {
-    const load = async () => {
-      const { data: auth } = await supabase.auth.getUser()
-      if (!auth.user) {
-        router.replace('/login')
-        return
-      }
+  const { user } = useUser()
 
+  useEffect(() => {
+    if (!user) return
+  
+    const load = async () => {
       const { data } = await supabase
         .from('questionnaire_results')
         .select('*')
-        .eq('user_id', auth.user.id)
+        .eq('user_id', user.id)   // 🔥 THIS MATCHES DB
         .order('created_at', { ascending: false })
         .limit(1)
         .single()
-
+  
       if (!data) {
         setLoading(false)
         return
       }
-
+  
       setCareerAnswers(data.career_answers)
       setCareerOpenAnswers(data.career_open_answers)
       setCultureAnswers(data.culture_answers)
       setLoading(false)
     }
-
+  
     load()
-  }, [router])
+  }, [user])
 
   if (loading) {
     return <div className="p-10 text-center">Loading...</div>
