@@ -1,4 +1,3 @@
-//components/navbar.tsx
 'use client'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -8,7 +7,7 @@ import { useUser } from "@clerk/nextjs"
 import { Menu, X } from "lucide-react"
 
 // 1. Variants type import karein
-import { motion, AnimatePresence, Variants } from 'framer-motion' 
+import { motion, AnimatePresence, Variants } from 'framer-motion'
 import { ChevronDown, BookOpen, GraduationCap, MessagesSquare, ArrowRight, Sparkles } from 'lucide-react'
 
 const educationLinks = [
@@ -52,7 +51,7 @@ export default function Navbar() {
         type: "spring", 
         stiffness: 300, 
         damping: 30,
-        staggerChildren: 0.05,
+        staggerChildren: 0.05, // Children animate one by one
         delayChildren: 0.1
       }
     },
@@ -72,7 +71,7 @@ export default function Navbar() {
     <>
       <header className="sticky top-0 z-50 w-full bg-white border-b border-slate-100">
         <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          
+
           <div className="flex items-center">
             <Link href="/" className="hover:opacity-90 transition-opacity">
               <Image
@@ -93,7 +92,7 @@ export default function Navbar() {
 </Link>
             <Link href="/Forinstitution" className="hover:text-blue-600 transition-colors py-2">For Institution</Link>
             <Link href="/Forstudents" className="hover:text-blue-600 transition-colors py-2">For Students</Link>
-            
+
 
             <button 
               onMouseEnter={() => setOpen(true)}
@@ -128,7 +127,7 @@ export default function Navbar() {
 
       {mobileOpen && (
   <div className="md:hidden px-6 pb-4 space-y-2 bg-white border-b">
-    
+
     <Link href="/" className="block py-2 text-slate-700 hover:text-blue-600" onClick={() => setMobileOpen(false)}>
       Home
     </Link>
@@ -178,7 +177,7 @@ export default function Navbar() {
             onMouseLeave={() => setOpen(false)}
           >
             <div className="mx-auto max-w-7xl px-6 py-10 grid grid-cols-12 gap-8">
-              
+
               <motion.div variants={itemVariants} className="col-span-4 border-r border-slate-100 pr-8">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
@@ -226,7 +225,7 @@ export default function Navbar() {
           </motion.div>
         )}
       </AnimatePresence>
-      
+
       <AnimatePresence>
         {open && (
           <motion.div 
