@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+/* =======================
+   COURSE
+======================= */
+model Course {
+  id          String    @id @default(uuid())
+  teacherId   String
+  title       String
+  subtitle    String?
+  description String?
+  price       Int
+
+  sections    Section[]
+
+  @@map("courses")
+}
+
+/* =======================
+   SECTION
+======================= */
+model Section {
+  id         String   @id @default(uuid())
+  title      String
+  orderIndex Int
+
+  courseId   String
+  course     Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  lessons    Lesson[]
+
+  @@map("sections")
+}
+
+/* =======================
+   LESSON
+======================= */
+model Lesson {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  duration    String
+  orderIndex  Int
+
+  sectionId  String
+  section    Section @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  @@map("lessons")
+}
+
+/* =======================
+   CHAT
+======================= */
+model ChatRoom {
+  id        String   @id @default(uuid())
+  studentId String   @map("student_id")
+  teacherId String   @map("teacher_id")
+  courseId  String   @map("course_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  messages  ChatMessage[]
+
+  @@unique([studentId, courseId])
+  @@map("chat_rooms")
+}
+
+model ChatMessage {
+  id        String   @id @default(uuid())
+  roomId    String   @map("room_id")
+  senderId  String   @map("sender_id")
+  content   String?
+  mediaUrl  String?  @map("media_url")
+  mediaType String?  @map("media_type") // 'image' | 'video'
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  room      ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@map("chat_messages")
+}

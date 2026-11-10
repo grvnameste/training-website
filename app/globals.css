@@ -1,0 +1,172 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+/* ================= PROFESSIONAL BLUE-WHITE LMS THEME ================= */
+
+:root {
+  /* ========== BASE ========== */
+  --background: #ffffff;          /* pure white */
+  --foreground: #0f172a;          /* slate-900 */
+
+  /* ========== CARDS ========== */
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+
+  /* ========== PRIMARY BRAND BLUE ========== */
+  --primary: #2563eb;             /* blue-600 */
+  --primary-foreground: #ffffff;
+
+  /* ========== SOFT SECTIONS ========== */
+  --secondary: #f1f5f9;           /* slate-100 */
+  --secondary-foreground: #0f172a;
+
+  /* ========== ACCENTS ========== */
+  --accent: #3b82f6;              /* blue-500 */
+  --accent-foreground: #ffffff;
+
+  /* ========== UI ELEMENTS ========== */
+  --border: #e5e7eb;              /* gray-200 */
+  --input: #ffffff;
+  --ring: #2563eb;
+}
+
+/* ================= TAILWIND THEME TOKENS ================= */
+
+@theme inline {
+  --font-sans: 'Geist', 'Geist Fallback';
+  --font-mono: 'Geist Mono', 'Geist Mono Fallback';
+  --font-serif: 'Georgia', 'Times New Roman', serif;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}
+
+
+/* ================= BASE ================= */
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+}
+
+/* ================= PRINT (RESUME ONLY) ================= */
+@media print {
+  /* Hide everything by default */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Show only resume */
+  #resume-print,
+  #resume-print * {
+    visibility: visible;
+  }
+
+  /* Position resume cleanly */
+  #resume-print {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 0;
+  }
+
+  /* Remove shadows */
+  .shadow,
+  .shadow-sm,
+  .shadow-md,
+  .shadow-lg {
+    box-shadow: none !important;
+  }
+
+  /* Hide UI elements */
+  .no-print {
+    display: none !important;
+  }
+}
+
+
+
+/* ================= STEPPER FIX ================= */
+
+.wizard-stepper__container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.wizard-stepper__step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 80px;
+}
+
+.wizard-stepper__circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  border: 2px solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+}
+
+.wizard-stepper__circle--completed {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: white;
+}
+
+.wizard-stepper__circle--current {
+  border-color: #2563eb;
+  color: #2563eb;
+}
+
+.wizard-stepper__line {
+  flex: 1;
+  height: 3px;
+  background: #e2e8f0;
+  margin: 0 10px;
+}
+
+.wizard-stepper__line--completed {
+  background: #2563eb;
+}
+
+/* globals.css */
+@keyframes pop {
+  0%   { transform: scale(0.7); }
+  60%  { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+@keyframes pulse-ring {
+  0%   { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.4); }
+  70%  { box-shadow: 0 0 0 8px rgba(37, 99, 235, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+}
+
+.animate-pop {
+  animation: pop 0.4s ease, pulse-ring 1.8s ease-out infinite 0.4s;
+}
