@@ -24,6 +24,8 @@ export default function CapstoneStagePage() {
     stage3Submitted,
     certificateRequested,
     certificateIssued,
+    certificateError,
+    certificateBlockers,
     handleStage1Upload,
     submitStage2Review,
     handleStage3Upload,
@@ -68,6 +70,8 @@ export default function CapstoneStagePage() {
           stage3Submitted={stage3Submitted}
           certificateRequested={certificateRequested}
           certificateIssued={certificateIssued}
+          certificateError={certificateError}
+          certificateBlockers={certificateBlockers}
           loading={loading}
           onUpload={handleStage3Upload}
           onRequestCertificate={requestCertificate}

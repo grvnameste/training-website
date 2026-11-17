@@ -20,6 +20,14 @@ interface CapstonePayload {
   board: { id: string; cardCount: number } | null
 }
 
+export interface CertificateBlocker {
+  type: 'assignment' | 'project_milestone'
+  id: string
+  title: string
+  status: string | null
+  dueAt: string | null
+}
+
 export function useCapstoneStage(capstoneId: string, stage: number) {
   const router = useRouter()
   const { user, isLoaded } = useUser()
@@ -33,6 +41,8 @@ export function useCapstoneStage(capstoneId: string, stage: number) {
   const [stage3Submitted, setStage3Submitted] = useState(false)
   const [certificateRequested, setCertificateRequested] = useState(false)
   const [certificateIssued, setCertificateIssued] = useState(false)
+  const [certificateError, setCertificateError] = useState<string | null>(null)
+  const [certificateBlockers, setCertificateBlockers] = useState<CertificateBlocker[]>([])
 
   const load = useCallback(async () => {
     if (!isLoaded) return
@@ -167,6 +177,8 @@ export function useCapstoneStage(capstoneId: string, stage: number) {
   )
 
   const requestCertificate = useCallback(async () => {
+    setCertificateError(null)
+    setCertificateBlockers([])
     try {
       const res = await fetch('/api/me/certificates/request', {
         method: 'POST',
@@ -174,8 +186,17 @@ export function useCapstoneStage(capstoneId: string, stage: number) {
         body: JSON.stringify({ capstoneId }),
       })
       const data = await res.json().catch(() => ({}))
-      if (!res.ok) throw new Error(data?.error || 'Failed to request certificate')
+      if (!res.ok) {
+        const blockers = Array.isArray(data?.details?.blockers)
+          ? (data.details.blockers as CertificateBlocker[])
+          : []
+        const message = data?.error || 'Failed to request certificate'
+        setCertificateBlockers(blockers)
+        setCertificateError(message)
+        throw new Error(message)
+      }
       setCertificateRequested(true)
+      setCertificateError(null)
       toast.success('Certificate request submitted')
     } catch (error: any) {
       toast.error(error?.message || 'Failed to request certificate')
@@ -192,6 +213,8 @@ export function useCapstoneStage(capstoneId: string, stage: number) {
     cardCount,
     certificateRequested,
     certificateIssued,
+    certificateError,
+    certificateBlockers,
     handleStage1Upload,
     submitStage2Review,
     handleStage3Upload,

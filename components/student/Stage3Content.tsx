@@ -1,12 +1,15 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Code2, Github, Upload, Lock, X, FileCode, Loader2, CheckCircle2 } from 'lucide-react'
+import { Code2, Github, Upload, Lock, X, FileCode, Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
+import type { CertificateBlocker } from '@/hooks/useCapstoneStage'
 
 interface Stage3ContentProps {
   stage3Submitted: boolean
   certificateRequested: boolean
   certificateIssued: boolean
+  certificateError: string | null
+  certificateBlockers: CertificateBlocker[]
   loading: boolean
   onUpload: (files: File[]) => void
   onRequestCertificate: () => void
@@ -17,6 +20,8 @@ export function Stage3Content({
   stage3Submitted,
   certificateRequested,
   certificateIssued,
+  certificateError,
+  certificateBlockers,
   loading,
   onUpload,
   onRequestCertificate,
@@ -133,6 +138,29 @@ export function Stage3Content({
               >
                 Request Certificate
               </Button>
+            )}
+
+            {certificateError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-700">
+                <p className="flex items-center gap-1.5 text-xs font-semibold">
+                  <AlertCircle className="h-4 w-4" />
+                  Certificate requirements incomplete
+                </p>
+                <p className="mt-1 text-xs">{certificateError}</p>
+                {certificateBlockers.length > 0 && (
+                  <ul className="mt-2 list-disc space-y-0.5 pl-4 text-xs">
+                    {certificateBlockers.map((blocker) => (
+                      <li key={`${blocker.type}-${blocker.id}`}>
+                        {blocker.type === 'assignment' ? 'Assignment' : 'Milestone'}:{' '}
+                        {blocker.title}
+                        {blocker.status
+                          ? ` (${blocker.status.replace('_', ' ')})`
+                          : ' (not started)'}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             )}
 
             {certificateRequested && !certificateIssued && (
