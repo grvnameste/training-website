@@ -1,10 +1,11 @@
-import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
 const ROOT = process.cwd()
 const SCAN_DIRS = ['app', 'components', 'hooks', 'lib', 'types']
 
 function walk(dir) {
+  if (!existsSync(dir)) return []
   const results = []
   for (const entry of readdirSync(dir)) {
     const path = join(dir, entry)
@@ -17,6 +18,27 @@ function walk(dir) {
 
 const files = SCAN_DIRS.flatMap((dir) => walk(join(ROOT, dir)))
 const violations = []
+
+const configFiles = ['package.json', '.gitlab-ci.yml', 'next.config.mjs', 'tsconfig.json']
+  .map((file) => join(ROOT, file))
+  .filter((file) => existsSync(file))
+
+const conflictMarkers = [...files, ...configFiles].filter((file) =>
+  /^(<<<<<<< |=======$|>>>>>>> )/m.test(readFileSync(file, 'utf8'))
+)
+if (conflictMarkers.length > 0) {
+  violations.push(
+    `Unresolved merge conflict markers found:\n  ${conflictMarkers
+      .map((file) => file.replace(ROOT + '\\', ''))
+      .join('\n  ')}`
+  )
+}
+
+try {
+  JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'))
+} catch {
+  violations.push('package.json is not valid JSON')
+}
 
 const anonImports = files.filter((file) =>
   readFileSync(file, 'utf8').includes('@/lib/supabase/client')

@@ -22,6 +22,8 @@ const PUBLIC_ROUTE_PREFIXES = [
   '/api/auth/register',
   '/api/auth/logout',
   '/api/auth/me',
+  '/api/health',
+  '/api/internal',
 ]
 
 const TEACHER_ROUTE_PREFIXES = [

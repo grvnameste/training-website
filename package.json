@@ -10,6 +10,7 @@
     "db:migrate": "node --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/migrate.mjs up",
     "db:migrate:status": "node --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/migrate.mjs status",
     "db:migrate:baseline": "node --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/migrate.mjs baseline",
+    "db:migrate:fresh": "node --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/migrate.mjs fresh",
     "db:drizzle:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:apply-auth-sql": "node --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/apply-sql.mjs supabase/migrations/20261115000000_password_auth.sql",
@@ -21,8 +22,9 @@
     "db:verify": "node --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/verify-migrations.mjs",
     "db:delete-project-template": "node --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/delete-project-template.mjs",
     "test": "npm run test:integration",
-    "test:db:setup": "node --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/test-db-setup.mjs",
+    "test:db:setup": "npm run db:migrate:fresh",
     "test:integration": "node --import tsx --test tests/integration/phase3-workflows.test.ts",
+    "test:e2e": "node --import tsx --test tests/e2e/phase4-smoke.test.ts",
     "seed:dev": "node --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/seed-development.mjs",
     "seed:verify-ui": "node --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/seed-ui-verification.mjs"
   },

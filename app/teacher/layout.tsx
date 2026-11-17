@@ -18,7 +18,8 @@ import {
   Menu,
   ChevronLeft,
   ShieldCheck,
-  UserCircle
+  UserCircle,
+  ScrollText
 } from 'lucide-react'
 
 export default function TeacherLayout({
@@ -60,6 +61,9 @@ export default function TeacherLayout({
     { href: '/teacher/capstone/approvals', icon: ClipboardCheck, label: 'Capstone Approvals' },
     { href: '/teacher/certificates', icon: CheckCircle, label: 'Certificates' },
     { href: '/teacher/chat', icon: MessageSquare, label: 'Inbox' },
+    ...(user.role === 'super_admin'
+      ? [{ href: '/teacher/audit-logs', icon: ScrollText, label: 'Audit Logs' }]
+      : []),
   ]
 
   return (

@@ -215,6 +215,9 @@ export const entitlements = pgTable(
   (table) => [
     index('entitlements_student_course_idx').on(table.studentId, table.courseId),
     index('entitlements_company_idx').on(table.companyId),
+    uniqueIndex('entitlements_active_student_course_key')
+      .on(table.studentId, table.courseId)
+      .where(sql`${table.status} = 'active'`),
   ]
 )
 

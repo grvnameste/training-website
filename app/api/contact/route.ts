@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { enforceRateLimit } from '@/lib/http/rate-limit'
 
 function escapeHtml(text: string): string {
   return String(text || '')
@@ -14,6 +15,9 @@ function isValidEmail(email: string): boolean {
 }
 
 export async function POST(request: Request) {
+  const limited = enforceRateLimit(request, 'contact', 5, 10 * 60_000)
+  if (limited) return limited
+
   try {
     const body = await request.json()
     const { name, email, subject, message } = body

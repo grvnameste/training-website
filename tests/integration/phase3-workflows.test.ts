@@ -230,7 +230,7 @@ describe('Phase 3 assignment and project workflows', { skip }, () => {
         .where(inArray(schema.projectTemplates.id, createdTemplateIds))
     }
 
-    await db.delete(schema.notifications).where(eq(schema.notifications.profileId, studentProfileId))
+    await db.delete(schema.notifications).where(inArray(schema.notifications.profileId, profileIds))
     await db
       .delete(schema.auditLogs)
       .where(inArray(schema.auditLogs.actorProfileId, profileIds))
@@ -253,6 +253,7 @@ describe('Phase 3 assignment and project workflows', { skip }, () => {
 
   it('builds, submits, and reviews an assignment, then clears the certificate blocker', async () => {
     const { assignmentService, certificateService } = services
+    const { db, schema } = services
 
     const assignment = await assignmentService.createAssignment(teacher, courseId, {
       title: 'Integration assignment',
@@ -286,6 +287,17 @@ describe('Phase 3 assignment and project workflows', { skip }, () => {
       content: 'Implementation summary',
     })
 
+    const teacherNotifications = await db
+      .select()
+      .from(schema.notifications)
+      .where(
+        and(
+          eq(schema.notifications.profileId, teacher.profile.id),
+          eq(schema.notifications.type, 'assignment_submitted')
+        )
+      )
+    assert.equal(teacherNotifications.length, 1)
+
     const queue = await assignmentService.listReviewQueue(teacher)
     assert.ok(queue.some((row) => row.submissionId === submission.id))
 
@@ -311,7 +323,6 @@ describe('Phase 3 assignment and project workflows', { skip }, () => {
       )
     )
 
-    const { db, schema } = services
     const notifications = await db
       .select()
       .from(schema.notifications)
@@ -326,6 +337,7 @@ describe('Phase 3 assignment and project workflows', { skip }, () => {
 
   it('runs a project through milestones, unlocks the next step, and completes it', async () => {
     const { projectService, certificateService, notificationService } = services
+    const { db, schema } = services
 
     const template = await projectService.createTemplate(teacher, courseId, {
       title: 'Integration project template',
@@ -381,6 +393,17 @@ describe('Phase 3 assignment and project workflows', { skip }, () => {
       firstInstanceMilestone.id,
       { content: 'Milestone one submitted' }
     )
+
+    const teacherNotifications = await db
+      .select()
+      .from(schema.notifications)
+      .where(
+        and(
+          eq(schema.notifications.profileId, teacher.profile.id),
+          eq(schema.notifications.type, 'project_milestone_submitted')
+        )
+      )
+    assert.equal(teacherNotifications.length, 1)
 
     const queue = await projectService.listProjectReviewQueue(teacher)
     assert.ok(queue.some((row) => row.submissionId === firstSubmission.id))
@@ -468,6 +491,9 @@ describe('Phase 3 assignment and project workflows', { skip }, () => {
 
     await notificationService.listNotifications(student.profile.id)
     await notificationService.listNotifications(student.profile.id)
+
+    const bulkSync = await notificationService.syncDueNotificationsForAll()
+    assert.ok(bulkSync.candidates >= 2)
 
     const rows = await db
       .select()

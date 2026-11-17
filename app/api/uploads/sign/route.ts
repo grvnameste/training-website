@@ -12,6 +12,7 @@ import {
   createSignedUploadUrl,
   getPublicUrl,
 } from '@/lib/storage/signed-urls'
+import { enforceRateLimit } from '@/lib/http/rate-limit'
 
 const schema = z.object({
   purpose: z.enum([
@@ -69,6 +70,9 @@ const PURPOSE_CONFIG = {
 } as const
 
 export async function POST(req: Request) {
+  const limited = enforceRateLimit(req, 'uploads:sign', 30, 60_000)
+  if (limited) return limited
+
   try {
     assertSameOrigin(req)
     const authResult = await requireAuth()

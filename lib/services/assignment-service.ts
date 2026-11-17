@@ -592,6 +592,24 @@ export async function submitAssignment(
     metadata: { courseId: assignment.courseId, attempt },
   })
 
+  const course = await getCourseById(assignment.courseId)
+  if (course?.teacherId) {
+    await createNotification({
+      profileId: course.teacherId,
+      type: 'assignment_submitted',
+      title: 'New assignment submission',
+      body: `${ctx.profile.name} submitted "${assignment.title}" (attempt ${attempt}).`,
+      linkUrl: `/teacher/assignments/${assignmentId}`,
+      dedupeKey: `assignment-submission:${submission.id}`,
+      metadata: {
+        assignmentId,
+        submissionId: submission.id,
+        studentId: ctx.profile.id,
+        attempt,
+      },
+    })
+  }
+
   return submission
 }
 
@@ -600,9 +618,7 @@ export async function listReviewQueue(ctx: AuthContext, courseId?: string) {
     .select({ id: courses.id, title: courses.title })
     .from(courses)
     .where(
-      ctx.role === 'super_admin'
-        ? eq(courses.isCapstone, false)
-        : eq(courses.teacherId, ctx.profile.id)
+      ctx.role === 'super_admin' ? sql`true` : eq(courses.teacherId, ctx.profile.id)
     )
 
   const courseIds = managedCourses

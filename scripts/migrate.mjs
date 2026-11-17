@@ -3,18 +3,6 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import postgres from 'postgres'
 
-const url = process.env.DATABASE_URL
-if (!url) {
-  console.error('DATABASE_URL is not set')
-  process.exit(1)
-}
-
-const directory = join(process.cwd(), 'supabase', 'migrations')
-const files = readdirSync(directory)
-  .filter((file) => file.endsWith('.sql'))
-  .sort()
-const migrations = files.map((file) => readMigration(file))
-
 const args = process.argv.slice(2)
 const command = args[0] && !args[0].startsWith('-') ? args[0] : 'up'
 const flags = new Set(args.filter((arg) => arg.startsWith('--')))
@@ -24,6 +12,44 @@ const upTo = args
 const dryRun = flags.has('--dry-run')
 const fresh = flags.has('--fresh')
 const allowChecksumDrift = flags.has('--allow-checksum-drift')
+
+const url =
+  command === 'fresh' && process.env.TEST_DATABASE_URL?.trim()
+    ? process.env.TEST_DATABASE_URL.trim()
+    : process.env.DATABASE_URL
+if (!url) {
+  console.error(
+    command === 'fresh'
+      ? 'TEST_DATABASE_URL or DATABASE_URL must be set'
+      : 'DATABASE_URL is not set'
+  )
+  process.exit(1)
+}
+
+if (command === 'fresh') {
+  const host = new URL(url).hostname
+  const localHosts = new Set(['localhost', '127.0.0.1', '::1', 'postgres'])
+  if (!localHosts.has(host) && process.env.ALLOW_REMOTE_FRESH !== '1') {
+    console.error(
+      `Refusing fresh install against ${host}. ` +
+        'Set ALLOW_REMOTE_FRESH=1 only for an isolated database.'
+    )
+    process.exit(1)
+  }
+}
+
+const directory = join(process.cwd(), 'supabase', 'migrations')
+const files = readdirSync(directory)
+  .filter((file) => file.endsWith('.sql'))
+  .sort()
+const migrations = files.map((file) => readMigration(file))
+
+const drizzleDirectory = join(process.cwd(), 'drizzle')
+const drizzleFiles = readdirSync(drizzleDirectory)
+  .filter((file) => file.endsWith('.sql'))
+  .sort()
+const baselineFile = drizzleFiles.at(-1)
+const platformFile = join(process.cwd(), 'supabase', 'baseline', 'platform.sql')
 
 const LEDGER_LOCK_ID = 730501
 
@@ -141,9 +167,59 @@ async function commandBaseline(sql) {
   }
 }
 
+async function commandFresh(sql) {
+  if (!baselineFile) {
+    console.error('No Drizzle baseline SQL found in ./drizzle')
+    process.exitCode = 1
+    return
+  }
+
+  const [existing] = await sql`
+    select count(*)::int as count
+    from pg_tables
+    where schemaname = 'public' and tablename <> 'schema_migrations'
+  `
+  if (existing.count > 0 && !dryRun) {
+    console.error(
+      'Fresh install requires an empty database. Public tables already exist.\n' +
+        'Use `npm run db:migrate` for an existing database, or `db:migrate:baseline` first.'
+    )
+    process.exitCode = 1
+    return
+  }
+
+  const baselineSource = readFileSync(join(drizzleDirectory, baselineFile), 'utf8')
+  const platformSource = readFileSync(platformFile, 'utf8')
+
+  if (dryRun) {
+    console.log(`would apply ${baselineFile}`)
+    console.log('would apply supabase/baseline/platform.sql')
+    console.log(`would record ${migrations.length} migrations in schema_migrations`)
+    return
+  }
+
+  await withLock(sql, async () => {
+    await sql.begin(async (tx) => {
+      await tx.unsafe(baselineSource)
+      await tx.unsafe(platformSource)
+    })
+    await ensureLedger(sql)
+
+    for (const migration of migrations) {
+      await sql`
+        insert into "schema_migrations" ("filename", "checksum", "execution_ms")
+        values (${migration.file}, ${migration.checksum}, null)
+        on conflict ("filename") do nothing
+      `
+    }
+  })
+
+  console.log(`Applied ${baselineFile} and supabase/baseline/platform.sql`)
+  console.log(`Recorded ${migrations.length} migrations as represented by the baseline`)
+}
+
 async function commandUp(sql) {
   await ensureLedger(sql)
-
   await withLock(sql, async () => {
     const rows = await appliedRows(sql)
     const applied = new Map(rows.map((row) => [row.filename, row]))
@@ -220,8 +296,10 @@ try {
     await commandBaseline(sql)
   } else if (command === 'up') {
     await commandUp(sql)
+  } else if (command === 'fresh') {
+    await commandFresh(sql)
   } else {
-    console.error(`Unknown command: ${command}. Use status, baseline, or up.`)
+    console.error(`Unknown command: ${command}. Use status, baseline, up, or fresh.`)
     process.exitCode = 1
   }
 } catch (error) {

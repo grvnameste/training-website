@@ -9,6 +9,7 @@ import {
   newSessionId,
 } from '@/lib/auth/session-store'
 import { normalizeRole, provisionProfile, toPublicUser } from '@/lib/auth/users'
+import { enforceRateLimit } from '@/lib/http/rate-limit'
 
 // Constant-cost comparison target so unknown accounts take the same time as
 // wrong passwords and cannot be enumerated.
@@ -16,6 +17,9 @@ const DUMMY_PASSWORD_HASH =
   '$2b$12$cqiXCYkZD7d9.pTAlq6DeeRgyS2bXFImruLm0.I9rMYdn6gBw5F6O'
 
 export async function POST(req: Request) {
+  const limited = enforceRateLimit(req, 'auth:login', 10, 60_000)
+  if (limited) return limited
+
   const body = await req.json().catch(() => null)
   if (!body || typeof body !== 'object') {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })

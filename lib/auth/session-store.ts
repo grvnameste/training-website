@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, isNull, lt } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { userSessions } from '@/lib/db/schema'
 import { SESSION_MAX_AGE } from './session'
@@ -56,4 +56,12 @@ export async function revokeSession(sessionId: string) {
     .update(userSessions)
     .set({ revokedAt: new Date() })
     .where(and(eq(userSessions.id, sessionId), isNull(userSessions.revokedAt)))
+}
+
+export async function cleanupExpiredSessions() {
+  const removed = await db
+    .delete(userSessions)
+    .where(lt(userSessions.expiresAt, new Date()))
+    .returning({ id: userSessions.id })
+  return removed.length
 }

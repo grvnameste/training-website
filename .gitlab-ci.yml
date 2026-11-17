@@ -50,6 +50,26 @@ integration:
     - npm run test:db:setup
     - npm run test:integration
 
+e2e:
+  stage: verify
+  needs: [install]
+  services:
+    - name: postgres:17
+      alias: postgres
+  variables:
+    POSTGRES_USER: postgres
+    POSTGRES_PASSWORD: postgres
+    POSTGRES_DB: readnrevise_test
+    DATABASE_URL: postgresql://postgres:postgres@postgres:5432/readnrevise_test
+    TEST_DATABASE_URL: postgresql://postgres:postgres@postgres:5432/readnrevise_test
+    SESSION_SECRET: phase4-e2e-session-secret-0123456789abcdef
+    CRON_SECRET: phase4-e2e-cron-secret
+    ALLOW_REMOTE_TEST_DB: "1"
+  script:
+    - npm run test:db:setup
+    - npm run build
+    - npm run test:e2e
+
 build:
   stage: build
   needs: [install]

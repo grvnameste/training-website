@@ -646,6 +646,32 @@ export async function submitMilestone(
     resourceId: instance.id,
     metadata: { instanceMilestoneId, attempt },
   })
+
+  const course = await getCourseById(instance.courseId)
+  if (course?.teacherId) {
+    const [templateMilestone] = await db
+      .select({ title: projectMilestones.title })
+      .from(projectMilestones)
+      .where(eq(projectMilestones.id, instanceMilestone.milestoneId))
+      .limit(1)
+    await createNotification({
+      profileId: course.teacherId,
+      type: 'project_milestone_submitted',
+      title: 'New project milestone submission',
+      body: `${ctx.profile.name} submitted "${
+        templateMilestone?.title ?? 'a milestone'
+      }" for review.`,
+      linkUrl: '/teacher/project-reviews',
+      dedupeKey: `project-milestone-submission:${submission.id}`,
+      metadata: {
+        instanceId: instance.id,
+        instanceMilestoneId,
+        submissionId: submission.id,
+        studentId: ctx.profile.id,
+      },
+    })
+  }
+
   return submission
 }
 
@@ -654,9 +680,7 @@ export async function listProjectReviewQueue(ctx: AuthContext) {
     .select({ id: courses.id })
     .from(courses)
     .where(
-      ctx.role === 'super_admin'
-        ? eq(courses.isCapstone, false)
-        : eq(courses.teacherId, ctx.profile.id)
+      ctx.role === 'super_admin' ? sql`true` : eq(courses.teacherId, ctx.profile.id)
     )
   const courseIds = coursesManaged.map((course) => course.id)
   if (courseIds.length === 0) return []

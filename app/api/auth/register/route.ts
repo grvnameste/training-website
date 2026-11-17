@@ -16,8 +16,12 @@ import {
   validatePassword,
   validateUsername,
 } from '@/lib/auth/validation'
+import { enforceRateLimit } from '@/lib/http/rate-limit'
 
 export async function POST(req: Request) {
+  const limited = enforceRateLimit(req, 'auth:register', 5, 10 * 60_000)
+  if (limited) return limited
+
   const body = await req.json().catch(() => null)
   if (!body || typeof body !== 'object') {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })

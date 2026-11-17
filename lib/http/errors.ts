@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { logger } from '@/lib/observability/logger'
 
 export class ApiError extends Error {
   status: number
@@ -23,6 +24,7 @@ export function toErrorResponse(error: unknown) {
   }
 
   console.error('[api] Unhandled error:', error)
+  logger.exception('unhandled_api_error', error)
   return NextResponse.json(
     { error: 'Internal server error', code: 'INTERNAL_ERROR' },
     { status: 500 }
