@@ -1,17 +1,13 @@
-//app/student/questionnaire/page.tsx
+// app/student/questionnaire/page.tsx
 'use client'
+
 import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import supabase from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { useUser } from "@clerk/nextjs"
-
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { useUser } from '@/hooks/useUser'
+import { toast } from 'sonner'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Loader2 } from 'lucide-react'
 
 type CareerAnswers = Record<string, number>
 type CareerOpenAnswers = Record<string, string>
@@ -63,41 +59,73 @@ export default function StudentQuestionnaire() {
   const [careerOpenAnswers, setCareerOpenAnswers] = useState<CareerOpenAnswers>({})
   const [cultureAnswers, setCultureAnswers] = useState<CultureAnswers>({})
 
-  const [userId, setUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-
+  const [submitting, setSubmitting] = useState(false)
 
   const { user, isLoaded } = useUser()
 
+  /* 🔐 AUTH CHECK (SESSION BASED) */
+  useEffect(() => {
+    if (!isLoaded) return
 
-  /* 🔐 AUTH CHECK (CLERK BASED) */
-useEffect(() => {
-  if (!isLoaded) return
+    if (!user) {
+      router.replace('/login')
+      return
+    }
 
-  if (!user) {
-    router.replace('/login')
-    return
+    setLoading(false)
+  }, [user, isLoaded, router])
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-24">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    )
   }
 
-  setUserId(user.id)   // 👈 Clerk ID
-  setLoading(false)
-}, [user, isLoaded])
-
-  if (loading) return null
-
   const activeQuestion =
-    step === 'career'
-      ? careerQuestions[careerIndex]
-      : cultureQuestions[cultureIndex]
+    step === 'career' ? careerQuestions[careerIndex] : cultureQuestions[cultureIndex]
 
   const selectedLikert =
-    step === 'career'
-      ? careerAnswers[activeQuestion.id]
-      : cultureAnswers[activeQuestion.id]
+    step === 'career' ? careerAnswers[activeQuestion.id] : cultureAnswers[activeQuestion.id]
+
+  const totalQuestions = careerQuestions.length + cultureQuestions.length
+  const currentStepNumber =
+    step === 'career' ? careerIndex + 1 : careerQuestions.length + cultureIndex + 1
+
+  const isCurrentAnswered = () => {
+    if (activeQuestion.type === 'likert') {
+      return selectedLikert !== undefined
+    }
+    return (careerOpenAnswers[activeQuestion.id] || '').trim().length > 0
+  }
+
+  const handlePrevious = () => {
+    if (step === 'career' && careerIndex > 0) {
+      setCareerIndex((i) => i - 1)
+    } else if (step === 'culture') {
+      if (cultureIndex > 0) {
+        setCultureIndex((i) => i - 1)
+      } else {
+        setStep('career')
+        setCareerIndex(careerQuestions.length - 1)
+      }
+    }
+  }
 
   const nextCareer = () => {
+    if (!isCurrentAnswered()) {
+      toast.error(
+        activeQuestion.type === 'likert'
+          ? 'Please select an option before continuing.'
+          : 'Please enter a brief response before continuing.'
+      )
+      return
+    }
+
     if (careerIndex < careerQuestions.length - 1) {
-      setCareerIndex(i => i + 1)
+      setCareerIndex((i) => i + 1)
     } else {
       setStep('culture')
     }
@@ -105,43 +133,42 @@ useEffect(() => {
 
   const finishQuestionnaire = async () => {
     if (!user) return
-  
-    // 🔥 STEP 1: get UUID from profiles
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('clerk_id', user.id)
-      .single()
-  
-    console.log("PROFILE:", profile, profileError)
-  
-    if (!profile) {
-      alert("Profile not found")
-      return
-    }
-  
-    // 🔥 STEP 2: insert questionnaire
-    const { error } = await supabase
-      .from('questionnaire_results')
-      .insert({
-        user_id: user.id,   // Clerk user id        career_answers: careerAnswers,
-        career_open_answers: careerOpenAnswers,
-        culture_answers: cultureAnswers,
+    setSubmitting(true)
+
+    try {
+      const res = await fetch('/api/me/questionnaire', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          careerAnswers,
+          careerOpenAnswers,
+          cultureAnswers,
+        }),
       })
-  
-    console.log("INSERT ERROR:", error)
-  
-    if (error) {
-      alert(error.message)   // 🔥 SHOW REAL ERROR
-      return
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        toast.error(data?.error || 'Failed to save questionnaire responses.')
+        setSubmitting(false)
+        return
+      }
+
+      toast.success('Assessment saved. We will use it to personalize your recommendations.')
+      router.replace('/student/result')
+    } catch (err: any) {
+      console.error('Questionnaire submit error:', err)
+      toast.error(err?.message || 'Something went wrong saving your assessment.')
+      setSubmitting(false)
     }
-  
-    router.replace('/student/result')
   }
 
   const nextCulture = () => {
+    if (!isCurrentAnswered()) {
+      toast.error('Please select an option before continuing.')
+      return
+    }
+
     if (cultureIndex < cultureQuestions.length - 1) {
-      setCultureIndex(i => i + 1)
+      setCultureIndex((i) => i + 1)
     } else {
       finishQuestionnaire()
     }
@@ -150,8 +177,20 @@ useEffect(() => {
   return (
     <div className="max-w-3xl mx-auto px-6 py-10">
       <Card className="rounded-3xl shadow-xl">
-        <CardHeader>
-          <CardTitle className="text-2xl">
+        <CardHeader className="space-y-3">
+          <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
+            <span>{step === 'career' ? 'Part 1: Career Discovery' : 'Part 2: Culture Fit'}</span>
+            <span>
+              Question {currentStepNumber} of {totalQuestions}
+            </span>
+          </div>
+          <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+            <div
+              className="h-full bg-blue-600 transition-all duration-300"
+              style={{ width: `${(currentStepNumber / totalQuestions) * 100}%` }}
+            />
+          </div>
+          <CardTitle className="text-2xl pt-1">
             {step === 'career' ? 'Career Questionnaire' : 'Culture Fit'}
           </CardTitle>
         </CardHeader>
@@ -166,17 +205,17 @@ useEffect(() => {
                 return (
                   <button
                     key={label}
+                    type="button"
                     onClick={() =>
                       step === 'career'
-                        ? setCareerAnswers(p => ({ ...p, [activeQuestion.id]: score }))
-                        : setCultureAnswers(p => ({ ...p, [activeQuestion.id]: score }))
+                        ? setCareerAnswers((p) => ({ ...p, [activeQuestion.id]: score }))
+                        : setCultureAnswers((p) => ({ ...p, [activeQuestion.id]: score }))
                     }
-                    className={`w-full rounded-xl border px-4 py-3 text-left
-                      ${
-                        selectedLikert === score
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted hover:bg-muted/70'
-                      }`}
+                    className={`w-full rounded-xl border px-4 py-3 text-left transition ${
+                      selectedLikert === score
+                        ? 'bg-blue-600 text-white border-blue-600 font-medium shadow-sm'
+                        : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-800'
+                    }`}
                   >
                     {label}
                   </button>
@@ -186,25 +225,43 @@ useEffect(() => {
           ) : (
             <textarea
               rows={5}
+              placeholder="Write your thoughts here..."
               value={careerOpenAnswers[activeQuestion.id] || ''}
-              onChange={e =>
-                setCareerOpenAnswers(p => ({
+              onChange={(e) =>
+                setCareerOpenAnswers((p) => ({
                   ...p,
                   [activeQuestion.id]: e.target.value,
                 }))
               }
-              className="w-full rounded-xl border p-4"
+              className="w-full rounded-xl border border-slate-200 p-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           )}
 
-          <div className="flex justify-end">
+          <div className="flex justify-between pt-2">
             <Button
-              onClick={step === 'career' ? nextCareer : nextCulture}
+              type="button"
+              variant="outline"
+              disabled={(step === 'career' && careerIndex === 0) || submitting}
+              onClick={handlePrevious}
             >
-              {step === 'culture' &&
-              cultureIndex === cultureQuestions.length - 1
-                ? 'Finish'
-                : 'Next'}
+              Previous
+            </Button>
+
+            <Button
+              type="button"
+              disabled={submitting}
+              onClick={step === 'career' ? nextCareer : nextCulture}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              {submitting ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" /> Saving...
+                </span>
+              ) : step === 'culture' && cultureIndex === cultureQuestions.length - 1 ? (
+                'Finish assessment'
+              ) : (
+                'Next'
+              )}
             </Button>
           </div>
         </CardContent>

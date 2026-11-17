@@ -1,7 +1,9 @@
 'use client'
 import React, { useEffect, useState, useRef } from 'react'
 import Image from 'next/image'
-import { useUser, useClerk } from "@clerk/nextjs"
+import { useAuth, useUser } from '@/hooks/useUser'
+import { canAccessInstructorPortal } from '@/lib/auth/roles'
+import { NotificationBell } from '@/components/notifications/notification-bell'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -16,6 +18,11 @@ import {
   FileText,
   Menu,
   ChevronLeft,
+  User,
+  Library,
+  ClipboardList,
+  FolderKanban,
+  X,
 } from 'lucide-react'
 
 export default function StudentLayout({
@@ -28,15 +35,26 @@ export default function StudentLayout({
 
   const [open, setOpen] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   const { user, isLoaded } = useUser()
-  const { signOut } = useClerk()
+  const { signOut } = useAuth()
 
   useEffect(() => {
     if (!isLoaded) return
-    if (!user) router.replace('/login')
+    if (!user) {
+      router.replace('/login')
+      return
+    }
+    if (canAccessInstructorPortal(user.role, user.companies)) {
+      router.replace('/teacher/dashboard')
+    }
   }, [user, isLoaded, router])
+
+  useEffect(() => {
+    setMobileMenuOpen(false)
+  }, [pathname])
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -57,69 +75,129 @@ export default function StudentLayout({
 
   const navItems = [
     { href: '/student/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { href: '/student/my-courses', icon: Library, label: 'My Courses' },
+    { href: '/student/assignments', icon: ClipboardList, label: 'Assignments' },
+    { href: '/student/projects', icon: FolderKanban, label: 'Projects' },
     { href: '/student/courses', icon: GraduationCap, label: 'Courses' },
     { href: '/student/skills', icon: BookOpen, label: 'Skills' },
     { href: '/student/activity', icon: Activity, label: 'Activity' },
     { href: '/student/result', icon: BarChart3, label: 'Result' },
     { href: '/student/interview', icon: Mic, label: 'Interview' },
     { href: '/student/resume', icon: FileText, label: 'Resume' },
+    { href: '/student/profile', icon: User, label: 'Profile' },
   ]
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans">
       {/* HEADER */}
       <header className="sticky top-0 z-[60] h-[70px] bg-white/80 backdrop-blur-md border-b border-slate-200/60">
-        <nav className="flex h-full items-center justify-between px-8">
-          <Link href="/student/dashboard" className="flex items-center hover:opacity-80 transition">
-            <Image
-              src="/assets/Readnrevise_logo.png"
-              alt="ReadNRevise Logo"
-              width={140}
-              height={35}
-              priority
-            />
-          </Link>
-
-          <div className="relative" ref={dropdownRef}>
+        <nav className="flex h-full items-center justify-between px-4 md:px-8">
+          <div className="flex items-center gap-3">
             <button
-              onClick={() => setOpen(prev => !prev)}
+              type="button"
+              onClick={() => setMobileMenuOpen((prev) => !prev)}
+              aria-label="Toggle navigation menu"
+              className="md:hidden p-2 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+            >
+              {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
+            </button>
+
+            <Link
+              href="/student/dashboard"
+              className="flex items-center hover:opacity-80 transition"
+            >
+              <Image
+                src="/assets/Readnrevise_logo.png"
+                alt="ReadNRevise Logo"
+                width={140}
+                height={35}
+                priority
+              />
+            </Link>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <NotificationBell />
+            <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setOpen((prev) => !prev)}
               className="group flex items-center gap-3 rounded-xl border border-slate-200 p-1.5 pr-3 bg-white hover:border-blue-400 hover:shadow-sm transition-all duration-200"
             >
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center text-xs font-bold shadow-md shadow-blue-200">
-                {user?.primaryEmailAddress?.emailAddress?.charAt(0).toUpperCase()}
-              </div>
+              {user?.avatarUrl ? (
+                <img
+                  src={user.avatarUrl}
+                  alt={user?.name || 'Student avatar'}
+                  referrerPolicy="no-referrer"
+                  className="w-8 h-8 rounded-lg object-cover border border-slate-200"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center text-xs font-bold shadow-md shadow-blue-200">
+                  {user?.email?.charAt(0).toUpperCase()}
+                </div>
+              )}
               <div className="hidden md:block text-left">
                 <p className="text-xs font-bold text-slate-700 leading-none truncate max-w-[100px]">
-                   {user?.fullName || 'Student'}
+                  {user?.name || 'Student'}
                 </p>
               </div>
-              <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+              <ChevronDown
+                className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+              />
             </button>
-            
-            {/* Simple Dropdown for Logout */}
+
+            {/* User Dropdown */}
             {open && (
-                <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-xl py-2 z-50">
-                    <button onClick={handleLogout} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-500 hover:bg-red-50 transition">
-                        <LogOut size={16} /> Logout
-                    </button>
+              <div className="absolute right-0 mt-2 w-52 bg-white border border-slate-200 rounded-xl shadow-xl py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
+                <div className="px-4 py-2 border-b border-slate-100">
+                  <p className="text-xs font-bold text-slate-800 truncate">
+                    {user?.name || 'Student'}
+                  </p>
+                  <p className="text-[11px] text-slate-400 truncate">
+                    {user?.email}
+                  </p>
                 </div>
+                <Link
+                  href="/student/profile"
+                  onClick={() => setOpen(false)}
+                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition"
+                >
+                  <User size={16} /> My Profile
+                </Link>
+                <div className="border-t border-slate-100 my-1" />
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-500 hover:bg-red-50 transition"
+                >
+                  <LogOut size={16} /> Logout
+                </button>
+              </div>
             )}
+            </div>
           </div>
         </nav>
       </header>
 
+      {/* MOBILE DRAWER BACKDROP */}
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-slate-900/40 md:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
       <div className="flex">
-        {/* SIDEBAR */}
+        {/* SIDEBAR (Desktop persistent + Mobile slide-over) */}
         <aside
-          className={`sticky top-[70px] h-[calc(100vh-70px)] bg-white border-r border-slate-200/60 transition-all duration-400 ease-in-out z-40
-          ${sidebarOpen ? 'w-[260px]' : 'w-[80px]'}`}
+          className={`fixed md:sticky top-[70px] left-0 h-[calc(100vh-70px)] bg-white border-r border-slate-200/60 transition-all duration-300 ease-in-out z-50 md:z-40
+          ${mobileMenuOpen ? 'translate-x-0 w-[260px]' : '-translate-x-full md:translate-x-0'}
+          ${sidebarOpen ? 'md:w-[260px]' : 'md:w-[80px]'}`}
         >
-          <div className="flex flex-col h-full py-6 px-4">
-            
-            {/* Toggle Button */}
-            <div className={`mb-8 flex ${sidebarOpen ? 'justify-end' : 'justify-center'}`}>
+          <div className="flex flex-col h-full py-6 px-4 overflow-y-auto">
+            {/* Desktop Toggle Button */}
+            <div className={`mb-6 hidden md:flex ${sidebarOpen ? 'justify-end' : 'justify-center'}`}>
               <button
-                onClick={() => setSidebarOpen(prev => !prev)}
+                onClick={() => setSidebarOpen((prev) => !prev)}
+                aria-label="Toggle sidebar width"
                 className="p-2 rounded-xl bg-slate-50 text-slate-500 hover:bg-blue-50 hover:text-blue-600 transition-colors border border-slate-100"
               >
                 {sidebarOpen ? <ChevronLeft size={18} /> : <Menu size={18} />}
@@ -128,34 +206,37 @@ export default function StudentLayout({
 
             {/* Navigation */}
             <nav className="flex-1 space-y-1.5">
-              {navItems.map(item => {
+              {navItems.map((item) => {
                 const Icon = item.icon
                 const active = pathname === item.href || pathname.startsWith(item.href + '/')
+                const showLabel = sidebarOpen || mobileMenuOpen
 
                 return (
                   <Link key={item.href} href={item.href} title={item.label}>
                     <div
                       className={`group flex items-center gap-3 rounded-xl transition-all duration-200 px-3 py-3 relative
-                      ${active 
-                        ? 'bg-blue-50 text-blue-600 font-semibold shadow-sm' 
-                        : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}
-                      ${sidebarOpen ? 'justify-start' : 'justify-center'}`}
+                      ${
+                        active
+                          ? 'bg-blue-50 text-blue-600 font-semibold shadow-sm'
+                          : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                      }
+                      ${showLabel ? 'justify-start' : 'justify-center'}`}
                     >
-                      {/* Active Indicator Line */}
                       {active && (
                         <div className="absolute left-0 w-1 h-6 bg-blue-600 rounded-r-full" />
                       )}
-                      
-                      <Icon className={`w-[22px] h-[22px] transition-transform duration-200 ${active ? 'scale-110' : 'group-hover:scale-110'}`} />
-                      
-                      {sidebarOpen && (
+
+                      <Icon
+                        className={`w-[22px] h-[22px] transition-transform duration-200 ${active ? 'scale-110' : 'group-hover:scale-110'}`}
+                      />
+
+                      {showLabel && (
                         <span className="text-[14px] tracking-tight">{item.label}</span>
                       )}
-                      
-                      {/* Tooltip for collapsed mode */}
-                      {!sidebarOpen && (
+
+                      {!showLabel && (
                         <div className="absolute left-16 bg-slate-900 text-white text-xs px-2 py-1 rounded opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap z-[100]">
-                            {item.label}
+                          {item.label}
                         </div>
                       )}
                     </div>
@@ -166,23 +247,23 @@ export default function StudentLayout({
 
             {/* Bottom Section / Logout */}
             <div className="pt-4 mt-4 border-t border-slate-100">
-                <button
+              <button
                 onClick={handleLogout}
                 className={`w-full group flex items-center gap-3 rounded-xl px-3 py-3 text-slate-500 hover:bg-red-50 hover:text-red-600 transition-all duration-200
-                ${sidebarOpen ? 'justify-start' : 'justify-center'}`}
-                >
+                ${sidebarOpen || mobileMenuOpen ? 'justify-start' : 'justify-center'}`}
+              >
                 <LogOut className="w-[22px] h-[22px]" />
-                {sidebarOpen && <span className="text-[14px] font-medium">Sign Out</span>}
-                </button>
+                {(sidebarOpen || mobileMenuOpen) && (
+                  <span className="text-[14px] font-medium">Sign Out</span>
+                )}
+              </button>
             </div>
           </div>
         </aside>
 
         {/* CONTENT */}
         <main className="flex-1 min-w-0">
-            <div className="max-w-[1400px] mx-auto p-6 md:p-10">
-                {children}
-            </div>
+          <div className="max-w-[1400px] mx-auto p-6 md:p-10">{children}</div>
         </main>
       </div>
     </div>

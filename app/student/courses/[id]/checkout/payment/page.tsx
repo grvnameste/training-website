@@ -3,10 +3,10 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import supabase from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { CreditCard, Lock } from 'lucide-react'
-import { useUser } from "@clerk/nextjs"
+import { useUser } from "@/hooks/useUser"
+import { toast } from 'sonner'
 
 interface Course {
   id: string
@@ -30,12 +30,16 @@ export default function PaymentStep() {
 
   useEffect(() => {
     const load = async () => {
-      const { data } = await supabase
-        .from('courses')
-        .select('id, title, price, thumbnail_url')
-        .eq('id', courseId)
-        .maybeSingle()
-      setCourse(data)
+      const res = await fetch(`/api/catalog/courses/${courseId}`, { cache: 'no-store' })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok && data.course) {
+        setCourse({
+          id: data.course.id,
+          title: data.course.title,
+          price: data.course.price,
+          thumbnail_url: data.course.thumbnailUrl,
+        })
+      }
       setLoading(false)
     }
     load()
@@ -43,69 +47,37 @@ export default function PaymentStep() {
 
   const handleEnrollAndComplete = async () => {
     setProcessing(true)
-  
+
     if (!user) {
-      alert("Not logged in")
-      setProcessing(false) // 🔥 IMPORTANT
+      toast.error("Please sign in to complete enrollment")
+      setProcessing(false)
       return
     }
-  
 
+    try {
+      const res = await fetch('/api/student/enroll', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ courseId }),
+      })
 
+      const data = await res.json()
 
- // ✅ get UUID (FINAL FIX)
-const { data: profile, error: profileError } = await supabase
-.from('profiles')
-.select('id')
-.eq('clerk_id', user.id)
-.single()
-
-if (profileError || !profile) {
-console.error(profileError)
-alert("User not found (dashboard open karo ek baar)")
-setProcessing(false)
-return
-}
-
-const uuid = profile.id
-console.log("UUID:", uuid)
-  
-    const { error } = await supabase
-      .from('course_enrollments')
-      .upsert(
-        {
-          student_id: uuid,
-          course_id: courseId
-        },
-        { onConflict: 'student_id,course_id' }
-      )
-      if (error) {
-        console.error(error)
-        alert("Enrollment failed")
-        setProcessing(false)
-        return
+      if (!res.ok) {
+        throw new Error(data.error || 'Enrollment failed')
       }
-  
- // 🔥 get first lesson
-const { data: sections } = await supabase
-.from('sections')
-.select(`
-  id,
-  lessons (
-    id,
-    order_index
-  )
-`)
-.eq('course_id', courseId)
-.order('order_index', { ascending: true })
 
-const firstLessonId = sections?.[0]?.lessons?.[0]?.id
-
-if (firstLessonId) {
-router.push(`/student/courses/${courseId}/play/${firstLessonId}`)
-} else {
-router.push(`/student/courses/${courseId}`)
-}
+      toast.success('Successfully enrolled! Starting your course...')
+      if (data.firstLessonId) {
+        router.push(`/student/courses/${courseId}/play/${data.firstLessonId}`)
+      } else {
+        router.push(`/student/courses/${courseId}`)
+      }
+    } catch (err: any) {
+      console.error(err)
+      toast.error(err.message || "Enrollment failed")
+      setProcessing(false)
+    }
   }
   if (loading) {
     return (
@@ -116,6 +88,23 @@ router.push(`/student/courses/${courseId}`)
   }
 
   if (!course) return null
+
+  if (course.price > 0) {
+    return (
+      <div className="mx-auto max-w-lg px-6 py-20 text-center">
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-8">
+          <h1 className="text-2xl font-semibold text-slate-900">Paid enrollment</h1>
+          <p className="mt-2 text-sm text-slate-600">
+            Online payment is not enabled for this course. Contact your institute to request
+            enrollment and an administrator will grant access.
+          </p>
+          <Button className="mt-5" onClick={() => router.push('/contact')}>
+            Contact institute
+          </Button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     
@@ -189,7 +178,7 @@ router.push(`/student/courses/${courseId}`)
           <div className="bg-white rounded-2xl border shadow-sm overflow-hidden">
             <div className="aspect-video">
               {course.thumbnail_url ? (
-                <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover" />
+                <img src={course.thumbnail_url} alt={course.title} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full bg-slate-200 flex items-center justify-center text-slate-400 text-sm">No thumbnail</div>
               )}

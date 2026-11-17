@@ -1,6 +1,6 @@
 //app/dashboard/page.tsx
 'use client'
-import { useUser } from "@clerk/nextjs"
+import { useUser } from "@/hooks/useUser"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 
@@ -16,11 +16,11 @@ export default function DashboardRedirect() {
       router.replace('/login')
       return
     }
-    const role = user.publicMetadata?.role
+    const role = user.role
 
     console.log("Role:", role)
 
-    if (role === 'super_admin') {
+    if (role === 'super_admin' || role === 'teacher') {
       router.replace('/teacher/dashboard')
     } else {
       router.replace('/student/dashboard')

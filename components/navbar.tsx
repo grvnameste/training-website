@@ -3,7 +3,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { useState } from 'react'
-import { useUser } from "@clerk/nextjs"
+import { useUser } from "@/hooks/useUser"
 import { Menu, X } from "lucide-react"
 
 // 1. Variants type import karein

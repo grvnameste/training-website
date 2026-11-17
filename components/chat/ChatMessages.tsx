@@ -5,7 +5,7 @@ import { Message } from '@/hooks/useTeacherChat'
 interface ChatMessagesProps {
     messages: Message[]
     teacherId: string | null
-    scrollRef: React.RefObject<HTMLDivElement>
+    scrollRef: React.RefObject<HTMLDivElement | null>
 }
 
 export function ChatMessages({ messages, teacherId, scrollRef }: ChatMessagesProps) {

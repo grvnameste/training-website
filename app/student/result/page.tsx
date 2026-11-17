@@ -1,18 +1,12 @@
-//app/student/result/page.tsx
+// app/student/result/page.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import supabase from '@/lib/supabase/client'
-import { useUser } from "@clerk/nextjs"
+import { useUser } from '@/hooks/useUser'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { Lock } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Lock, RotateCcw, Loader2 } from 'lucide-react'
 
 type CareerAnswers = Record<string, number>
 type CareerOpenAnswers = Record<string, string>
@@ -61,50 +55,63 @@ export default function QuestionnaireResult() {
   const [careerOpenAnswers, setCareerOpenAnswers] = useState<CareerOpenAnswers | null>(null)
   const [cultureAnswers, setCultureAnswers] = useState<CultureAnswers | null>(null)
 
-  const { user } = useUser()
+  const { user, isLoaded } = useUser()
 
   useEffect(() => {
-    if (!user) return
-  
-    const load = async () => {
-      const { data } = await supabase
-        .from('questionnaire_results')
-        .select('*')
-        .eq('user_id', user.id)   // 🔥 THIS MATCHES DB
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single()
-  
-      if (!data) {
-        setLoading(false)
-        return
-      }
-  
-      setCareerAnswers(data.career_answers)
-      setCareerOpenAnswers(data.career_open_answers)
-      setCultureAnswers(data.culture_answers)
+    if (!isLoaded) return
+
+    if (!user) {
       setLoading(false)
+      return
     }
-  
+
+    const load = async () => {
+      try {
+        const res = await fetch('/api/me/questionnaire', { cache: 'no-store' })
+        const payload = await res.json().catch(() => ({}))
+        const data = payload?.result
+        if (data) {
+          setCareerAnswers(data.career_answers || null)
+          setCareerOpenAnswers(data.career_open_answers || null)
+          setCultureAnswers(data.culture_answers || null)
+        }
+      } catch (err) {
+        console.error('Error loading questionnaire result:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
     load()
-  }, [user])
+  }, [user, isLoaded])
 
   if (loading) {
-    return <div className="p-10 text-center">Loading...</div>
+    return (
+      <div className="flex flex-col items-center justify-center py-24 gap-3 text-slate-500">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <p className="text-sm font-medium">Loading assessment results...</p>
+      </div>
+    )
   }
 
   /* 🔒 NO ASSESSMENT */
   if (!careerAnswers && !careerOpenAnswers && !cultureAnswers) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center">
-        <Card className="max-w-md w-full text-center">
-          <CardHeader>
-            <Lock className="mx-auto w-8 h-8 text-muted-foreground" />
+        <Card className="max-w-md w-full text-center p-6 rounded-2xl">
+          <CardHeader className="space-y-3">
+            <Lock className="mx-auto w-8 h-8 text-blue-600" />
             <CardTitle>Assessment Required</CardTitle>
           </CardHeader>
-          <CardContent>
-            <Button onClick={() => router.push('/student/questionnaire')}>
-              Give Assessment
+          <CardContent className="space-y-4">
+            <p className="text-sm text-slate-500">
+              Complete the optional Career & Culture assessment to personalize your recommendations.
+            </p>
+            <Button
+              onClick={() => router.push('/student/questionnaire')}
+              className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-6"
+            >
+              Take Assessment
             </Button>
           </CardContent>
         </Card>
@@ -114,9 +121,17 @@ export default function QuestionnaireResult() {
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-10 space-y-8">
-      <h1 className="text-3xl font-bold text-center">
-        Your Questionnaire Responses
-      </h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <h1 className="text-3xl font-bold text-slate-900">Your Questionnaire Responses</h1>
+        <Button
+          variant="outline"
+          onClick={() => router.push('/student/questionnaire')}
+          className="self-start sm:self-auto gap-2"
+        >
+          <RotateCcw className="w-4 h-4" />
+          Retake Assessment
+        </Button>
+      </div>
 
       {/* ================= CAREER ================= */}
       <Card>
@@ -125,21 +140,21 @@ export default function QuestionnaireResult() {
         </CardHeader>
 
         <CardContent className="space-y-4">
-          {careerQuestions.map(q => (
+          {careerQuestions.map((q) => (
             <div key={q.id} className="border rounded-xl p-4 bg-white">
-              <p className="font-medium">{q.text}</p>
+              <p className="font-medium text-slate-900">{q.text}</p>
 
               {q.type === 'likert' ? (
-                <p className="mt-1 text-slate-600">
+                <p className="mt-1 text-slate-600 text-sm">
                   Answer:
-                  <span className="ml-2 font-semibold">
+                  <span className="ml-2 font-semibold text-blue-700">
                     {careerAnswers?.[q.id] !== undefined
-                      ? likertLabels[4 - careerAnswers[q.id]]
+                      ? likertLabels[4 - careerAnswers[q.id]] ?? '—'
                       : '—'}
                   </span>
                 </p>
               ) : (
-                <p className="mt-2 text-slate-600 whitespace-pre-line">
+                <p className="mt-2 text-slate-600 text-sm whitespace-pre-line">
                   {careerOpenAnswers?.[q.id] || '—'}
                 </p>
               )}
@@ -155,14 +170,14 @@ export default function QuestionnaireResult() {
         </CardHeader>
 
         <CardContent className="space-y-4">
-          {cultureQuestions.map(q => (
+          {cultureQuestions.map((q) => (
             <div key={q.id} className="border rounded-xl p-4 bg-white">
-              <p className="font-medium">{q.text}</p>
-              <p className="mt-1 text-slate-600">
+              <p className="font-medium text-slate-900">{q.text}</p>
+              <p className="mt-1 text-slate-600 text-sm">
                 Answer:
-                <span className="ml-2 font-semibold">
+                <span className="ml-2 font-semibold text-blue-700">
                   {cultureAnswers?.[q.id] !== undefined
-                    ? likertLabels[4 - cultureAnswers[q.id]]
+                    ? likertLabels[4 - cultureAnswers[q.id]] ?? '—'
                     : '—'}
                 </span>
               </p>

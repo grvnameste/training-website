@@ -69,7 +69,7 @@ export function ChatSidebar({
                                 >
                                     <div className="relative">
                                         <Avatar className={`w-10 h-10 border-2 transition-transform duration-300 ${selectedRoomId === room.id ? 'border-white/50 scale-105' : 'border-white'}`}>
-                                            <AvatarImage src={room.student_image} className="object-cover" />
+                                            <AvatarImage src={room.student_image || undefined} className="object-cover" />
                                             <AvatarFallback className={selectedRoomId === room.id ? 'bg-white/20' : 'bg-slate-200'}>
                                                 <User className="w-5 h-5" />
                                             </AvatarFallback>

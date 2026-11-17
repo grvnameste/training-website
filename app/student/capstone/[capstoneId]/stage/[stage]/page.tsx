@@ -58,6 +58,7 @@ export default function CapstoneStagePage() {
   <Stage2Content
     capstoneId={capstoneId}
     stage2Submitted={stage2Submitted}
+    loading={loading}
     onSubmitReview={submitStage2Review}
   />
 )}
@@ -72,6 +73,15 @@ export default function CapstoneStagePage() {
           onRequestCertificate={requestCertificate}
           capstoneId={capstoneId}
         />
+      )}
+
+      {stage !== 1 && stage !== 2 && stage !== 3 && (
+        <div className="rounded-xl border bg-white p-8 text-center space-y-3">
+          <p className="text-sm font-medium text-slate-600">Invalid capstone stage requested.</p>
+          <Button variant="outline" onClick={() => router.push(`/student/capstone/${capstoneId}/stage/1`)}>
+            Go to Stage 1
+          </Button>
+        </div>
       )}
     </div>
   )

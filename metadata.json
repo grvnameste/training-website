@@ -1,0 +1,8 @@
+{
+  "name": "ReadNRevise Training",
+  "description": "Engineering and SDLC learning platform with course catalog, capstone projects, and student dashboards.",
+  "permissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

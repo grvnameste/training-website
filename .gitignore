@@ -18,6 +18,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# typescript build info
+*.tsbuildinfo
+
 # ide / os
 .idea/
 .vscode/
@@ -36,3 +39,4 @@ public/_next-video
 
 # clerk configuration (can include secrets)
 /.clerk/
+/.agents/

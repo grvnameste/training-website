@@ -8,7 +8,7 @@ interface MessageInputProps {
     onContentChange: (val: string) => void
     onSend: () => void
     onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void
-    fileInputRef: React.RefObject<HTMLInputElement>
+    fileInputRef: React.RefObject<HTMLInputElement | null>
     isUploading: boolean
     filePreview: string | null
     onRemoveFile: () => void

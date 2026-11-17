@@ -1,16 +1,15 @@
-//hooks/useTeacherChat.ts
 import { useEffect, useState } from 'react'
-import supabase from '@/lib/supabase/client'
-import { useUser } from "@clerk/nextjs"
+import { useUser } from '@/hooks/useUser'
 
 export interface Room {
   id: string
   student_id: string
+  teacher_id: string
   course_id: string
   student_name?: string
-  student_image?: string
+  student_image?: string | null
   course_title?: string
-  last_message?: string
+  last_message?: string | null
   last_message_at?: string
   unread_count?: number
 }
@@ -31,162 +30,84 @@ export function useTeacherChat() {
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(true)
   const [teacherId, setTeacherId] = useState<string | null>(null)
-  const [teacherName, setTeacherName] = useState('Teacher')
+  const [teacherName, setTeacherName] = useState('Instructor')
   const { user } = useUser()
 
   useEffect(() => {
-    const init = async () => {
-      if (!user) {
-        setLoading(false)
-        return
-      }
-    
-
-
-      console.log("USER:", user?.id)
-
-const { data: profile, error: profileError } = await supabase
-  .from('profiles')
-  .select('id, name, clerk_id') // ✅ FIXED
-    .eq('clerk_id', user.id)
-  .maybeSingle() // 🔥 IMPORTANT
-
-console.log("PROFILE:", profile)
-console.log("PROFILE ERROR:", profileError)
-    
-      if (!profile) {
-        setLoading(false)
-        return
-      }
-    
-      const teacherUUID = profile.id
-      console.log("TEACHER UUID:", teacherUUID)
-
-      
-      setTeacherId(teacherUUID)
-      setTeacherName(profile.name || 'Teacher')    
-      const { data: chatRooms, error } = await supabase
-  .from('chat_rooms')
-  .select('*, course:courses(title)')
-  .eq('teacher_id', teacherUUID) // 🔥 ADD THIS LINE
-    
-    console.log("CHAT ROOMS:", chatRooms)
-    console.log("CHAT ROOMS ERROR:", error)
-    
-      if (chatRooms) {
-        const enrichedRooms = await Promise.all(
-          chatRooms.map(async (room: any) => {
-            const { data: studentProfile } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', room.student_id)
-              .maybeSingle()
-    
-            const { count } = await supabase
-              .from('chat_messages')
-              .select('*', { count: 'exact', head: true })
-              .eq('room_id', room.id)
-              .eq('is_read', false)
-              .neq('sender_id', teacherUUID)
-    
-            return {
-              ...room,
-              student_name:
-                studentProfile?.full_name ||
-                studentProfile?.name ||
-                'Student',
-              student_image:
-                studentProfile?.avatar ||
-                studentProfile?.avatar_url ||
-                studentProfile?.image,
-              course_title: room.course?.title,
-              unread_count: count || 0,
-            }
-          })
-        )
-    
-        setRooms(enrichedRooms)
-
-        // 🔥 ADD THIS LINE
-        if (enrichedRooms.length > 0) {
-          setSelectedRoom(enrichedRooms[0])
-        }
-            }
-    
+    if (!user) {
       setLoading(false)
+      return
     }
-    init()
+    setTeacherId(user.id)
+    setTeacherName(user.name || 'Instructor')
+
+    let active = true
+    fetch('/api/chat/rooms', { cache: 'no-store' })
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok) throw new Error(data?.error || 'Could not load conversations')
+        if (!active) return
+        const nextRooms: Room[] = data.rooms ?? []
+        setRooms(nextRooms)
+        setSelectedRoom((current) => current ?? nextRooms[0] ?? null)
+      })
+      .catch((error) => console.error('Chat rooms load failed:', error))
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+
+    return () => {
+      active = false
+    }
   }, [user])
 
-  // Global Unread Tracker
   useEffect(() => {
-    if (!teacherId || rooms.length === 0) return
-    const channel = supabase
-      .channel('global-unread-tracker')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, 
-        (payload) => {
-          const newMessage = payload.new as Message
-          if (newMessage.sender_id !== teacherId && selectedRoom?.id !== newMessage.room_id) {
-            setRooms(prev => prev.map(r => r.id === newMessage.room_id ? { ...r, unread_count: (r.unread_count || 0) + 1 } : r))
-          }
-        }
-      )
-      .subscribe()
-    return () => { supabase.removeChannel(channel) }
-  }, [teacherId, rooms.length, selectedRoom])
-  // Room Specific Logic
-  useEffect(() => {
-    if (!selectedRoom || !teacherId) return
-    const loadMessages = async () => {
-      setMessages([]) // 🔥 ADD THIS LINE
-    
-      const { data } = await supabase
-        .from('chat_messages')
-        .select('*')
-        .eq('room_id', selectedRoom.id)
-        .order('created_at', { ascending: true })
-    
-      setMessages(data || [])
+    if (!selectedRoom) {
+      setMessages([])
+      return
     }
 
-    const markMessagesAsRead = async () => {
-      if (!teacherId) return
-      const res = await fetch('/api/chat/mark-read', {
-        method: 'POST',
-        body: JSON.stringify({ roomId: selectedRoom.id, userId: teacherId })
-      })
-      if (res.ok) {
-        setRooms(prev => prev.map(r => r.id === selectedRoom.id ? { ...r, unread_count: 0 } : r))
+    let active = true
+    const load = async () => {
+      try {
+        const res = await fetch(`/api/chat/rooms/${selectedRoom.id}/messages`, {
+          cache: 'no-store',
+        })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok) throw new Error(data?.error || 'Could not load messages')
+        if (active) {
+          setMessages(data.messages ?? [])
+          setRooms((prev) =>
+            prev.map((room) =>
+              room.id === selectedRoom.id ? { ...room, unread_count: 0 } : room
+            )
+          )
+        }
+      } catch (error) {
+        console.error('Messages load failed:', error)
       }
     }
 
-    loadMessages()
-    markMessagesAsRead()
+    void load()
+    const interval = setInterval(load, 5000)
+    window.addEventListener('focus', load)
 
-    const channel = supabase
-      .channel(`room:${selectedRoom.id}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `room_id=eq.${selectedRoom.id}` }, 
-        (payload) => {
-          const newMessage = payload.new as Message
-          setMessages(prev => {
-            if (prev.some(m => m.id === newMessage.id)) return prev
-            return [...prev, newMessage]
-          })
-                    if (newMessage.sender_id !== teacherId) markMessagesAsRead()
-        }
-      )
-      .subscribe()
+    return () => {
+      active = false
+      clearInterval(interval)
+      window.removeEventListener('focus', load)
+    }
+  }, [selectedRoom])
 
-    return () => { supabase.removeChannel(channel) }
-  }, [selectedRoom, teacherId])
   return {
     rooms,
     setRooms,
     selectedRoom,
     setSelectedRoom,
     messages,
+    setMessages,
     loading,
     teacherId,
-    teacherName
+    teacherName,
   }
 }

@@ -1,0 +1,20 @@
+import { existsSync } from 'node:fs'
+import { defineConfig } from 'drizzle-kit'
+
+if (typeof process.loadEnvFile === 'function') {
+  if (existsSync('.env.local')) {
+    process.loadEnvFile('.env.local')
+  }
+  if (existsSync('.env')) {
+    process.loadEnvFile('.env')
+  }
+}
+
+export default defineConfig({
+  dialect: 'postgresql',
+  schema: './lib/db/schema.ts',
+  out: './drizzle',
+  dbCredentials: {
+    url: process.env.DATABASE_URL!,
+  },
+})

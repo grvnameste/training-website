@@ -2,11 +2,9 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import supabase from '@/lib/supabase/client'
 import { Loader2, MessageSquare, User } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-import { usePresence } from '@/hooks/usePresence'
 import { useTeacherChat } from '@/hooks/useTeacherChat'
 import { ChatSidebar } from '@/components/chat/ChatSidebar'
 import { ChatMessages } from '@/components/chat/ChatMessages'
@@ -18,6 +16,7 @@ export default function TeacherChatPage() {
     selectedRoom,
     setSelectedRoom,
     messages,
+    setMessages,
     loading,
     teacherId,
     teacherName
@@ -32,7 +31,8 @@ export default function TeacherChatPage() {
   const scrollRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const { isUserOnline } = usePresence(teacherId, teacherName)
+  // Presence is intentionally disabled until a server-backed presence service exists.
+  const isUserOnline = (_userId: string, _courseId?: string) => false
 
 
 
@@ -68,13 +68,18 @@ export default function TeacherChatPage() {
         mediaType = selectedFile.type.startsWith('image') ? 'image' : 'video'
       }
 
-      await supabase.from('chat_messages').insert({
-        room_id: selectedRoom.id,
-        sender_id: teacherId,
-        content: content.trim() || null,
-        media_url: mediaUrl,
-        media_type: mediaType,
+      const res = await fetch(`/api/chat/rooms/${selectedRoom.id}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: content.trim() || undefined,
+          mediaUrl: mediaUrl || undefined,
+          mediaType: mediaType || undefined,
+        }),
       })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data?.error || 'Failed to send message')
+      if (data.message) setMessages((prev) => [...prev, data.message])
 
       setContent('')
       setSelectedFile(null)
@@ -125,7 +130,7 @@ export default function TeacherChatPage() {
               <div className="flex items-center gap-3">
                 <div className="relative">
                   <Avatar className="w-10 h-10 border shadow-sm">
-                    <AvatarImage src={selectedRoom.student_image} />
+                    <AvatarImage src={selectedRoom.student_image || undefined} />
                     <AvatarFallback><User /></AvatarFallback>
                   </Avatar>
                   {isUserOnline(selectedRoom.student_id, selectedRoom.course_id) && (

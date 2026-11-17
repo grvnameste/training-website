@@ -1,8 +1,5 @@
-//components/AnalyticsProvider.tsx
 'use client'
 
-import { Analytics } from '@vercel/analytics/next'
-
 export default function AnalyticsProvider() {
-  return <Analytics />
+  return null
 }

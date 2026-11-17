@@ -4,6 +4,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Play, Clipboard, Eye, Clock, CheckCircle } from "lucide-react";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
+import { QUIZ_METADATA } from "@/lib/quiz/quizData";
 
 type Quiz = {
   id: string;
@@ -15,13 +17,15 @@ type Quiz = {
   estimatedPassPct?: number; // small extra meta for UI
 };
 
-const DEFAULT_QUIZZES: Quiz[] = [
-  { id: "q1", title: "JavaScript Basics", skills: ["javascript", "frontend"], questionsCount: 20, difficulty: "Easy", durationMinutes: 15, estimatedPassPct: 82 },
-  { id: "q2", title: "React & State Management", skills: ["react", "redux", "frontend"], questionsCount: 25, difficulty: "Medium", durationMinutes: 25, estimatedPassPct: 70 },
-  { id: "q3", title: "TypeScript Practical", skills: ["typescript", "javascript"], questionsCount: 18, difficulty: "Medium", durationMinutes: 20, estimatedPassPct: 75 },
-  { id: "q4", title: "Node.js APIs", skills: ["nodejs", "backend"], questionsCount: 22, difficulty: "Medium", durationMinutes: 30, estimatedPassPct: 68 },
-  { id: "q5", title: "Mobile Automation (Appium)", skills: ["appium", "automation", "mobile"], questionsCount: 30, difficulty: "Hard", durationMinutes: 45, estimatedPassPct: 52 },
-];
+const DEFAULT_QUIZZES: Quiz[] = Object.values(QUIZ_METADATA).map((q) => ({
+  id: q.id,
+  title: q.title,
+  skills: q.skills,
+  questionsCount: q.questionsCount,
+  difficulty: q.difficulty,
+  durationMinutes: q.durationMinutes,
+  estimatedPassPct: q.estimatedPassPct,
+}));
 
 const STORAGE_KEY = "student:quizBank_v2";
 
@@ -84,6 +88,7 @@ export default function QuizSkills({ skills }: { skills: string[] }) {
 
   function copyId(id: string) {
     navigator.clipboard?.writeText(id);
+    toast.success(`Quiz ID "${id}" copied to clipboard!`);
   }
 
   const skillsLabel = skills && skills.length ? skills.join(", ") : "No skills added";

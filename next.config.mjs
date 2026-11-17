@@ -2,10 +2,8 @@ import { withNextVideo } from "next-video/process";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-
+  output: 'standalone',
+  serverExternalPackages: ['postgres'],
   images: {
     remotePatterns: [
       {
@@ -14,9 +12,31 @@ const nextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'kdiafdknsvbutdrkobwi.supabase.co', // 🔥 ADD THIS
+        hostname: 'kdiafdknsvbutdrkobwi.supabase.co',
       },
     ],
+  },
+
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-DNS-Prefetch-Control',
+            value: 'on',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin',
+          },
+        ],
+      },
+    ];
   },
 };
 

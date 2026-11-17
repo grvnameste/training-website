@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { generateCertificatePDF } from '@/lib/certificates/generatePdf'
-import { auth } from '@clerk/nextjs/server'
+import { getAuthContext } from '@/lib/auth/server'
 
 export async function GET(req: Request) {
-  const { userId } = await auth()
-  if (!userId) {
+  const context = await getAuthContext()
+  if (!context) {
     return new NextResponse('Unauthorized', { status: 401 })
   }
 
@@ -21,18 +21,8 @@ export async function GET(req: Request) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 
-  // ✅ GET STUDENT UUID
-  const { data: profile } = await admin
-    .from('profiles')
-    .select('id')
-    .eq('clerk_id', userId)
-    .single()
-
-  if (!profile?.id) {
-    return new NextResponse('Profile not found', { status: 404 })
-  }
-
-  const studentId = profile.id
+  const studentId = context.profile.id
+  const studentName = context.profile.name
 
   // ✅ CHECK CERTIFICATE
   const { data: progress } = await admin
@@ -46,13 +36,6 @@ export async function GET(req: Request) {
     return new NextResponse('Not issued', { status: 403 })
   }
 
-  // ✅ GET NAME
-  const { data: student } = await admin
-    .from('student_profiles')
-    .select('name')
-    .eq('id', studentId)
-    .single()
-
   const { data: course } = await admin
     .from('courses')
     .select('title')
@@ -60,7 +43,7 @@ export async function GET(req: Request) {
     .single()
 
   const pdfBuffer = await generateCertificatePDF({
-    studentName: student?.name ?? 'Student',
+    studentName,
     courseName: course?.title ?? 'Capstone',
     issueDate: new Date().toDateString(),
     certificateId: `${studentId}-${courseId}`,

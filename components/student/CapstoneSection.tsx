@@ -63,7 +63,7 @@ export function CapstoneSection({
                 />
 
                 <StageItem
-                    title="Stage 2 – Development & Submission"
+                    title="Stage 3 – Development & Submission"
                     unlocked={!isLocked(3)}
                     completed={stage3Submitted}
                     meeting={meeting}
