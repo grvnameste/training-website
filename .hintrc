@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 {
   "extends": [
     "development"
@@ -10,4 +11,18 @@
       }
     ]
   }
+=======
+{
+  "extends": [
+    "development"
+  ],
+  "hints": {
+    "axe/forms": [
+      "default",
+      {
+        "select-name": "off"
+      }
+    ]
+  }
+>>>>>>> 2f7d3a232363d3d766bff65e4cb13ada689e9ee8
 }

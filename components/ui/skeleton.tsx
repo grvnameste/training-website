@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { cn } from '@/lib/utils'
 
 function Skeleton({ className, ...props }: React.ComponentProps<'div'>) {
@@ -11,3 +12,18 @@ function Skeleton({ className, ...props }: React.ComponentProps<'div'>) {
 }
 
 export { Skeleton }
+=======
+import { cn } from '@/lib/utils'
+
+function Skeleton({ className, ...props }: React.ComponentProps<'div'>) {
+  return (
+    <div
+      data-slot="skeleton"
+      className={cn('bg-accent animate-pulse rounded-md', className)}
+      {...props}
+    />
+  )
+}
+
+export { Skeleton }
+>>>>>>> 2f7d3a232363d3d766bff65e4cb13ada689e9ee8

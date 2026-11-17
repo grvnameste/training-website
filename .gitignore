@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # dependencies
 node_modules/
 
@@ -39,4 +40,44 @@ public/_next-video
 
 # clerk configuration (can include secrets)
 /.clerk/
+=======
+# dependencies
+node_modules/
+
+# next.js
+.next/
+out/
+dist/
+build/
+
+# env files
+.env
+.env.local
+.env.*.local
+
+# logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ide / os
+.idea/
+.vscode/
+.DS_Store
+
+# vercel
+.vercel
+package-lock.json
+
+# next-video
+videos/*
+!videos/*.json
+!videos/*.js
+!videos/*.ts
+public/_next-video
+
+# clerk configuration (can include secrets)
+/.clerk/
+>>>>>>> 2f7d3a232363d3d766bff65e4cb13ada689e9ee8
 /.agents/

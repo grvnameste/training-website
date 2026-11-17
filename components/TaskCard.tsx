@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // components/TaskCard.tsx
 'use client'
 
@@ -89,3 +90,17 @@ export default function TaskCard({ id, title, card, isOverlay = false, onDelete 
     </div>
   )
 }
+=======
+//components/TaskCard.tsx
+type Props = {
+    title: string
+  }
+  
+  export default function TaskCard({ title }: Props) {
+    return (
+      <div className="bg-white p-3 rounded-lg shadow-sm hover:shadow-md transition cursor-pointer">
+        {title}
+      </div>
+    )
+  }
+>>>>>>> 2f7d3a232363d3d766bff65e4cb13ada689e9ee8

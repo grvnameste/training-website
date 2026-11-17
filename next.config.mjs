@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { withNextVideo } from "next-video/process";
 
 /** @type {import('next').NextConfig} */
@@ -40,4 +41,28 @@ const nextConfig = {
   },
 };
 
+=======
+import { withNextVideo } from "next-video/process";
+
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'kdiafdknsvbutdrkobwi.supabase.co', // 🔥 ADD THIS
+      },
+    ],
+  },
+};
+
+>>>>>>> 2f7d3a232363d3d766bff65e4cb13ada689e9ee8
 export default withNextVideo(nextConfig);
