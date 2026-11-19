@@ -2,6 +2,7 @@ import { eq, or } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { profiles, users } from '@/lib/db/schema'
+import { isBreachedPassword } from '@/lib/auth/breached-password'
 import { hashPassword } from '@/lib/auth/password'
 import { setSessionCookie, signSession } from '@/lib/auth/session'
 import {
@@ -36,6 +37,12 @@ export async function POST(req: Request) {
     validateUsername(username) || validateEmail(email) || validatePassword(password)
   if (validationError) {
     return NextResponse.json({ error: validationError }, { status: 400 })
+  }
+  if (await isBreachedPassword(password)) {
+    return NextResponse.json(
+      { error: 'This password has appeared in a known data breach. Choose a different password' },
+      { status: 400 }
+    )
   }
 
   const existing = await db
