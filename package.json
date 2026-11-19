@@ -16,6 +16,7 @@
     "db:apply-auth-sql": "node --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/apply-sql.mjs supabase/migrations/20261115000000_password_auth.sql",
     "db:apply-schema": "node --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/migrate.mjs up",
     "create-admin": "node --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/create-admin.mjs",
+    "create-test-users": "node --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/create-test-users.mjs",
     "typecheck": "tsc --noEmit",
     "check:invariants": "node scripts/check-invariants.mjs",
     "check": "npm run typecheck && npm run check:invariants",
