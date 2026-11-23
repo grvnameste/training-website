@@ -6,8 +6,8 @@ export default function StudentsPageContent() {
   return (
     <div className="min-h-screen bg-white">
       {/* HERO SECTION - More Dynamic */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-blue-50/50 to-white py-24 lg:py-32">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,#000_70%,transparent_100%)]" />
+      <section className="relative overflow-hidden bg-gradient-to-b from-blue-50/50 to-white py-24 dark:from-blue-500/10 dark:to-transparent lg:py-32">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,#000_70%,transparent_100%)] dark:opacity-20" />
         
         <div className="relative z-10 max-w-4xl mx-auto px-6 text-center">
           <span className="inline-block px-4 py-1.5 mb-6 text-sm font-medium tracking-wider text-blue-600 uppercase bg-blue-100/50 rounded-full">

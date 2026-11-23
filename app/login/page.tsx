@@ -71,6 +71,7 @@ export default function LoginPage() {
               width={180}
               height={45}
               priority
+              className="h-auto w-auto dark:brightness-0 dark:invert"
             />
           </div>
 

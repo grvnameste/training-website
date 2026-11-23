@@ -111,7 +111,7 @@ export default function CoursesPage() {
             )}
             <button
               type="submit"
-              className="rounded-xl bg-slate-900 px-5 py-2 text-sm font-bold text-white transition-colors hover:bg-blue-600"
+              className="rounded-xl bg-slate-900 px-5 py-2 text-sm font-bold text-white transition-colors hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
             >
               Search
             </button>

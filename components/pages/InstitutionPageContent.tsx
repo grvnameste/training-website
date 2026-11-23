@@ -11,7 +11,7 @@ export default function InstitutionPageContent() {
   return (
     <div className="min-h-screen bg-white">
       {/* HERO SECTION - Corporate & Professional */}
-      <section className="relative py-24 lg:py-32 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-blue-50 via-white to-white overflow-hidden">
+      <section className="relative py-24 lg:py-32 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-blue-50 via-white to-white overflow-hidden dark:from-blue-500/10 dark:via-transparent dark:to-transparent">
         <div className="max-w-7xl mx-auto px-6 relative z-10">
           <div className="text-center">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-700 text-sm font-medium mb-6">

@@ -60,7 +60,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-200 via-slate-50 to-white px-4 relative overflow-hidden">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-200 via-slate-50 to-white px-4 relative overflow-hidden dark:from-slate-800 dark:via-[#0b1220] dark:to-[#070d19]">
       <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-100/40 rounded-full blur-3xl -z-10 animate-pulse" />
       <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-100/40 rounded-full blur-3xl -z-10" />
 
@@ -73,7 +73,7 @@ export default function RegisterPage() {
               width={160}
               height={40}
               priority
-              className="h-auto w-auto"
+              className="h-auto w-auto dark:brightness-0 dark:invert"
             />
           </div>
           <div className="flex items-center justify-center gap-2 mb-1">

@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:is(.marketing-dark *));
 
 /* ================= PROFESSIONAL BLUE-WHITE LMS THEME ================= */
 
@@ -30,6 +30,12 @@
   --border: #e5e7eb;              /* gray-200 */
   --input: #ffffff;
   --ring: #2563eb;
+
+  /* ========== MARKETING SURFACE ========== */
+  --ink: #0f172a;                 /* secondary */
+  --mint: #10b981;                /* accent */
+  --surface: #f8fafc;             /* page background */
+  --hairline: #e2e8f0;
 }
 
 /* ================= TAILWIND THEME TOKENS ================= */
@@ -52,6 +58,13 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-ink: var(--ink);
+  --color-mint: var(--mint);
+  --color-surface: var(--surface);
+  --color-hairline: var(--hairline);
+
+  --shadow-soft: 0 1px 2px rgb(15 23 42 / 0.04), 0 16px 40px -20px rgb(15 23 42 / 0.18);
+  --shadow-lift: 0 30px 70px -30px rgb(15 23 42 / 0.35);
 }
 
 
@@ -65,6 +78,374 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
   }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 5.5rem;
+  }
+
+  :where(a, button, [role='button'], summary):focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: #bfdbfe;
+    color: #0f172a;
+  }
+}
+
+/* ================= MARKETING UTILITIES ================= */
+
+@layer utilities {
+  .bg-grid-light {
+    background-image:
+      linear-gradient(to right, rgb(15 23 42 / 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(15 23 42 / 0.05) 1px, transparent 1px);
+    background-size: 64px 64px;
+  }
+
+  .bg-grid-dark {
+    background-image:
+      linear-gradient(to right, rgb(148 163 184 / 0.13) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(148 163 184 / 0.13) 1px, transparent 1px);
+    background-size: 64px 64px;
+  }
+
+  .mask-fade-x {
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 10%, #000 90%, transparent);
+    mask-image: linear-gradient(to right, transparent, #000 10%, #000 90%, transparent);
+  }
+
+  .marquee-track {
+    animation: marquee 46s linear infinite;
+  }
+
+  .marquee:hover .marquee-track,
+  .marquee:focus-within .marquee-track {
+    animation-play-state: paused;
+  }
+
+  .animate-float {
+    animation: float-y 7s ease-in-out infinite;
+  }
+
+  .animate-float-slow {
+    animation: float-y 9s ease-in-out infinite;
+    animation-delay: -2.5s;
+  }
+
+  .animate-rise {
+    animation: rise-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  .text-gradient-brand {
+    background-image: linear-gradient(96deg, #2563eb 0%, #1d4ed8 45%, #0d9488 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes float-y {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .marquee-track,
+  .animate-float,
+  .animate-float-slow,
+  .animate-rise {
+    animation: none !important;
+  }
+}
+
+/* ================= PUBLIC THEME SKIN =================
+   Scoped to .marketing-dark on <html>. Authenticated
+   workspaces never receive the class, so their light UI
+   is untouched. */
+
+.marketing-dark {
+  color-scheme: dark;
+  --background: #070d19;
+  --foreground: #e2e8f0;
+  --card: #0f172a;
+  --card-foreground: #e2e8f0;
+  --secondary: #1e293b;
+  --secondary-foreground: #e2e8f0;
+  --primary: #3b82f6;
+  --primary-foreground: #ffffff;
+  --accent: #1e293b;
+  --accent-foreground: #e2e8f0;
+  --border: rgb(255 255 255 / 0.1);
+  --input: rgb(255 255 255 / 0.08);
+  --ring: #60a5fa;
+  --ink: #f8fafc;
+  --mint: #34d399;
+  --surface: #070d19;
+  --hairline: rgb(255 255 255 / 0.1);
+}
+
+.marketing-dark body {
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+.marketing-dark ::selection {
+  background: rgb(59 130 246 / 0.35);
+  color: #f8fafc;
+}
+
+/* Page vs. card surface hierarchy */
+.marketing-dark .min-h-screen.bg-white,
+.marketing-dark .min-h-screen.bg-slate-50,
+.marketing-dark .min-h-screen.bg-slate-50\/50,
+.marketing-dark .section-page.bg-white,
+.marketing-dark .site-footer.bg-white {
+  background-color: #070d19;
+}
+
+.marketing-dark .bg-white {
+  background-color: #0f172a;
+}
+
+.marketing-dark .bg-white\/85 {
+  background-color: rgb(7 13 25 / 0.84);
+}
+
+.marketing-dark .bg-white\/95 {
+  background-color: rgb(15 23 42 / 0.92);
+}
+
+.marketing-dark .bg-white\/80 {
+  background-color: rgb(15 23 42 / 0.8);
+}
+
+.marketing-dark .bg-white\/50 {
+  background-color: rgb(15 23 42 / 0.5);
+}
+
+.marketing-dark .bg-\[\#FBFBFE\],
+.marketing-dark .bg-\[\#fcfcfd\] {
+  background-color: #070d19;
+}
+
+.marketing-dark .bg-slate-50,
+.marketing-dark .bg-slate-50\/30,
+.marketing-dark .bg-slate-50\/50,
+.marketing-dark .bg-slate-50\/70,
+.marketing-dark .bg-slate-50\/80,
+.marketing-dark .bg-gray-50 {
+  background-color: #0b1220;
+}
+
+.marketing-dark .bg-slate-100,
+.marketing-dark .bg-slate-100\/80,
+.marketing-dark .bg-gray-100 {
+  background-color: rgb(255 255 255 / 0.08);
+}
+
+.marketing-dark .bg-blue-50,
+.marketing-dark .bg-blue-50\/50,
+.marketing-dark .bg-blue-50\/60,
+.marketing-dark .bg-blue-50\/80,
+.marketing-dark .bg-blue-100,
+.marketing-dark .bg-blue-100\/40,
+.marketing-dark .bg-blue-100\/50,
+.marketing-dark .bg-indigo-50,
+.marketing-dark .bg-indigo-100\/40 {
+  background-color: rgb(59 130 246 / 0.12);
+}
+
+.marketing-dark .bg-emerald-50,
+.marketing-dark .bg-emerald-100 {
+  background-color: rgb(16 185 129 / 0.12);
+}
+
+.marketing-dark .bg-amber-50 {
+  background-color: rgb(245 158 11 / 0.12);
+}
+
+/* Text */
+.marketing-dark .text-slate-950,
+.marketing-dark .text-slate-900,
+.marketing-dark .text-gray-900 {
+  color: #f8fafc;
+}
+
+.marketing-dark .text-slate-800,
+.marketing-dark .text-slate-700,
+.marketing-dark .text-gray-800,
+.marketing-dark .text-gray-700 {
+  color: #e2e8f0;
+}
+
+.marketing-dark .text-slate-600,
+.marketing-dark .text-slate-500,
+.marketing-dark .text-gray-600,
+.marketing-dark .text-gray-500 {
+  color: #94a3b8;
+}
+
+.marketing-dark .text-blue-600,
+.marketing-dark .text-blue-700,
+.marketing-dark .text-blue-800 {
+  color: #93c5fd;
+}
+
+.marketing-dark .text-indigo-600,
+.marketing-dark .text-indigo-700 {
+  color: #a5b4fc;
+}
+
+.marketing-dark .text-emerald-700,
+.marketing-dark .text-emerald-800 {
+  color: #6ee7b7;
+}
+
+.marketing-dark .text-amber-800 {
+  color: #fcd34d;
+}
+
+/* Borders & dividers */
+.marketing-dark .border-slate-50,
+.marketing-dark .border-slate-100,
+.marketing-dark .border-slate-200,
+.marketing-dark .border-slate-200\/60,
+.marketing-dark .border-slate-200\/70,
+.marketing-dark .border-slate-200\/80,
+.marketing-dark .border-gray-50,
+.marketing-dark .border-gray-100,
+.marketing-dark .border-gray-200,
+.marketing-dark .border-white {
+  border-color: rgb(255 255 255 / 0.1);
+}
+
+.marketing-dark .border-blue-100,
+.marketing-dark .border-blue-200,
+.marketing-dark .border-blue-200\/70 {
+  border-color: rgb(96 165 250 / 0.3);
+}
+
+.marketing-dark .ring-slate-200,
+.marketing-dark .ring-slate-200\/50,
+.marketing-dark .ring-slate-200\/70 {
+  --tw-ring-color: rgb(255 255 255 / 0.1);
+}
+
+.marketing-dark .ring-blue-100\/70 {
+  --tw-ring-color: rgb(96 165 250 / 0.2);
+}
+
+.marketing-dark .ring-white {
+  --tw-ring-color: #070d19;
+}
+
+/* Hover states */
+.marketing-dark .hover\:bg-slate-50:hover,
+.marketing-dark .hover\:bg-slate-100:hover,
+.marketing-dark .hover\:bg-slate-100\/80:hover,
+.marketing-dark .hover\:bg-gray-50:hover {
+  background-color: rgb(255 255 255 / 0.06);
+}
+
+.marketing-dark .hover\:bg-blue-50:hover {
+  background-color: rgb(59 130 246 / 0.15);
+}
+
+.marketing-dark .hover\:border-slate-300:hover {
+  border-color: rgb(255 255 255 / 0.2);
+}
+
+/* Forms */
+.marketing-dark input:not([type='checkbox']):not([type='radio']),
+.marketing-dark textarea,
+.marketing-dark select {
+  background-color: rgb(255 255 255 / 0.05);
+  border-color: rgb(255 255 255 / 0.15);
+  color: #f8fafc;
+}
+
+.marketing-dark input::placeholder,
+.marketing-dark textarea::placeholder {
+  color: #64748b;
+}
+
+/* Neutralise light-tinted shadows on dark surfaces */
+.marketing-dark .shadow-slate-100,
+.marketing-dark .shadow-slate-200,
+.marketing-dark .shadow-slate-200\/50,
+.marketing-dark .shadow-slate-200\/60,
+.marketing-dark .shadow-blue-100,
+.marketing-dark .shadow-blue-200,
+.marketing-dark .shadow-blue-200\/50,
+.marketing-dark .shadow-indigo-100,
+.marketing-dark .shadow-blue-500\/5 {
+  --tw-shadow-color: rgb(0 0 0 / 0.5);
+}
+
+/* Floating hero cards sit above the code surface */
+.marketing-dark .float-card.bg-white {
+  background-color: #1e293b;
+}
+
+/* Dark-aware decorative bits */
+.marketing-dark .text-gradient-brand {
+  background-image: linear-gradient(96deg, #93c5fd 0%, #60a5fa 45%, #2dd4bf 100%);
+}
+
+.marketing-dark .bg-grid-light {
+  background-image:
+    linear-gradient(to right, rgb(148 163 184 / 0.13) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(148 163 184 / 0.13) 1px, transparent 1px);
+}
+
+/* White-on-dark controls stay white */
+.marketing-dark .theme-static.bg-white {
+  background-color: #ffffff;
+}
+
+.marketing-dark .theme-static.text-slate-900,
+.marketing-dark .theme-static.text-slate-950 {
+  color: #020617;
 }
 
 /* ================= PRINT (RESUME ONLY) ================= */

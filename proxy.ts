@@ -18,6 +18,7 @@ const PUBLIC_ROUTE_PREFIXES = [
   '/Forinstitution',
   '/api/contact',
   '/api/video',
+  '/api/catalog',
   '/api/auth/login',
   '/api/auth/register',
   '/api/auth/logout',
