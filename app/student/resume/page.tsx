@@ -489,7 +489,7 @@ export default function ResumePage() {
   return (
     <div className="min-h-screen bg-[#F8FAFC] selection:bg-blue-100">
       {/* GLOSSY NAVBAR */}
-      <nav className="sticky top-0 z-[100] bg-white/70 backdrop-blur-xl border-b border-slate-200/60 no-print">
+      <nav className="sticky top-[70px] z-30 bg-white/70 backdrop-blur-xl border-b border-slate-200/60 no-print">
         <div className="max-w-[1600px] mx-auto px-8 h-20 flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="bg-gradient-to-tr from-blue-600 to-indigo-600 p-2.5 rounded-2xl shadow-lg shadow-blue-200">
